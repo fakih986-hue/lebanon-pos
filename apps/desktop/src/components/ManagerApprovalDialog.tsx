@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react"
+import { createPortal } from "react-dom"
 import { ShieldCheck, X } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 import { requestManagerApproval, type ApprovalFailure, type ApprovalRequest } from "../features/pos/services/approval.service"
@@ -40,9 +41,13 @@ export default function ManagerApprovalDialog({ open, summary, request, onApprov
     if (!open) return
     returnFocus.current = document.activeElement
     setPin(""); setBusy(false); setSlow(false); setError(null); setCandidates(null)
+    // focus the PIN; again once a dialog closing underneath (the action's own confirmation) has
+    // finished, since it returns focus to its trigger when it unmounts
     const id = window.setTimeout(() => pinRef.current?.focus(), 0)
+    const again = window.setTimeout(() => { if (document.activeElement !== pinRef.current) pinRef.current?.focus() }, 120)
     return () => {
       window.clearTimeout(id)
+      window.clearTimeout(again)
       inFlight.current?.abort()
       inFlight.current = null
       const back = returnFocus.current as HTMLElement | null
@@ -64,12 +69,13 @@ export default function ManagerApprovalDialog({ open, summary, request, onApprov
       if (result.code === "AMBIGUOUS_PIN" && result.candidates?.length) { setCandidates(result.candidates); setError(null); setPin(pin); return }
       setError(result)
       setCandidates(null)
-      window.setTimeout(() => pinRef.current?.focus(), 0)
     } finally {
       window.clearTimeout(slowTimer)
       setSlow(false)
       setBusy(false)
       if (inFlight.current === controller) inFlight.current = null
+      // back to the PIN once it is enabled again (it is disabled while the server answers)
+      if (!controller.signal.aborted) window.setTimeout(() => pinRef.current?.focus(), 30)
     }
   }
 
@@ -92,7 +98,10 @@ export default function ManagerApprovalDialog({ open, summary, request, onApprov
     return text === key ? e.message : text
   }
 
-  return (
+  // rendered on <body>: an open Drawer makes the page behind it inert (as ConfirmLayer does)
+  // created only while open: a Drawer opened earlier marks every <body> child that exists then as inert
+  if (!open || typeof document === "undefined") return null
+  return createPortal(
     <div className={`fixed inset-0 z-[320] flex items-center justify-center p-4 ${open ? "" : "pointer-events-none"}`}>
       <div className={`fixed inset-0 transition-opacity duration-200 ${open ? "opacity-100" : "opacity-0"}`} style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }} onClick={cancel} />
       {open && (
@@ -150,6 +159,7 @@ export default function ManagerApprovalDialog({ open, summary, request, onApprov
           </form>
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   )
 }

@@ -24,13 +24,14 @@ type MenuItem = {
   labelKey: string
   path: string
   icon: LucideIcon
-  permission: Permission
+  /** One permission, or any of several. */
+  permission: Permission | Permission[]
   group: "Register" | "Inventory" | "Finance" | "Operations" | "System"
 }
 
 export const menuItems: MenuItem[] = [
   { label: "POS",        labelKey: "desktop.nav.pos",         path: "/",                 icon: ScanLine,          permission: "sales.checkout",   group: "Register"  },
-  { label: "Sales",      labelKey: "desktop.nav.sales",       path: "/sales",            icon: ReceiptText,       permission: "reports.view",     group: "Register"  },
+  { label: "Sales",      labelKey: "desktop.nav.sales",       path: "/sales",            icon: ReceiptText,       permission: ["reports.view", "sales.reprint"] as Permission[], group: "Register"  },
   { label: "Customers",  labelKey: "nav.customers",           path: "/customers",        icon: Users,             permission: "customers.manage", group: "Register"  },
   { label: "Products",   labelKey: "nav.products",            path: "/products",         icon: Boxes,             permission: "inventory.view",   group: "Inventory" },
   { label: "Receiving",  labelKey: "desktop.nav.receiving",   path: "/products/new",     icon: PackagePlus,       permission: "inventory.receive",group: "Inventory" },
@@ -66,7 +67,7 @@ export default function Sidebar() {
   const currentUser = getCurrentUser()
   const storeName = getSettings().storeName
   const currentStore = getKnownStores().find((s) => s.apiUrl === getApiUrl())
-  const visibleMenuItems = menuItems.filter((item) => userCan(item.permission))
+  const visibleMenuItems = menuItems.filter((item) => (Array.isArray(item.permission) ? item.permission.some((p) => userCan(p)) : userCan(item.permission)))
 
   useEffect(() => subscribeSecurity(() => setSecurityVersion((v) => v + 1)), [])
   useEffect(() => subscribeSync(() => setSyncPending(getSyncStatus().pending)), [])
@@ -326,7 +327,7 @@ export function BottomNav() {
   const location = useLocation()
   const { t } = useI18n()
   const [, setSecurityVersion] = useState(0)
-  const visibleMenuItems = menuItems.filter((item) => userCan(item.permission))
+  const visibleMenuItems = menuItems.filter((item) => (Array.isArray(item.permission) ? item.permission.some((p) => userCan(p)) : userCan(item.permission)))
   useEffect(() => subscribeSecurity(() => setSecurityVersion((v) => v + 1)), [])
 
   return (

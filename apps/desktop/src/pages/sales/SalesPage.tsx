@@ -112,6 +112,8 @@ export default function SalesPage() {
   const canRefund = userCan("sales.refund")
   const canReprint = userCan("sales.reprint")
   const canVoid = userCan("sales.void")
+  // a cashier may look up receipts (reprint; refund or void with a manager's approval) without the report figures
+  const seeReports = userCan("reports.view")
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase()
@@ -259,19 +261,19 @@ export default function SalesPage() {
     <main className="mg2 mg2-bo min-h-0 flex-1 overflow-y-auto">
       <div className="mg2-wrap">
         <PageHeader eyebrow={t("rcpt.sell")} title={t("rcpt.title")} actions={
-          <button type="button" className="mg2-btn" onClick={() => exportSalesCsv(filtered)} disabled={filtered.length === 0}><Download size={16} />{t("rcpt.export")}</button>
+          seeReports ? <button type="button" className="mg2-btn" onClick={() => exportSalesCsv(filtered)} disabled={filtered.length === 0}><Download size={16} />{t("rcpt.export")}</button> : null
         } />
-        <PageTabs label={t("rcpt.tabs")} current={tab} items={[{ value: "receipts", label: t("pos.sales.tab_receipts"), count: sales.length }, { value: "insights", label: t("pos.sales.tab_insights") }]} />
+        {seeReports && <PageTabs label={t("rcpt.tabs")} current={tab} items={[{ value: "receipts", label: t("pos.sales.tab_receipts"), count: sales.length }, { value: "insights", label: t("pos.sales.tab_insights") }]} />}
 
         {/* REFUND-INTEGRITY-1: server-rejected refunds stay visible until settled */}
         <MoneyConflictsPanel />
 
-        <div className="mg2-stats" style={{ marginBlock: 16 }}>
+        {seeReports && <div className="mg2-stats" style={{ marginBlock: 16 }}>
           <StatTile label={t("rcpt.kpi.gross")} value={<>{formatCurrency(metrics.todayGross)}<span className="mg2-cap" style={{ display: "block", fontSize: 13, fontWeight: 500 }}>{formatLbpCurrency(usdToLbp(metrics.todayGross, rate))}</span></>} />
           <StatTile label={t("rcpt.kpi.net")} value={<>{formatCurrency(metrics.todayNetRevenue)}<span className="mg2-cap" style={{ display: "block", fontSize: 13, fontWeight: 500 }}>{formatLbpCurrency(usdToLbp(metrics.todayNetRevenue, rate))}</span></>} />
           <StatTile label={t("rcpt.kpi.refunds")} value={<span className={metrics.todayRefunds > 0 ? "t-pos" : undefined}>{formatCurrency(metrics.todayRefunds)}</span>} />
           <StatTile label={t("rcpt.kpi.count")} value={formatNumber(metrics.todayTransactions)} />
-        </div>
+        </div>}
 
         <div className="mg2-toolbar">
           <div className="mg2-search">
@@ -303,7 +305,7 @@ export default function SalesPage() {
           {STATUSES.map((s) => <FilterChip key={s} pressed={status === s} onClick={() => setStatus(s)} label={t(`rcpt.status.${s}`)} count={statusCount(s)} tone={s === "Voided" ? "err" : s === "Debt" ? "warn" : undefined} />)}
         </div>
 
-        {tab === "insights" ? (
+        {tab === "insights" && seeReports ? (
           <InsightsPanel filteredSales={filtered} paymentMix={paymentMix} onViewSale={(s) => openReceipt(s.id)} onExportCsv={() => exportSalesCsv(filtered)} />
         ) : sales.length === 0 ? (
           <div className="mg2-card"><EmptyState icon={<ReceiptText size={28} aria-hidden="true" />} title={t("rcpt.empty_title")} text={t("rcpt.empty_text")} /></div>
@@ -357,7 +359,7 @@ export default function SalesPage() {
               ))}
             </div>
             <p className="mg2-cap" style={{ marginTop: 8 }}>
-              {t("rcpt.footer", { n: filtered.length, revenue: formatCurrency(revenue) })}{userCan("reports.cost") && (profit !== undefined ? profit > 0 && <> · {t("rcpt.footer_profit", { profit: formatCurrency(profit) })}</> : <> · {t("rcpt.footer_profit_na")}</>)}
+              {seeReports && t("rcpt.footer", { n: filtered.length, revenue: formatCurrency(revenue) })}{userCan("reports.cost") && (profit !== undefined ? profit > 0 && <> · {t("rcpt.footer_profit", { profit: formatCurrency(profit) })}</> : <> · {t("rcpt.footer_profit_na")}</>)}
               {filtersOn && <> · <button type="button" className="mg2-sort" style={{ color: "var(--text)", textDecoration: "underline" }} onClick={clearFilters}>{t("acct.clear_filters")}</button></>}
             </p>
           </>

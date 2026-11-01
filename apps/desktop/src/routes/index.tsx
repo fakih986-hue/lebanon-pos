@@ -176,10 +176,11 @@ function RequirePermission({
   permission,
   children,
 }: {
-  permission: Permission
+  /** One permission, or any of several. */
+  permission: Permission | Permission[]
   children: ReactNode
 }) {
-  if (!userCan(permission)) {
+  if (!(Array.isArray(permission) ? permission.some((p) => userCan(p)) : userCan(permission))) {
     return <AccessDenied />
   }
 
@@ -242,7 +243,8 @@ const router = createBrowserRouter([
     path: "/sales",
     element: (
       <Shell>
-        <RequirePermission permission="reports.view">
+        {/* receipts: reprint and (with a manager's approval) refund or void; the figures need reports.view */}
+        <RequirePermission permission={["reports.view", "sales.reprint"]}>
           <SalesPage />
         </RequirePermission>
       </Shell>

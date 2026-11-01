@@ -23,8 +23,8 @@ let container: HTMLDivElement, root: Root, scanner: HTMLInputElement
 const request = { entity: "refund", action: "create", payload: { id: "r1", total: 5 }, permission: "sales.refund" as const }
 const grant = { approvalId: "a1", entity: "refund", action: "create", recordId: "r1", permission: "sales.refund", approverName: "Maya", expiresAt: new Date(Date.now() + 60_000).toISOString(), userId: "rana" }
 const flushAsync = () => act(async () => { await new Promise((r) => setTimeout(r, 10)) })
-const pinInput = () => container.querySelector<HTMLInputElement>("input[type=password]")!
-const text = () => container.textContent ?? ""
+const pinInput = () => document.body.querySelector<HTMLInputElement>("input[type=password]")!
+const text = () => document.querySelector("[role=dialog]")?.textContent ?? ""
 function type(value: string) {
   Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(pinInput(), value)
   pinInput().dispatchEvent(new Event("input", { bubbles: true }))
@@ -52,7 +52,7 @@ describe("manager approval dialog", () => {
     const { onApproved } = await render()
     expect(document.activeElement).toBe(pinInput())
     await act(async () => { type("6602") })
-    const form = container.querySelector("form")!
+    const form = document.body.querySelector("form")!
     await act(async () => { form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })) })
     await act(async () => { form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })) }) // repeated confirmation
     expect(calls).toHaveLength(1)
@@ -64,22 +64,22 @@ describe("manager approval dialog", () => {
 
   it("the touch keypad types digits; a slow server is said so; a wrong PIN is shown and the PIN cleared", async () => {
     await render({ slowMs: 20 })
-    const key = (d: string) => [...container.querySelectorAll("button")].find((b) => b.getAttribute("aria-label") === d)!
+    const key = (d: string) => [...document.body.querySelectorAll("button")].find((b) => b.getAttribute("aria-label") === d)!
     await act(async () => { for (const d of ["6", "6", "0", "1"]) key(d).click() })
     expect(pinInput().value).toBe("6601")
-    await act(async () => { container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })) })
+    await act(async () => { document.body.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })) })
     await flushAsync(); await flushAsync()
     expect(text()).toContain("Still waiting for the server")
     await act(async () => { calls[0].resolve({ ok: false, code: "INVALID_PIN", message: "Wrong PIN.", remaining: 3 }) })
     expect(text()).toContain("Wrong PIN. 3 attempts left")
     expect(pinInput().value).toBe("")
-    expect(container.querySelector("[role=alert]")).toBeTruthy()
+    expect(document.body.querySelector("[role=alert]")).toBeTruthy()
   })
 
   it("Escape cancels: nothing is approved, the request in flight is abandoned, focus returns to the scanner field", async () => {
     const { onCancel, onApproved } = await render()
     await act(async () => { type("1234") })
-    await act(async () => { container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })) })
+    await act(async () => { document.body.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })) })
     await act(async () => { window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })) })
     expect(onCancel).toHaveBeenCalled()
     expect(calls[0].signal?.aborted).toBe(true)
@@ -93,18 +93,29 @@ describe("manager approval dialog", () => {
   it("a PIN shared by two people: the person approving is chosen, then the same PIN is sent for them", async () => {
     await render()
     await act(async () => { type("1111") })
-    await act(async () => { container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })) })
+    await act(async () => { document.body.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })) })
     await act(async () => { calls[0].resolve({ ok: false, code: "AMBIGUOUS_PIN", message: "", candidates: [{ id: "m1", name: "Maya" }, { id: "m2", name: "Sami" }] }) })
     expect(text()).toContain("Who is approving")
-    await act(async () => { [...container.querySelectorAll("button")].find((b) => b.textContent === "Sami")!.click() })
+    await act(async () => { [...document.body.querySelectorAll("button")].find((b) => b.textContent === "Sami")!.click() })
     expect(calls[1].req).toMatchObject({ pin: "1111", approverId: "m2" })
+  })
+
+  it("opened from inside a drawer (the page behind is inert): the dialog is outside it and its PIN field takes focus", async () => {
+    // the page mounts the dialog closed; a Drawer then opens and marks every <body> child inert; then the dialog opens
+    const onApproved = vi.fn(), onCancel = vi.fn()
+    await act(async () => { root.render(h(I18nProvider, null, h(ManagerApprovalDialog, { open: false, summary: null, request, onApproved, onCancel }))) })
+    for (const el of [...document.body.children]) el.setAttribute("inert", "")
+    await act(async () => { root.render(h(I18nProvider, null, h(ManagerApprovalDialog, { open: true, summary: h("p", null, "Void"), request, onApproved, onCancel }))) })
+    await flushAsync()
+    expect(pinInput().closest("[inert]")).toBeNull()
+    expect(document.activeElement).toBe(pinInput())
   })
 
   it("Arabic: the dialog and its errors are translated", async () => {
     await render({}, "ar")
     expect(text()).toContain("موافقة المدير")
     await act(async () => { type("1") })
-    await act(async () => { container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })) })
+    await act(async () => { document.body.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })) })
     await act(async () => { calls[0].resolve({ ok: false, code: "OFFLINE", message: "x" }) })
     expect(text()).toContain("لا توجد موافقة دون اتصال")
   })
