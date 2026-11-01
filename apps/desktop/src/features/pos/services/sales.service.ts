@@ -218,7 +218,12 @@ function normalizeSaleItem(raw: any): SaleItem {
   if (typeof raw?.productSyncId === "string") (item as any).productSyncId = raw.productSyncId
   if (typeof raw?.lineId === "string" && raw.lineId) item.lineId = raw.lineId
   // SPRINT-1: the line's stock policy when sold (refunds/voids depend on it). Absent = tracked.
-  if (raw?.stockPolicy === "untracked" || raw?.stockPolicy === "tracked") item.stockPolicy = raw.stockPolicy
+  if (raw?.stockPolicy === "untracked" || raw?.stockPolicy === "tracked" || raw?.stockPolicy === "recipe") item.stockPolicy = raw.stockPolicy
+  // café batch: the line as sold (options, note, the product's own price, the recipe revision) for reprints and refunds
+  if (Array.isArray(raw?.modifiers) && raw.modifiers.length) item.modifiers = raw.modifiers
+  if (typeof raw?.note === "string" && raw.note) item.note = raw.note
+  if (raw?.basePrice !== undefined && raw?.basePrice !== null && Number.isFinite(Number(raw.basePrice))) item.basePrice = Number(raw.basePrice)
+  if (typeof raw?.recipeRev === "string" && raw.recipeRev) item.recipeRev = raw.recipeRev
   if (Number.isInteger(raw?.stockPolicyVersion)) item.stockPolicyVersion = raw.stockPolicyVersion
   if (typeof raw?.stockPolicyRev === "string" && raw.stockPolicyRev) item.stockPolicyRev = raw.stockPolicyRev
   if (typeof raw?.stockPolicyConflict === "string") item.stockPolicyConflict = raw.stockPolicyConflict
@@ -846,7 +851,8 @@ export function processRefund(input: ProcessRefundInput): SaleRefund {
     plan: planned.map((line) => {
       const saleItem = itemFor(line.key)!
       // SPRINT-1: the line's stock policy WHEN SOLD decides: a made-to-order item is refunded in money only.
-      return { productId: line.productId, productName: saleItem.name, barcode: saleItem.barcode ?? "", quantity: line.quantity, allocations: line.allocations, restock: saleItem.stockPolicy !== "untracked" }
+      // Café batch: so is a drink made from a recipe (its ingredients were used; they are not restored).
+      return { productId: line.productId, productName: saleItem.name, barcode: saleItem.barcode ?? "", quantity: line.quantity, allocations: line.allocations, restock: saleItem.stockPolicy !== "untracked" && saleItem.stockPolicy !== "recipe" }
     }),
     ...(sale.paymentMethod === "Debt" && sale.customerId
       ? { debt: { customerId: sale.customerId, amount: total, reference: `${refund.refundNumber} return for ${sale.saleNumber}` } }
@@ -945,7 +951,8 @@ export function voidSale(saleId: string, restoreStock = true) {
   if (sale.status === "Voided") return
 
   // SPRINT-1: a made-to-order line (its policy when sold) never returns to stock.
-  const untrackedKeys = new Set((sale.items ?? []).filter((item) => item.stockPolicy === "untracked").map((item) => item.lineId ?? legacyLineKey(item.id)))
+  // café batch: nor does a drink made from a recipe
+  const untrackedKeys = new Set((sale.items ?? []).filter((item) => item.stockPolicy === "untracked" || item.stockPolicy === "recipe").map((item) => item.lineId ?? legacyLineKey(item.id)))
   const plan = planVoidRestoration(refundableLinesOf(sale), priorRefundLinesOf(getRefunds(), sale.id))
     .filter((line) => !untrackedKeys.has(line.key))
   const slices = lotSlices(plan.flatMap((line) => line.allocations ?? []))
@@ -1054,7 +1061,7 @@ export function checkoutLocalSale(input: LocalCheckoutInput): LocalCheckoutResul
   assertCanWrite("record sale")
   // SPRINT-1: made-to-order (untracked) products have no lots and no stock.
   {
-    const untracked = new Set(getProductsSync().filter((p) => p.stockPolicy === "untracked").map((p) => p.id))
+    const untracked = new Set(getProductsSync().filter((p) => p.stockPolicy === "untracked" || p.stockPolicy === "recipe").map((p) => p.id))
     if (untracked.size) input = { ...input, lots: input.lots.filter((l) => !untracked.has(l.productId)), stock: input.stock.filter((l) => !untracked.has(l.productId)) }
   }
   // SPRINT-0: selling at cost is a price override (the server enforces the same rule).

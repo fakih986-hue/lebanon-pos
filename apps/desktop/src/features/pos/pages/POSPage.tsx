@@ -386,7 +386,8 @@ export default function POSPage() {
 
   // --- Cart operations ---
   // SPRINT-1: the stock limit applies to tracked items only (made-to-order items have none).
-  const stockLimit = (p: { stock: number; stockPolicy?: string }) => p.stockPolicy === "untracked" ? Number.POSITIVE_INFINITY : p.stock
+  // café batch: a recipe drink has no stock of its own either (its ingredients are checked: cartShortage)
+  const stockLimit = (p: { stock: number; stockPolicy?: string }) => (p.stockPolicy ?? "tracked") !== "tracked" ? Number.POSITIVE_INFINITY : p.stock
   /**
    * Café batch: put a configured drink in the cart (or change an existing line: `replaceKey`). The same
    * configuration merges into its line; the whole cart's ingredients must be in stock here.

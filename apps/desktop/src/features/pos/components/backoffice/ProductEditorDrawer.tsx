@@ -228,11 +228,12 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
           <Field label={t("inv.field.price")} error={errors.price}>{(a) => (
             <span className="mg2-money"><span className="mg2-adorn">$</span><input {...a} type="number" min="0" step="0.01" inputMode="decimal" dir="ltr" value={price} onChange={(e) => setPrice(e.target.value)} /></span>
           )}</Field>
-          <Field label={t("inv.field.cost")} error={errors.cost} help={marginPct !== null ? t("inv.margin_is", { n: marginPct }) : undefined}>{(a) => (
+          {/* café batch: a drink made from ingredients has no cost of its own (each sale is valued from its lots) */}
+          {kind !== "recipe" && <Field label={t("inv.field.cost")} error={errors.cost} help={marginPct !== null ? t("inv.margin_is", { n: marginPct }) : undefined}>{(a) => (
             <span className="mg2-money"><span className="mg2-adorn">$</span><input {...a} type="number" min="0" step="0.01" inputMode="decimal" dir="ltr" value={cost} onChange={(e) => setCost(e.target.value)} /></span>
-          )}</Field>
-          <Field label={t("inv.field.reorder_point")} error={errors.reorderPoint} help={t("inv.reorder_point_help")}>{(a) => <input {...a} className="mg2-input num" type="number" min="0" step="1" dir="ltr" value={reorderPoint} onChange={(e) => setReorderPoint(e.target.value)} />}</Field>
-          <Field label={t("inv.field.reorder_qty")} error={errors.reorderQuantity}>{(a) => <input {...a} className="mg2-input num" type="number" min="0" step="1" dir="ltr" value={reorderQuantity} onChange={(e) => setReorderQuantity(e.target.value)} />}</Field>
+          )}</Field>}
+          {trackStock && <Field label={kind === "ingredient" ? t("inv.field.reorder_point_in", { unit: t(`unit.${stockUnit}`) }) : t("inv.field.reorder_point")} error={errors.reorderPoint} help={t("inv.reorder_point_help")}>{(a) => <input {...a} className="mg2-input num" type="number" min="0" step="1" dir="ltr" value={reorderPoint} onChange={(e) => setReorderPoint(e.target.value)} />}</Field>}
+          {trackStock && <Field label={t("inv.field.reorder_qty")} error={errors.reorderQuantity}>{(a) => <input {...a} className="mg2-input num" type="number" min="0" step="1" dir="ltr" value={reorderQuantity} onChange={(e) => setReorderQuantity(e.target.value)} />}</Field>}
         </div>
         <fieldset className="mg2-card" style={{ padding: 12, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
           <legend className="mg2-cap" style={{ padding: "0 4px" }}>{t("inv.kind")}</legend>

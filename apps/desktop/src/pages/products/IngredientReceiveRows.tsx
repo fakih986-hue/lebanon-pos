@@ -4,6 +4,7 @@ import { useI18n } from "@lebanonpos/shared"
 import { Badge } from "../../features/pos/components/backoffice/BackOffice"
 import { PURCHASE_UNITS, asStockUnit, type PurchaseUnit } from "../../features/pos/lib/cafeMenu"
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
+import { formatUnitCost } from "../../features/pos/lib/cost"
 import { createRow, ingredientRowPlan, isBlankRow, rowProblems, type BatchRow, type RowProblem } from "../../features/pos/lib/receiveRows"
 import type { Product } from "../../features/pos/types/product"
 
@@ -82,7 +83,7 @@ export default function IngredientReceiveRows({ rows, products, problemKey, cost
             <div style={{ display: "flex", gap: 6, alignItems: "center", justifyContent: "space-between", gridColumn: "1 / -1", flexWrap: "wrap" }}>
               <span className="mg2-cap" role="status" aria-live="polite">
                 {plan.ok && r.ingredientProductId
-                  ? t("inv.rcv.ing.preview", { qty: formatNumber(plan.stockMilli / 1000), unit: t(`unit.${unit}`), value: plan.unitCostTT !== null ? `${formatCurrency(plan.unitCostTT / 10000)}/${t(`unit.${unit}`)}` : t("pos.not_available"), total: r.purchasePrice !== undefined && r.purchaseQuantity ? formatCurrency(Math.round(r.purchaseQuantity * r.purchasePrice * 10000) / 10000) : t("pos.not_available") })
+                  ? t("inv.rcv.ing.preview", { qty: formatNumber(plan.stockMilli / 1000), unit: t(`unit.${unit}`), value: plan.unitCostTT !== null ? `${formatUnitCost(plan.unitCostTT / 10000, t("pos.not_available"))}/${t(`unit.${unit}`)}` : t("pos.not_available"), total: r.purchasePrice !== undefined && r.purchaseQuantity ? formatCurrency(Math.round(r.purchaseQuantity * r.purchasePrice * 10000) / 10000) : t("pos.not_available") })
                   : null}
                 {problems.map((p) => <Badge key={p} tone="err">{t(problemKey[p])}</Badge>)}
                 {r.saveError ? <Badge tone="err">{r.saveError}</Badge> : null}

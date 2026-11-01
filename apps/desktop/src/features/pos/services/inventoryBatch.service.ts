@@ -329,6 +329,9 @@ export function receiveInventoryBatches(entries: ReceiveBatchInput[], opts?: { o
   return batches
 }
 
+/** Café batch: stock quantities are exact to 0.001 of their unit (grams, millilitres, units). */
+const roundQuantity = (n: number) => Math.round(n * 1000) / 1000
+
 export function consumeInventoryBatches(
   items: ConsumeBatchInput[],
   /** movementIdPrefix: each item's Sale movement gets the id <prefix>-<index> (written once). */
@@ -352,9 +355,10 @@ export function consumeInventoryBatches(
       }
 
       const quantity = Math.min(remaining, batch.quantityRemaining)
-      batch.quantityRemaining -= quantity
+      // café batch: ingredient quantities have decimals (grams, millilitres): kept to 0.001 so they cannot drift
+      batch.quantityRemaining = roundQuantity(batch.quantityRemaining - quantity)
       updateBatchStatus(batch)
-      remaining -= quantity
+      remaining = roundQuantity(remaining - quantity)
 
       const allocations = allocationsByProduct.get(item.productId) ?? []
       allocations.push({
@@ -521,9 +525,9 @@ export function adjustInventoryBatches(input: InventoryBatchAdjustmentInput) {
 
     const quantity = Math.min(remaining, batch.quantityRemaining)
 
-    batch.quantityRemaining -= quantity
+    batch.quantityRemaining = roundQuantity(batch.quantityRemaining - quantity)
     updateBatchStatus(batch)
-    remaining -= quantity
+    remaining = roundQuantity(remaining - quantity)
     allocations.push({
       batchId: batch.id,
       batchNumber: batch.batchNumber,
@@ -631,9 +635,9 @@ export function restoreInventoryBatches(items: ConsumeBatchInput[]) {
         return
       }
 
-      batch.quantityRemaining += quantity
+      batch.quantityRemaining = roundQuantity(batch.quantityRemaining + quantity)
       batch.status = "Open"
-      remaining -= quantity
+      remaining = roundQuantity(remaining - quantity)
     })
 
     if (remaining > 0) {

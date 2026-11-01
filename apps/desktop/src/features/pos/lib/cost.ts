@@ -24,6 +24,11 @@ export function sumAvailable(values: Iterable<unknown>): number | undefined {
 export function formatCost(value: unknown, unavailable: string): string {
   return isCostAvailable(value) ? formatUsdCurrency(value) : unavailable
 }
+/** Café batch: a cost per gram, millilitre or piece of an ingredient (often below a cent): 4 decimals, never "$0.00". */
+export function formatUnitCost(value: unknown, unavailable: string): string {
+  if (!isCostAvailable(value)) return unavailable
+  return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`
+}
 
 /** The cost a person typed in a form, or undefined when the field was left blank (nothing to send). */
 export function typedCost(text: string): number | undefined {

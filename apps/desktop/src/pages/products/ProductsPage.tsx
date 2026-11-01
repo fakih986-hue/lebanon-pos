@@ -15,7 +15,7 @@ import ProductEditorDrawer from "../../features/pos/components/backoffice/Produc
 import MenuOptionsDrawer from "../../features/pos/components/backoffice/MenuOptionsDrawer"
 import { downloadCsv } from "../../features/pos/lib/csv"
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
-import { formatCost, isCostAvailable, sumAvailable } from "../../features/pos/lib/cost"
+import { formatCost, formatUnitCost, isCostAvailable, sumAvailable } from "../../features/pos/lib/cost"
 import { daysToExpiry } from "../../features/pos/lib/lotTrace"
 import { getApiUrl, getAuthToken } from "../../features/pos/services/sync.service"
 import { getInventoryBatches, subscribeInventoryBatches, type InventoryBatch } from "../../features/pos/services/inventoryBatch.service"
@@ -40,7 +40,9 @@ type ReorderGroup = ReturnType<typeof groupReorderSuggestionsBySupplier>[number]
 
 /** null: no price to compare with; undefined: the cost is unavailable. */
 function margin(p: Product) {
-  if (!(p.price > 0)) return null
+  // café batch: a drink made from ingredients has no cost of its own (each sale is valued from the lots it takes):
+  // no margin here rather than an invented 100%
+  if (!(p.price > 0) || p.stockPolicy === "recipe") return null
   return isCostAvailable(p.cost) ? ((p.price - p.cost) / p.price) * 100 : undefined
 }
 function supplierOrderMessage(g: ReorderGroup) {
@@ -340,7 +342,7 @@ export default function ProductsPage() {
                       </td>
                       <td className="p3">{p.category}</td>
                       <td className="num">{formatCurrency(p.price)}</td>
-                      {showCost && <td className="num p4" style={{ color: "var(--text-2)" }}>{formatCost(p.cost, t("pos.not_available"))}</td>}
+                      {showCost && <td className="num p4" style={{ color: "var(--text-2)" }}>{p.stockPolicy === "recipe" ? <span title={t("inv.recipe_cost_per_sale")}>—</span> : p.sellable === false ? `${formatUnitCost(p.cost, t("pos.not_available"))}/${t(`unit.${p.stockUnit ?? "unit"}`)}` : formatCost(p.cost, t("pos.not_available"))}</td>}
                       {showCost && <td className="num p4" style={{ color: m == null ? "var(--text-3)" : m < 10 ? "var(--v2-err)" : m < 25 ? "var(--v2-warn)" : "var(--text-2)" }}>{m === null ? "—" : m === undefined ? t("pos.not_available") : `${Math.round(m)}%`}</td>}
                       <td className="num">
                         {p.isParent ? <span style={{ color: "var(--text-3)" }}>—</span>

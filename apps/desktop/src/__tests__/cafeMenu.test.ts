@@ -148,6 +148,23 @@ describe("café menu on the register", () => {
     expect(lot).toMatchObject({ initialQuantity: 2000, unitCost: 0.0184, purchaseUnit: "kg", purchaseQuantity: 2, unitsPerPurchase: 1000, purchasePrice: 18.37, supplierReference: "INV-9" })
   })
 
+  it("counts and adjustments name the product by its stable id (the numeric id is this device's: another product at the cloud)", async () => {
+    const adj = await import("../features/pos/services/inventoryAdjustment.service")
+    const count = await import("../features/pos/services/stockCount.service")
+    adj.recordStockAdjustment({ productId: 3, quantityChange: -30, reason: "Count Correction", note: "ml" })
+    const op = read<{ entity: string; action: string; payload: Record<string, unknown> }>(K.queue).find((o) => o.entity === "inventory" && o.action === "adjust")!
+    expect(op.payload).toMatchObject({ productId: 3, productSyncId: "milk", quantityChange: -30 })
+    expect(stockOf(3)).toBe(970)
+    const session = count.startStockCount()
+    expect(session.lines.find((l) => l.productId === 2)).toMatchObject({ productSyncId: "beans" })
+    // a decimal count variance in grams stays exact
+    count.updateStockCountLine(session.id, 2, 35.5)
+    count.completeStockCount(session.id)
+    expect(stockOf(2)).toBe(35.5)
+    const counted = read<{ entity: string; action: string; payload: Record<string, unknown> }>(K.queue).find((o) => o.entity === "inventory" && o.action === "adjust" && o.payload.productId === 2)!
+    expect(counted.payload).toMatchObject({ productSyncId: "beans", quantityChange: -4.5 })
+  })
+
   it("a drink sold with a recipe the server never received: a manager's decision travels with the same sale", async () => {
     const m = await svc()
     m.sync.enqueueSyncOperation({ entity: "sale", action: "create", summary: "s", payload: { id: "s-held", saleNumber: "S-H", total: 3, items: [{ name: "Cappuccino", stockPolicy: "recipe", recipeRev: "rcp-gone", quantity: 1 }] } })

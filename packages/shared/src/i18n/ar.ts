@@ -2439,7 +2439,7 @@ export const ar = {
   "inv.gate.retired": "أُوقف {label}. احفظ مجدداً لتغيير إعداد المخزون.",
   "inv.gate.retire_failed": "تعذّر إيقافه: {error}",
   // café batch: modifiers, recipes, ingredients, waste
-  "unit.unit": "وحدة",
+  "unit.unit": "قطعة",
   "unit.g": "غ",
   "unit.ml": "مل",
   "unit.pack": "علب",
@@ -2490,6 +2490,9 @@ export const ar = {
   "inv.err.unit_incompatible": "لا يمكن تحويل {from} إلى {to}.",
   "inv.field.opening_stock_in": "المخزون الافتتاحي ({unit})",
   "inv.options_offered": "الإضافات المعروضة معه",
+  "inv.recipe_cost_per_sale": "تُحسب كلفته في كل بيع من دفعات المكوّنات التي يستهلكها (التقارير ← المقهى)",
+  "inv.can_make": "يمكن تحضيره الآن",
+  "inv.field.reorder_point_in": "حدّ إعادة الطلب ({unit})",
   "inv.recipe_after_save": "احفظه أولاً، ثم أضِف وصفته هنا.",
   "menu.title": "إضافات القائمة",
   "menu.subtitle": "الأحجام، الحليب، السكر، الشوت الإضافي، الثلج. تُؤرشف الإضافات ولا تُحذف: المبيعات السابقة تبقى تعرضها.",

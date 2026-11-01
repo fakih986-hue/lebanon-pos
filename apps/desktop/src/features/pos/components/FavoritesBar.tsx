@@ -44,7 +44,7 @@ export default function FavoritesBar({ products, selectedCategory, onAddToCart }
           key={p.id}
           type="button"
           onClick={() => onAddToCart(p)}
-          disabled={p.stockPolicy !== "untracked" && p.stock <= 0}
+          disabled={(p.stockPolicy ?? "tracked") === "tracked" && p.stock <= 0}
           className="flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold transition active:scale-[0.96] disabled:opacity-30"
           style={{
             borderColor: "var(--surface-3)",

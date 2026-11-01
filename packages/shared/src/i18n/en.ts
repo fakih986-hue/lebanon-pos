@@ -2439,7 +2439,7 @@ export const en = {
   "inv.gate.retired": "{label} retired. Save again to change the stock setting.",
   "inv.gate.retire_failed": "Could not retire it: {error}",
   // café batch: modifiers, recipes, ingredients, waste
-  "unit.unit": "units",
+  "unit.unit": "pcs",
   "unit.g": "g",
   "unit.ml": "ml",
   "unit.pack": "packs",
@@ -2490,6 +2490,9 @@ export const en = {
   "inv.err.unit_incompatible": "{from} cannot be converted to {to}.",
   "inv.field.opening_stock_in": "Opening stock ({unit})",
   "inv.options_offered": "Options offered with it",
+  "inv.recipe_cost_per_sale": "Valued per sale from the ingredient lots it takes (Reports → Café)",
+  "inv.can_make": "Can make now",
+  "inv.field.reorder_point_in": "Reorder point ({unit})",
   "inv.recipe_after_save": "Save it first, then add its recipe here.",
   "menu.title": "Menu options",
   "menu.subtitle": "Sizes, milk, sugar, extra shots, ice. Options are archived, never deleted: past sales keep showing them.",

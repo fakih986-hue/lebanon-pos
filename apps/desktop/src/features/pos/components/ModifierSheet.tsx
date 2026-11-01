@@ -133,7 +133,7 @@ export default function ModifierSheet({ product, groups, initial, mode, servings
                       <input type={single ? "radio" : "checkbox"} name={`mod-${g.id}`} checked={chosen} disabled={blocked}
                         onChange={() => toggle(g, o.id)} className="h-4 w-4 shrink-0" style={{ accentColor: "var(--brand)" }} />
                       <span className="min-w-0 flex-1 text-[14px] font-medium" style={{ color: "var(--text)" }}>{label(o)}</span>
-                      <span className="num text-[12px] font-semibold" style={{ color: "var(--text-3)" }}>
+                      <span className="num text-[12px] font-semibold" dir="ltr" style={{ color: "var(--text-3)" }}>
                         {blocked ? t("pos.mod.unavailable") : d === 0 ? "" : `${d > 0 ? "+" : "−"}${formatCurrency(Math.abs(d))}`}
                       </span>
                     </label>
@@ -162,7 +162,7 @@ export default function ModifierSheet({ product, groups, initial, mode, servings
             <button type="button" className="mg2-btn" style={{ minHeight: 48, minWidth: 48 }} aria-label={t("pos.mod.more")} onClick={() => setQuantity((q) => q + 1)}><Plus size={18} /></button>
           </div>
           <p id="mg2-mod-price" className="num text-[14px]" style={{ margin: 0, color: "var(--text-2)" }} aria-live="polite">
-            {delta !== 0 ? t("pos.mod.price_line", { base: formatCurrency(Number(product.price)), delta: `${delta > 0 ? "+" : "−"}${formatCurrency(Math.abs(delta))}`, each: formatCurrency(unitPrice) }) : t("pos.mod.price_each", { each: formatCurrency(unitPrice) })}
+            {delta !== 0 ? t("pos.mod.price_line", { base: formatCurrency(Number(product.price)), delta: `\u2066${delta > 0 ? "+" : "−"}${formatCurrency(Math.abs(delta))}\u2069`, each: formatCurrency(unitPrice) }) : t("pos.mod.price_each", { each: formatCurrency(unitPrice) })}
           </p>
         </div>
 

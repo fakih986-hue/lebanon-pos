@@ -15,6 +15,7 @@ import { showToast } from "../../services/toast.service"
 import { userCan } from "../../services/security.service"
 import type { Product } from "../../types/product"
 import { Badge, Drawer, ExpiryChip, StatTile } from "./BackOffice"
+import { servingsFor } from "../../services/menu.service"
 
 /** Product details (§8 Lots): on hand, reorder, average cost, lots first-expiry-first, stock vs lots, actions. */
 export default function ProductDetailsDrawer({ product, products, lots, canManage, canReceive, onClose, onEdit, onOpenLot }: {
@@ -35,6 +36,10 @@ export default function ProductDetailsDrawer({ product, products, lots, canManag
   const untracked = product.stock - inLots
   const date = (iso: string) => new Intl.DateTimeFormat(locale === "ar" ? "ar-LB" : "en-GB", { day: "2-digit", month: "short" }).format(new Date(iso))
   const parent = product.parentId ? products.find((p) => p.id === product.parentId) : undefined
+  // café batch: a drink made from ingredients has no stock, lots or cost of its own: what its ingredients in
+  // stock can still make, and nothing to receive or count here (each sale is valued from the lots it takes)
+  const recipeDrink = product.stockPolicy === "recipe"
+  const servings = recipeDrink ? servingsFor(product, [], products) : null
 
   function act(fn: () => void, ok: string) {
     try { fn(); showToast(ok) } catch (err) { showToast(String((err as Error)?.message ?? err), "error") }
@@ -50,8 +55,8 @@ export default function ProductDetailsDrawer({ product, products, lots, canManag
         </>}
         footer={<>
           <button type="button" className="mg2-btn mg2-btn-primary" onClick={onEdit} disabled={!canManage} data-autofocus><Pencil size={16} />{t("inv.edit")}</button>
-          {canReceive && <Link className="mg2-btn" style={{ textDecoration: "none" }} to={`/products/new?barcode=${encodeURIComponent(product.barcode ?? "")}`}><PackagePlus size={16} />{t("inv.receive")}</Link>}
-          <Link className="mg2-btn" style={{ textDecoration: "none" }} to={`/stock?view=Control&product=${product.id}`}><SlidersHorizontal size={16} />{t("inv.adjust_count")}</Link>
+          {canReceive && !recipeDrink && <Link className="mg2-btn" style={{ textDecoration: "none" }} to={`/products/new?barcode=${encodeURIComponent(product.barcode ?? "")}`}><PackagePlus size={16} />{t("inv.receive")}</Link>}
+          {!recipeDrink && <Link className="mg2-btn" style={{ textDecoration: "none" }} to={`/stock?view=Control&product=${product.id}`}><SlidersHorizontal size={16} />{t("inv.adjust_count")}</Link>}
           <span style={{ flex: 1 }} />
           {product.archived
             ? <button type="button" className="mg2-btn" disabled={!canManage} onClick={() => act(() => restoreProduct(product.id), t("inv.restored", { name: product.name }))}><ArchiveRestore size={16} />{t("inv.restore")}</button>
@@ -69,13 +74,15 @@ export default function ProductDetailsDrawer({ product, products, lots, canManag
         </div>
 
         <div className="mg2-stats">
-          <StatTile label={t("inv.on_hand")} value={<span className="num">{product.isParent ? "—" : formatNumber(product.stock)}</span>} />
+          {recipeDrink
+            ? <StatTile label={t("inv.can_make")} value={<span className="num">{servings === null || !Number.isFinite(servings) ? "—" : formatNumber(servings)}</span>} />
+            : <StatTile label={t("inv.on_hand")} value={<span className="num">{product.isParent ? "—" : formatNumber(product.stock)}</span>} />}
           <StatTile label={t("inv.reorder_at")} value={<span className="num">{formatNumber(product.reorderPoint ?? 10)}</span>} />
-          {userCan("reports.cost") && <StatTile label={t("inv.avg_cost")} value={<span className="num">{formatCost(avgCost, t("pos.not_available"))}</span>} />}
+          {userCan("reports.cost") && <StatTile label={t("inv.avg_cost")} value={<span className="num" title={recipeDrink ? t("inv.recipe_cost_per_sale") : undefined}>{recipeDrink ? "—" : formatCost(avgCost, t("pos.not_available"))}</span>} />}
           <StatTile label={t("inv.field.price")} value={<span className="num">{formatCurrency(product.price)}</span>} />
         </div>
 
-        {!product.isParent && (
+        {!product.isParent && !recipeDrink && (
           <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <h3 className="mg2-section-title">{t("inv.lots_fefo")}</h3>
             {sorted.length === 0 ? <p className="mg2-cap" style={{ margin: 0 }}>{product.stock > 0 ? t("inv.no_lots_untracked", { n: formatNumber(product.stock) }) : t("inv.no_lots")}</p> : sorted.map((b) => {

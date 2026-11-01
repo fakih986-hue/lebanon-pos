@@ -930,13 +930,14 @@ export function decreaseProductStock(items: ProductStockMovement[]) {
   const nextProducts = getProductsSync().map((product) => {
     const movement = items.find((item) => item.productId === product.id)
 
-    if (!movement || product.stockPolicy === "untracked") {
+    if (!movement || (product.stockPolicy ?? "tracked") !== "tracked") {
       return product
     }
 
     return {
       ...product,
-      stock: Math.max(0, product.stock - movement.quantity),
+      // café batch: kept to 0.001 of the unit (ingredients in grams and millilitres)
+      stock: Math.max(0, Math.round((product.stock - movement.quantity) * 1000) / 1000),
     }
   })
 
@@ -949,13 +950,13 @@ export function increaseProductStock(items: ProductStockMovement[]) {
   const nextProducts = getProductsSync().map((product) => {
     const movement = items.find((item) => item.productId === product.id)
 
-    if (!movement || product.stockPolicy === "untracked") {
+    if (!movement || (product.stockPolicy ?? "tracked") !== "tracked") {
       return product
     }
 
     return {
       ...product,
-      stock: product.stock + movement.quantity,
+      stock: Math.round((product.stock + movement.quantity) * 1000) / 1000,
     }
   })
 
@@ -1135,7 +1136,7 @@ export function detectIncompleteProducts() {
 export function getLowStockProducts(products?: Product[]) {
   const list = products ?? getProductsSync()
   // SPRINT-1: made-to-order (untracked) items have no stock to run low.
-  return list.filter(p => !p.archived && p.stockPolicy !== "untracked" && p.stock <= (p.reorderPoint ?? 10) && p.stock >= 0)
+  return list.filter(p => !p.archived && (p.stockPolicy ?? "tracked") === "tracked" && p.stock <= (p.reorderPoint ?? 10) && p.stock >= 0)
 }
 
 export function getNoBarcodeProducts(products?: Product[]) {
