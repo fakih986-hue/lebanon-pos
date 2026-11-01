@@ -143,6 +143,42 @@ describe("operations keep the evidence they were created under", () => {
     expect(push.headers["x-device-credential"]).toBe("DEVICE-CRED")
   })
 
+  it("a lock right after Rana's work: it is sent under her session BEFORE the server is told her session ended", async () => {
+    const calls = server()
+    const { sec, sync, cred } = await fresh()
+    enroll(cred)
+    await sec.unlockWithPin("2222")
+    const ranaSession = cred.getStaffSession()!.session
+    // her void is being written (staged); her payout, queued meanwhile, waits for the next automatic send
+    const voidOp = sync.stageSyncOperation({ entity: "sale", action: "void", summary: "Rana's void", payload: { id: "s1" } })
+    const op = await sync.enqueueSyncOperation({ entity: "cash-movement", action: "create", summary: "Rana's payout", payload: { id: "m1" } })
+    sync.commitStagedSyncOperation(voidOp.id)
+    sec.lockSession() // a staff switch a moment later
+    expect(cred.getStaffSession()).toBeNull() // gone here at once: the next person never acts under it
+    for (let i = 0; i < 100 && !calls.some((c) => c.url.endsWith("/api/auth/staff-session/end")); i++) await new Promise((r) => setTimeout(r, 20))
+    const pushAt = calls.findIndex((c) => c.url.endsWith("/api/sync/push") && (c.body.operations as any[]).some((o) => o.id === op!.id && o.ev?.session === ranaSession))
+    const endAt = calls.findIndex((c) => c.url.endsWith("/api/auth/staff-session/end"))
+    expect(pushAt).toBeGreaterThanOrEqual(0)
+    expect(endAt).toBeGreaterThan(pushAt)
+    expect(calls[endAt].body).toEqual({ session: ranaSession })
+    expect(sync.getSyncQueue().find((o) => o.id === op!.id)?.status).toBe("Synced")
+    expect(calls.findIndex((c) => c.url.endsWith("/api/sync/push") && (c.body.operations as any[]).some((o) => o.id === voidOp.id && o.ev?.session === ranaSession))).toBeLessThan(endAt)
+  })
+
+  it("a lock while the server is unreachable: Rana's work stays queued with her session (sent later, decided by the server)", async () => {
+    server({ down: true })
+    const { sec, sync, cred } = await fresh()
+    enroll(cred)
+    cred.setStaffSession({ session: "S-rana-offline", sessionId: "sid", staffId: "rana", staffName: "Rana", authTime: "2026-10-31T08:00:00.000Z", expiresAt: "2026-10-31T20:00:00.000Z", apiUrl: API })
+    localStorage.setItem("lebanonpos.current-user.v1", "rana")
+    const op = await sync.enqueueSyncOperation({ entity: "cash-movement", action: "create", summary: "Rana's payout", payload: { id: "m2" } })
+    sec.lockSession()
+    await new Promise((r) => setTimeout(r, 100))
+    const kept = sync.getSyncQueue().find((o) => o.id === op!.id)
+    expect(kept?.status).not.toBe("Synced")
+    expect(kept?.status).not.toBe("Rejected")
+  })
+
   it("the device credential is only sent to the server that issued it", async () => {
     const calls = server()
     const { sec, sync, cred } = await fresh()

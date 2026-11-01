@@ -3,7 +3,7 @@
 // pending work stays, and only an explicit store switch (or the hub offering this store again) ends it.
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const API = "http://localhost:3015"
+const API = "http://localhost:39151" // not the hub port: a hub running on this machine must not answer this test
 const tokenFor = (tenantId: string, n = 0) => `h.${btoa(JSON.stringify({ userId: "__admin__", tenantId, typ: "hub-local", n })).replace(/=+$/, "")}.s`
 type Call = { url: string; auth: string | null }
 

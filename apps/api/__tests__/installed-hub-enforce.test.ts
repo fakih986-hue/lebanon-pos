@@ -172,6 +172,9 @@ if (!ready) {
       const legacyId = `legacy-${randomUUID().slice(0, 6)}`
       const legacySale = { ...cafeOrder(0), cashier: "Owner", cashierId: A.staff.owner }
       const legacyOp = randomUUID()
+      // it was paired with this hub (approved), but sends neither a device credential nor a staff session
+      const legacyCode = (await call(HUB!, "POST", "/api/device/generate-code", {}, ownerPerson)).body.code
+      expect((await call(HUB!, "POST", "/api/device/pair", { code: legacyCode, deviceId: legacyId, deviceName: "Old till" })).status).toBe(200)
       const pushed = (await call(HUB!, "POST", "/api/sync/push", { deviceId: legacyId, operations: [{ id: legacyOp, entity: "sale", action: "create", payload: legacySale }] }, ownerTransport, { "x-titan-sync-schema": "4" })).body
       expect(pushed?.results?.[0]?.status).toBe("ok") // observe: accepted, recorded as a claim
       const [eProof, eLegacy] = [await cloudEvidence(queue().find((o) => o.payload?.id === proof.id)!.id), await cloudEvidence(legacyOp)]
@@ -203,7 +206,7 @@ if (!ready) {
       expect(await hubPolicy(ownerPerson)).toMatchObject({ mode: "enforce" })
       // the connection alone carries nothing: the owner's register account without a session
       d.security.lockSession(); await dispose()
-      const bare = await rawPush([{ id: randomUUID(), entity: "cash-movement", action: "create", payload: { id: randomUUID(), type: "OwnerDraw", amountUsd: 1, reason: "no session", createdAt: new Date().toISOString() } }], ownerTransport)
+      const bare = await rawPush([{ id: randomUUID(), entity: "cash-movement", action: "create", payload: { id: randomUUID(), type: "OwnerDraw", direction: "Out", note: "", recordedByName: "Register", amountUsd: 1, reason: "no session", createdAt: new Date().toISOString() } }], ownerTransport)
       evidence("owner connection, no session", bare?.results?.[0])
       expect(bare?.results?.[0]?.status).not.toBe("ok")
       await signIn("1504", A.staff.rana)
@@ -229,6 +232,7 @@ if (!ready) {
       expect(d.cash.createCashMovement(payout)).toBeTruthy()
       await flush()
       const ops = { order: opFor("sale", order.id)!, refund: opFor("refund", refundId)!, void: queue().find((o) => o.entity === "sale" && o.action === "void" && o.payload?.id === routine.id)!, payout: opFor("cash-movement", payout.id)! }
+      evidence("rana ops after flush", Object.fromEntries(Object.entries(ops).map(([k, o]) => [k, o && { status: o.status, attempts: o.attempts, staged: !!o.staged, error: errOf(o).slice(0, 200) }])))
       expect(Object.values(ops).map((o) => o.status)).toEqual(["Synced", "Synced", "Synced", "Synced"])
       const seen: Record<string, unknown> = {}
       for (const [name, op] of Object.entries(ops)) {
@@ -329,7 +333,7 @@ if (!ready) {
     it("the hub's own screen: its local sign-in carries nothing until the screen is enrolled and a person signs in", async () => {
       const local_ = (await call(HUB!, "POST", "/api/setup/auto-login", {})).body?.token as string
       expect(local_).toBeTruthy()
-      const draw = () => ({ id: randomUUID(), entity: "cash-movement", action: "create", payload: { id: randomUUID(), type: "OwnerDraw", amountUsd: 1, reason: "hub screen", createdAt: new Date().toISOString() } })
+      const draw = () => ({ id: randomUUID(), entity: "cash-movement", action: "create", payload: { id: randomUUID(), type: "OwnerDraw", direction: "Out", note: "", recordedByName: "Register", amountUsd: 1, reason: "hub screen", createdAt: new Date().toISOString() } })
       const bare = (await call(HUB!, "POST", "/api/sync/push", { deviceId: "hub-screen", operations: [draw()] }, local_, { "x-titan-sync-schema": "5" })).body?.results?.[0]
       const rest = await call(HUB!, "GET", "/api/sync/refused", undefined, local_)
       evidence("hub screen unenrolled", { push: bare, rest: rest.status })
@@ -353,7 +357,7 @@ if (!ready) {
       await signIn("1502", A.staff.manager)
       const ended = staffSession()!.session
       expect((await call(HUB!, "POST", "/api/auth/staff-session/end", { session: ended }, undefined, { "x-device-credential": credential()! })).body?.ended).toBe(true)
-      const late = await rawPush([{ id: randomUUID(), entity: "cash-movement", action: "create", payload: { id: randomUUID(), type: "OwnerDraw", amountUsd: 1, reason: "after sign-out", createdAt: new Date().toISOString() } }], ownerTransport, ended)
+      const late = await rawPush([{ id: randomUUID(), entity: "cash-movement", action: "create", payload: { id: randomUUID(), type: "OwnerDraw", direction: "Out", note: "", recordedByName: "Register", amountUsd: 1, reason: "after sign-out", createdAt: new Date().toISOString() } }], ownerTransport, ended)
       evidence("ended session", late?.results?.[0])
       expect(late?.results?.[0]?.status).not.toBe("ok")
       await signIn("1502", A.staff.manager)
@@ -390,12 +394,12 @@ if (!ready) {
       await signIn("1504", A.staff.rana)
       const sale = cafeOrder(0)
       expect(checkout(sale).status).toBe("completed")
-      const payout = { id: randomUUID(), type: "OwnerDraw", amountUsd: 1, reason: "Owner draw", note: "LAN only" }
+      const payout = { id: randomUUID(), type: "OwnerDraw", direction: "Out", note: "", recordedByName: "Register", amountUsd: 1, reason: "Owner draw", note: "LAN only" }
       expect((await ask("cash-movement", "create", d.cash.cashMovementApprovalPayload(payout), "cash.manage")).ok).toBe(true)
       expect(d.cash.createCashMovement(payout)).toBeTruthy()
       await flush()
       expect([opFor("sale", sale.id)?.status, opFor("cash-movement", payout.id)?.status]).toEqual(["Synced", "Synced"])
-      const bare = await rawPush([{ id: randomUUID(), entity: "cash-movement", action: "create", payload: { id: randomUUID(), type: "OwnerDraw", amountUsd: 1, reason: "no session", createdAt: new Date().toISOString() } }], ownerTransport)
+      const bare = await rawPush([{ id: randomUUID(), entity: "cash-movement", action: "create", payload: { id: randomUUID(), type: "OwnerDraw", direction: "Out", note: "", recordedByName: "Register", amountUsd: 1, reason: "no session", createdAt: new Date().toISOString() } }], ownerTransport)
       expect(bare?.results?.[0]?.status).not.toBe("ok")
       expect(await prisma.sale.count({ where: { tenantId: A.tenantId, id: sale.id } })).toBe(0)
       keep("lanSale", sale.id); keep("lanSaleOp", opFor("sale", sale.id)!.id); keep("lanPayout", payout.id); keep("lanPayoutOp", opFor("cash-movement", payout.id)!.id)
@@ -405,7 +409,7 @@ if (!ready) {
   if (PHASE === "enforce-restart") describe("hub restarted, cloud still unreachable", { timeout: 200_000 }, () => {
     it("the hub still enforces the adopted version (a restart does not lower it)", async () => {
       expect(await hubPolicy(ownerPerson)).toEqual({ mode: "enforce", version: Number(kept("version")) })
-      const bare = await rawPush([{ id: randomUUID(), entity: "cash-movement", action: "create", payload: { id: randomUUID(), type: "OwnerDraw", amountUsd: 1, reason: "after restart", createdAt: new Date().toISOString() } }], ownerTransport)
+      const bare = await rawPush([{ id: randomUUID(), entity: "cash-movement", action: "create", payload: { id: randomUUID(), type: "OwnerDraw", direction: "Out", note: "", recordedByName: "Register", amountUsd: 1, reason: "after restart", createdAt: new Date().toISOString() } }], ownerTransport)
       evidence("after restart, no session", bare?.results?.[0])
       expect(bare?.results?.[0]?.status).not.toBe("ok")
     })
@@ -446,7 +450,7 @@ if (!ready) {
       expect((await ask("sale", "create", order, "sales.discount")).ok).toBe(true)
       expect(checkout(order).status).toBe("completed")
       const opId = randomUUID()
-      const payload = { id: randomUUID(), type: "OwnerDraw", amountUsd: 1, reason: "unapproved", createdAt: new Date().toISOString() }
+      const payload = { id: randomUUID(), type: "OwnerDraw", direction: "Out", note: "", recordedByName: "Register", amountUsd: 1, reason: "unapproved", createdAt: new Date().toISOString() }
       await flush()
       const draw = await rawPush([{ id: opId, entity: "cash-movement", action: "create", payload }], ownerTransport, staffSession()!.session)
       const e = await cloudEvidence(opFor("sale", order.id)!.id)
@@ -466,7 +470,7 @@ if (!ready) {
       expect(v).toBe(Number(kept("version")) + 1)
       expect(await waitFor(async () => { const p = await hubPolicy(ownerPerson); return p.mode === "observe" && p.version === v ? p : null }, 90_000)).toEqual({ mode: "observe", version: v })
       d.security.lockSession(); await dispose()
-      const r = await rawPush([{ id: randomUUID(), entity: "cash-movement", action: "create", payload: { id: randomUUID(), type: "OwnerDraw", amountUsd: 1, reason: "observe again", createdAt: new Date().toISOString() } }], ownerTransport)
+      const r = await rawPush([{ id: randomUUID(), entity: "cash-movement", action: "create", payload: { id: randomUUID(), type: "OwnerDraw", direction: "Out", note: "", recordedByName: "Register", amountUsd: 1, reason: "observe again", createdAt: new Date().toISOString() } }], ownerTransport)
       expect(r?.results?.[0]?.status).toBe("ok")
     })
   })

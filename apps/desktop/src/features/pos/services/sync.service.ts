@@ -1710,6 +1710,27 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
   return operation
 }
 
+/** Operations still waiting to be sent (not acknowledged, not rejected) that were made under this staff session. */
+function queuedUnderSession(session: string) {
+  return readQueue().filter((op) => op.status !== "Synced" && op.status !== "Rejected" && op.attempts < MAX_ATTEMPTS && op.ev?.session === session).length
+}
+
+/**
+ * SPRINT-2 hub batch: before a person's staff session ends (lock, staff switch), send the work they did under
+ * it. Otherwise a refund, void or payout queued a moment before the switch reaches the server after the
+ * session was signed out, and an enforcing store holds it for review. Bounded: when the server cannot be
+ * reached, or nothing more is accepted, the work stays queued and the caller ends the session anyway.
+ */
+export async function deliverSessionWork(session: string, ms = 8_000): Promise<void> {
+  const deadline = Date.now() + ms
+  while (queuedUnderSession(session) > 0 && Date.now() < deadline) {
+    if (_flushing) { await new Promise((r) => setTimeout(r, 150)); continue }
+    const before = queuedUnderSession(session)
+    await flushSyncQueue()
+    if (queuedUnderSession(session) >= before) return
+  }
+}
+
 export async function flushSyncQueue() {
   if (_flushing) return { synced: 0, skipped: 0 }
   _flushing = true
@@ -1771,7 +1792,7 @@ async function _flushSyncQueue() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()),
+        Authorization: `Bearer ${token}`,
         ...SYNC_SCHEMA_HEADERS, // SPRINT-1: the server records this till's version (upgrade gate)
         ...deviceHeadersFor(apiUrl), // SPRINT-2 C: device credential, separate from the connection token
       },

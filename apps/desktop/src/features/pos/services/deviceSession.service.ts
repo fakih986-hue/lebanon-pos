@@ -6,7 +6,7 @@
  * Every call is best effort — a failure never blocks a sale or an unlock; the server then simply
  * records weaker evidence for the work.
  */
-import { getApiUrl, getCurrentTenantId, getDeviceId } from "./sync.service"
+import { deliverSessionWork, getApiUrl, getCurrentTenantId, getDeviceId } from "./sync.service"
 import {
   clearPersonEvidence, getDeviceEnrollment, getStaffSession, getStoreIdentityMode, personEvidence, setDeviceEnrollment, setStaffSession,
   type DeviceEnrollment,
@@ -70,17 +70,23 @@ export async function startStaffSession(pin: string, staffId: string): Promise<b
   }
 }
 
-/** The register locked or changed person: drop the session here, and tell the server (best effort). */
+/**
+ * The register locked or changed person: drop the session here at once (the next person never acts under
+ * it), send the work queued under it, then tell the server it ended (best effort).
+ */
 export function endStaffSession(): void {
   const s = getStaffSession()
   clearPersonEvidence()
   const e = getDeviceEnrollment()
   if (!s || !e || e.revoked) return
-  void fetch(`${s.apiUrl}/api/auth/staff-session/end`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-device-credential": e.credential },
-    body: JSON.stringify({ session: s.session }),
-  }).catch(() => undefined)
+  void (async () => {
+    await deliverSessionWork(s.session).catch(() => undefined)
+    await fetch(`${s.apiUrl}/api/auth/staff-session/end`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-device-credential": e.credential },
+      body: JSON.stringify({ session: s.session }),
+    })
+  })().catch(() => undefined)
 }
 
 export type CheckoutIdentityProblem = "not-enrolled" | "sign-in-again"
