@@ -136,3 +136,126 @@ New permissions: `prep.view`, `prep.update`, `reports.cost`. No new roles.
 ## Recommended first café sprint
 
 **Sprint 0 + Sprint 1 together** (security fixes are small and independent; Sprint 1 is the café blocker). After both, the verdict can move to **"ready for basic café use with restrictions"**: takeaway sales of untracked drinks and tracked packaged goods, cash/card, shifts, refunds — with no modifiers (use variants and the sale note), no prep tickets, no recipes, and staff attribution documented as device-asserted.
+
+## Café menu, modifiers, recipes and ingredient stock — design (2026-11-01, implemented on `dev/staff-auth-approvals`)
+
+This replaces the Sprint 3 and Sprint 5 sketches above. There are no preparation states, no shared tabs, no kitchen
+screen, and no rounding change.
+
+### Product kinds (existing abstractions only)
+
+| Kind | `stockPolicy` | `sellable` | Stock and lots | Sold at the POS |
+|---|---|---|---|---|
+| Packaged item (Pepsi, chips) | `tracked` | true | its own lots, its own unit | yes (barcode optional) |
+| Prepared drink using ingredients | `recipe` (new value) | true | none of its own; its recipe consumes ingredient lots | yes |
+| Untracked prepared item | `untracked` | true | none | yes |
+| Ingredient (beans, milk, syrup, cups) | `tracked` | **false** | its own lots in its stock unit | no (hidden from POS, Simple POS and delivery) |
+
+- Barcodes stay optional for every kind.
+- A drink is sellable because its ingredients are in stock, never because of a fake quantity: the drink's own `stock`
+  stays 0. Availability = the servings its unconditional recipe lines can still make from open stock.
+- Variants stay for genuinely different products. Modifier groups cover sizes, milk, sugar, shots and ice, so there
+  is no catalogue product per combination.
+
+### Units and precision
+
+- Stock units: `unit`, `g`, `ml`. The stock unit is the base unit of the ingredient, its lots, counts, adjustments,
+  waste and low-stock threshold.
+- Purchase units convert only within one dimension: `kg→g ×1000`, `g→g`, `L→ml ×1000`, `ml→ml`, `pack→unit ×n`
+  (n a whole number ≥ 1), `unit→unit`. Anything else (e.g. kg→ml) is refused before saving.
+- Quantities are exact to 0.001 of the stock unit. Recipe quantities with more decimals are refused. A consumption
+  (line quantity × sold quantity ÷ yield) is computed in integer thousandths and rounded half-up once. Lot and
+  product quantities are written with a rounded SQL update, so repeated decrements cannot drift.
+- Money: the receiving row keeps the invoice price exactly (`purchasePrice` per purchase unit). Valuation
+  (`unitCost` per stock unit, 4 dp) is derived from it. Ingredient cost is computed with exact decimals from the
+  invoice price of each lot actually consumed, then rounded to 4 dp once per line.
+
+### Modifier groups
+
+- `ModifierGroup`: stable id minted by the creator, EN/AR names, required, min/max, sort, archived, revision.
+  Its options (stable ids; EN/AR names; price delta; default; available; archived) live inside it.
+- Products list their groups in order (`modifierGroupIds`).
+- Rules: a required group needs at least max(1, min); single choice = max 1; defaults pre-select. Archived or
+  unavailable options cannot be chosen; they still exist, so old sales and refunds display them.
+- Sale lines keep an immutable snapshot `modifiers[]` (group and option ids, names, price delta), `basePrice` and a
+  preparation `note`. Line price = base + Σ deltas, in exact 4 dp money.
+- Cart lines merge only when product, options, note and unit price are the same; otherwise they are separate lines.
+
+### Recipes
+
+- `RecipeRevision` rows are immutable. Each has an id minted once by whoever saves it, the product, a yield, a note,
+  the attributed person, and lines `{ingredient syncId, quantity in stock units, when[], unless[] }`.
+  - `when`: the line applies only if all those options are selected (size- or milk-dependent quantities, extra shot).
+  - `unless`: the line is skipped if any of those options is selected (substitution: milk unless oat).
+- The product points at its current revision (`recipeRev`). Saving a recipe adds a revision and moves the pointer;
+  it never edits an old one.
+- Sale lines carry `recipeRev` and the consumption the register computed. The authoritative server recomputes it
+  from its own copy of that revision and records `consumption[]` (ingredient, quantity, the lots used with their
+  cost) and a `costStatus` on the line: `known`, `partial`, `unknown`, or a real zero.
+
+### Consumption and returns
+
+- Ingredients are consumed in the transaction that commits the sale: same operation id, once, FEFO, with lots ordered
+  by expiry, received date, then id. That ordering is deterministic, so a hub and the cloud consume the same lots.
+- On the register, the drink's ingredient quantities join the existing checkout journal (lots, stock and movements),
+  so an interrupted checkout that never committed is compensated exactly once by the existing recovery.
+- A refund or void of a prepared drink returns money only. Recipe lines never restore ingredients; untracked lines
+  never restore anything. Packaged lines keep the existing lot restoration.
+- Remake and waste: a new permission-controlled stock event (`inventory/waste`, needs `inventory.adjust`; anyone else
+  is held for review in an enforcing store). A drink with its options consumes its current recipe. One stock
+  adjustment per ingredient (reason `Remake` or `Waste`), cost from the actual lots.
+- Ingredient spills, expiry and counts use the existing adjustment and count flows, in stock units.
+
+### Server authority, offline and mixed versions
+
+- The authoritative server (the store's hub, or the cloud for a direct store) checks the following:
+  - product identity, and that the product is sellable;
+  - options belong to the product's groups and satisfy the rules;
+  - unit price ≥ base + Σ known deltas, otherwise `sales.price_override` or a manager approval is needed (approvals
+    bind to the whole line including options, because options are material fields of the command);
+  - the recipe revision and the ingredient quantities;
+  - actor and approval, as today;
+  - the operation id, as today.
+- Live checkout through a hub (`wt-`) is refused before payment when options are invalid or an ingredient is short.
+- A queued sale (offline, or a direct register) is never refused for its options or price:
+  - Invalid options are recorded on the line as `modifierConflict` and audited.
+  - A revision the server does not know yet: the sale is held (`RECIPE_HELD:`) and retried. Nothing is applied. The
+    register keeps it with the other held sales. If the revision never arrives, a manager with `inventory.manage`
+    resolves the line on the register: either "made with the recipe recorded here" or "made with no ingredients
+    recorded". The decision is audited, and every server then applies the same thing.
+  - Today's recipe is never substituted silently.
+- Ingredient shortfall on a queued sale: two registers that are both fully offline can consume the same scarce
+  ingredient. Stock never goes negative, so the existing rule applies: the sale is not applied and is held for
+  review (`INGREDIENT_SHORT:`, Held work, category stock). A manager counts or receives the ingredient, then applies
+  it. The customer is never asked to pay again. There are no offline reservations.
+- New sync schema 6 (registers and hubs):
+  - Older registers do not receive recipe drinks or ingredients in their pulls, and cannot sell them.
+  - Making a product a recipe drink is refused while a register or hub older than schema 6 still trades (the existing
+    upgrade gate, threshold 6).
+  - The cloud must be upgraded first.
+
+### Authorization (existing permissions)
+
+| Action | Permission |
+|---|---|
+| Menu, modifier groups, products, recipes | `inventory.manage` |
+| Ingredient receiving | `inventory.receive` |
+| Waste, remakes, counts | `inventory.adjust` |
+| Price below base + options, sale at cost | `sales.price_override` (or manager approval) |
+| Refunds | `sales.refund` |
+
+Cashiers choose options with `sales.checkout` only. Checkout cannot edit recipes or costs. Cost and profit fields,
+including `consumption` costs and lot invoice prices, are removed for staff without `reports.cost`.
+
+### Delivery in hub stores (closing the topology boundary)
+
+- Delivery changes stock at the cloud, so in a hub store it is refused at every boundary:
+  - new customer orders (`DELIVERY_UNAVAILABLE`, before anything is recorded or paid);
+  - stock-changing status changes by staff and drivers;
+  - the delivery menu, which says delivery is unavailable.
+- Recipe, untracked and ingredient products are not offered for delivery in any store.
+- A delivery order's stock is taken once and given back at most once; an existing double decrement on
+  Confirmed→OutForDelivery is fixed.
+- Orders accepted before the store became a hub store are closed through an explicit, audited manager decision, with
+  no cloud stock change.
+- Readiness blocks changing to a hub store while delivery orders are open.
