@@ -125,7 +125,11 @@ describe("permission rules for operations that had none", () => {
     expect((await prisma.syncOperation.findUnique({ where: { id: op.id } }))!.appliedAt).toBeTruthy()
   })
   it("refused work is reviewed and resolved: apply once under the manager's authority (evidence says so), decline is final", async () => {
-    const resolve = (token: string, id: string, decision: string, note = "checked on the shelf") => call("POST", `/api/sync/refused/${id}/resolve`, { decision, note }, token)
+    // a decision is about the preview the reviewer saw (SPRINT-2 F); a decline says what happened to the money
+    const resolve = async (token: string, id: string, decision: string, note = "checked on the shelf") => {
+      const previewToken = ((await call("GET", "/api/sync/refused", undefined, token)).body?.operations as any[] | undefined)?.find((o) => o.id === id)?.previewToken ?? "no-preview-seen"
+      return call("POST", `/api/sync/refused/${id}/resolve`, { decision, note, previewToken, ...(decision === "dismiss" ? { outcome: "nothing-to-correct" } : {}) }, token)
+    }
     const applyOp = { id: randomUUID(), entity: "inventory", action: "adjust", payload: { ...adjust(), quantityChange: 3 } }
     const declineOp = { id: randomUUID(), entity: "inventory", action: "adjust", payload: { ...adjust(), quantityChange: -4 } }
     for (const op of [applyOp, declineOp]) expect((await call("POST", "/api/sync/push", { deviceId: "ct-dev", operations: [op] }, cashier)).body.results[0].status).toBe("error")

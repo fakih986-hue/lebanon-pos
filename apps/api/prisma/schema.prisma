@@ -781,7 +781,10 @@ model SyncOperation {
 
   @@index([tenantId, status])
   @@index([tenantId, createdAt])
-  @@index([tenantId, entity, status])
+  @@index([tenantId, entity, status])
+  /// SPRINT-2 F: what this server knew when it held the operation for review (actor, device, session,
+  /// approval and attestation checks, evidence label). Never a token or a PIN. Kept with the command.
+  heldEvidence Json?
 }
 
 model Device {
@@ -964,6 +967,32 @@ model ManagerApproval {
 
   @@index([tenantId, deviceId])
   @@index([tenantId, recordId])
+}
+
+/// SPRINT-2 F: one reviewer's decision about one held operation (opId unique: decided once). Kept apart
+/// from the operation, which stays as it was sent, with the evidence it was held with. `outcome` for a
+/// decline says what the reviewer states about money: nothing to correct, a manual correction they
+/// acknowledge (not proof), or money they attest was recovered (the reviewer's statement, not proof).
+model ReviewResolution {
+  id               String   @id @default(uuid())
+  tenantId         String
+  opId             String   @unique
+  entity           String
+  action           String
+  decision         String   // apply | dismiss
+  outcome          String   // applied | nothing-to-correct | manual-correction-acknowledged | money-recovered-attested
+  category         String
+  reviewerId       String
+  reviewerName     String
+  note             String
+  previewToken     String
+  originalReason   String?
+  originalEvidence Json?
+  money            Json?
+  applyResult      String?
+  createdAt        DateTime @default(now())
+
+  @@index([tenantId, createdAt])
 }
 
 /// SPRINT-2 C: a staff session — the server verified this staff member's PIN for this enrolled device

@@ -86,13 +86,15 @@ export async function describeEffects(tenantId: string, entity: string, action: 
     const lines = []
     for (const it of items) {
       const prod = await productOf(tenantId, { ...it, productId: it.id })
-      lines.push({ name: typeof it.name === "string" ? it.name : prod.name, quantity: num(it.quantity) ?? 0, unitPrice: num(it.unitPrice) ?? 0, catalogue: prod.price })
+      const quantity = num(it.quantity) ?? 0
+      // stock: what the server holds now and after applying this line (SPRINT-2 F)
+      lines.push({ name: typeof it.name === "string" ? it.name : prod.name, quantity, unitPrice: num(it.unitPrice) ?? 0, catalogue: prod.price, serverStockNow: prod.stock, serverStockAfter: prod.stock === null ? null : prod.stock - quantity })
     }
     return [{ kind: "sale", saleNumber: typeof p.saleNumber === "string" ? p.saleNumber : null, total: num(p.total), lines }]
   }
   // Money the register already moved locally (a decline on the server does not move it back).
   if (entity === "expense") return [{ kind: "money", what: "expense", amount: num(p.amount), party: typeof p.vendor === "string" ? p.vendor : null }]
-  if (entity === "cash-movement") return [{ kind: "money", what: String(p.type ?? p.direction ?? "").toLowerCase().includes("in") ? "cash-in" : "cash-out", amount: num(p.amount), party: typeof p.reason === "string" ? p.reason : null }]
+  if (entity === "cash-movement") return [{ kind: "money", what: String(p.type ?? p.direction ?? "").toLowerCase().includes("in") ? "cash-in" : "cash-out", amount: num(p.amountUsd ?? p.amount), party: typeof p.reason === "string" ? p.reason : null }]
   if (entity === "supplier-payment") return [{ kind: "money", what: "supplier-payment", amount: num(p.amount), party: typeof p.supplierName === "string" ? p.supplierName : null }]
   if (entity === "refund") return [{ kind: "money", what: "refund", amount: num(p.total ?? p.amount), party: typeof p.saleNumber === "string" ? p.saleNumber : null }]
   return [{ kind: "other" }]

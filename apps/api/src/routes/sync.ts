@@ -13,6 +13,7 @@ import { applyPolicyChange, resolveLinePolicy, StockPolicyMismatchError } from "
 import { settleCloseOfDate } from "../lib/dailyClose.js"
 import { verifyAttestation, type AttestationResult } from "../lib/hubAttestation.js"
 import { checkApproval, useApproval, type ApprovalSeen } from "../lib/approvals.js"
+import { DISMISS_OUTCOMES, moneyEffect, previewTokenOf, reviewCategory } from "../lib/reviewQueue.js"
 import { createHash } from "node:crypto"
 import { localGateBlockers, recordSyncClient, RETIRED_CLIENT_MESSAGE, StockPolicyGateError, POLICY_GATE_WINDOW_DAYS, type GateBlocker } from "../lib/policyGate.js"
 import { LEGACY_REV } from "../lib/stockPolicy.js"
@@ -671,15 +672,24 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         // "Refused" row (never forwarded, never pruned) that a manager can list. The till keeps
         // its own copy too. A later push of the same op, once permitted, applies it normally.
         try {
-          const row = await prisma.syncOperation.findUnique({ where: { id: op.id }, select: { tenantId: true, appliedAt: true } })
+          const row = await prisma.syncOperation.findUnique({ where: { id: op.id }, select: { tenantId: true, appliedAt: true, heldEvidence: true } })
           const error = `${denial} (pushed by account ${req.auth!.userId}${deviceId ? `, device ${deviceId}` : ""})`
+          // SPRINT-2 F: what this server knew when it held it (kept with the command; no tokens)
+          const { opId: _o, tenantId: _t, ...held } = observeEvidence({
+            opId: op.id, tenantId, entity: op.entity, action: op.action, payload: op.payload,
+            kind: tokenKind(req.auth), accountId: typeof req.auth!.userId === "string" ? req.auth!.userId : null,
+            deviceId: deviceId ?? null, transport: transportOf(req as any),
+            acceptedBy: ["true", "1"].includes(process.env.IS_LOCAL_SERVER || "") ? "hub" : "cloud",
+            envelope: (op as any).ev ?? null, device: deviceSeen, session: sessionSeen, relayed: (op as any).ev?.relayed ?? null, attestation: attested, approval: approvalSeen,
+          })
+          const heldEvidence = JSON.parse(JSON.stringify({ ...held, heldAt: new Date().toISOString() }))
           if (!row) {
             await prisma.syncOperation.create({
-              data: { id: op.id, tenantId, entity: op.entity, action: op.action, summary: `${op.action} ${op.entity}`, payload: (op.payload ?? {}) as any, status: "Refused", attempts: 1, lastAttemptAt: new Date(), error },
+              data: { id: op.id, tenantId, entity: op.entity, action: op.action, summary: `${op.action} ${op.entity}`, payload: (op.payload ?? {}) as any, status: "Refused", attempts: 1, lastAttemptAt: new Date(), error, heldEvidence },
             })
           } else if (row.tenantId === tenantId && !row.appliedAt) {
-            // never reopens work a manager is resolving or has declined
-            await prisma.syncOperation.updateMany({ where: { id: op.id, tenantId, appliedAt: null, status: { notIn: ["Resolving", "Dismissed"] } }, data: { status: "Refused", attempts: { increment: 1 }, lastAttemptAt: new Date(), error } })
+            // never reopens work a manager is resolving or has declined; the first held evidence is kept
+            await prisma.syncOperation.updateMany({ where: { id: op.id, tenantId, appliedAt: null, status: { notIn: ["Resolving", "Dismissed"] } }, data: { status: "Refused", attempts: { increment: 1 }, lastAttemptAt: new Date(), error, ...(row.heldEvidence ? {} : { heldEvidence }) } })
           }
         } catch (keepErr) { console.error("Failed to keep refused operation:", keepErr) }
         // A refused price is a money decision a manager settles (never retried); other refusals
@@ -899,7 +909,7 @@ router.get("/refused", staffSync, async (req: AuthRequest, res: ServerResponse) 
   const rows = await prisma.syncOperation.findMany({
     where: { tenantId, status: { in: ["Refused", "Resolving"] }, appliedAt: null },
     orderBy: { createdAt: "desc" }, take: 200,
-    select: { id: true, entity: true, action: true, status: true, payload: true, error: true, attempts: true, createdAt: true, lastAttemptAt: true },
+    select: { id: true, entity: true, action: true, status: true, payload: true, error: true, attempts: true, createdAt: true, lastAttemptAt: true, heldEvidence: true },
   })
   const origins = await refusalOrigins(tenantId)
   const staff = new Map((await prisma.staffUser.findMany({ where: { tenantId }, select: { id: true, name: true } })).map((s) => [s.id, s.name]))
@@ -910,14 +920,26 @@ router.get("/refused", staffSync, async (req: AuthRequest, res: ServerResponse) 
     const reason = refusalReason(r.error)
     const needs = reviewPermissionsFor(r.entity, r.action, r.payload, reason)
     if (!seesAll && !needs.some((p) => viewerPerms.includes(p))) continue
+    const effects = await describeEffects(tenantId, r.entity, r.action, r.payload)
+    const held = (r.heldEvidence ?? null) as Record<string, any> | null
     operations.push({
       id: r.id, entity: r.entity, action: r.action, status: r.status, reason, attempts: r.attempts,
+      // SPRINT-2 F
+      category: reviewCategory(reason),
+      evidence: held ? {
+        label: held.evidence ?? null, credentialKind: held.credentialKind ?? null, deviceCheck: held.deviceCheck ?? null, sessionCheck: held.sessionCheck ?? null,
+        sessionStaff: held.sessionStaffId ? { id: held.sessionStaffId, name: staff.get(held.sessionStaffId) ?? null } : null,
+        approval: held.approval ?? null, attestation: held.attestation ?? null, limitations: held.limitations ?? [], heldAt: held.heldAt ?? null, transport: held.transport ?? null,
+      } : null,
+      money: moneyEffect(r.entity, r.action, r.payload),
+      previewToken: previewTokenOf(r, effects),
+      resolutions: [{ decision: "apply", requiredPermissions: needs }, { decision: "dismiss", outcomes: DISMISS_OUTCOMES, requiredPermissions: needs }],
       refusedAt: r.createdAt, lastAttemptAt: r.lastAttemptAt,
       pushedBy: pushed.userId ? { id: pushed.userId, name: staff.get(pushed.userId) ?? null } : null,
       deviceId: pushed.deviceId,
       claimedActor: { ...claimed, knownName: claimed.id ? staff.get(claimed.id) ?? null : null },
       limitations: actorLimitations(pushed.userId, claimed, pushed.deviceId, r.payload),
-      effects: await describeEffects(tenantId, r.entity, r.action, r.payload),
+      effects,
       payload: redactSecrets(r.payload),
       requiredPermissions: needs,
       canResolve: needs.some((p) => viewerPerms.includes(p)),
@@ -928,17 +950,25 @@ router.get("/refused", staffSync, async (req: AuthRequest, res: ServerResponse) 
 
 router.post("/refused/:id/resolve", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   const tenantId = req.auth!.tenantId
-  const body = z.object({ decision: z.enum(["apply", "dismiss"]), note: z.string().trim().min(3).max(500) }).safeParse(req.body)
-  if (!body.success) { json(res, { error: "Choose apply or dismiss and write a note (at least 3 characters).", code: "INVALID" }, 400); return }
+  if (req.body && typeof req.body === "object" && ("partial" in req.body || "items" in req.body || "quantities" in req.body)) {
+    json(res, { error: "Partial repairs are not supported: apply the operation as it was sent, or decline it and correct the business record separately.", code: "UNSUPPORTED_PARTIAL" }, 400); return
+  }
+  const body = z.object({ decision: z.enum(["apply", "dismiss"]), note: z.string().trim().min(3).max(500), previewToken: z.string().min(8).max(64), outcome: z.enum(DISMISS_OUTCOMES).optional() }).safeParse(req.body)
+  if (!body.success) { json(res, { error: "Choose apply or dismiss, write a note (at least 3 characters) and send the preview you decided on.", code: "INVALID" }, 400); return }
+  if (body.data.decision === "dismiss" && !body.data.outcome) { json(res, { error: "Say what happened to the money: nothing to correct, a manual correction, or money recovered.", code: "OUTCOME_REQUIRED" }, 400); return }
   const reviewer = await staffReviewer(req)
   if (!reviewer) { json(res, { error: "Sign in as a staff member to review refused work.", code: "NOT_STAFF" }, 403); return }
   const id = String((req.params as Record<string, string>).id)
-  const row = await prisma.syncOperation.findFirst({ where: { id, tenantId }, select: { id: true, entity: true, action: true, payload: true, status: true, error: true, appliedAt: true } })
+  const row = await prisma.syncOperation.findFirst({ where: { id, tenantId }, select: { id: true, entity: true, action: true, payload: true, status: true, error: true, appliedAt: true, attempts: true, heldEvidence: true } })
   if (!row) { json(res, { error: "Not found", code: "NOT_FOUND" }, 404); return }
   if (row.status !== "Refused" || row.appliedAt) { json(res, { error: "This operation is no longer waiting for review.", code: "NOT_REFUSED", status: row.appliedAt ? "applied" : row.status }, 409); return }
   const reason = refusalReason(row.error)
   const needs = reviewPermissionsFor(row.entity, row.action, row.payload, reason)
   if (!needs.some((p) => reviewer.permissions.includes(p))) { json(res, { error: `Deciding about this needs: ${needs.join(" or ")}.`, code: "FORBIDDEN" }, 403); return }
+  // SPRINT-2 F (after the reviewer's authority): the decision must be about what the reviewer saw (the operation and the server's state now)
+  if (previewTokenOf(row, await describeEffects(tenantId, row.entity, row.action, row.payload)) !== body.data.previewToken) {
+    json(res, { error: "This operation or its effects changed since you looked at it. Look again before deciding.", code: "STALE_PREVIEW" }, 409); return
+  }
   // Exactly one decision: Refused -> Resolving is taken by one request only.
   const taken = await prisma.syncOperation.updateMany({ where: { id, tenantId, status: "Refused", appliedAt: null }, data: { status: "Resolving" } })
   if (taken.count !== 1) { json(res, { error: "Someone else is deciding about this operation.", code: "NOT_REFUSED" }, 409); return }
@@ -949,11 +979,18 @@ router.post("/refused/:id/resolve", staffSync, async (req: AuthRequest, res: Ser
     userId: reviewer.id, userName: reviewer.name, userRole: (req.auth!.role ?? "Manager") as any,
   } }).catch(() => undefined)
   const back = (error: string) => prisma.syncOperation.updateMany({ where: { id, tenantId, status: "Resolving" }, data: { status: "Refused", error } })
+  // SPRINT-2 F: the decision, recorded apart from the operation (decided once: opId is unique)
+  const record = (outcome: string, applyResult: string | null) => prisma.reviewResolution.create({ data: {
+    tenantId, opId: id, entity: row.entity, action: row.action, decision: body.data.decision, outcome, category: reviewCategory(reason),
+    reviewerId: reviewer.id, reviewerName: reviewer.name, note: body.data.note, previewToken: body.data.previewToken,
+    originalReason: reason, originalEvidence: (row.heldEvidence ?? undefined) as any, money: moneyEffect(row.entity, row.action, row.payload) as any, applyResult,
+  } })
 
   if (body.data.decision === "dismiss") {
     await prisma.syncOperation.updateMany({ where: { id, tenantId, status: "Resolving" }, data: { status: "Dismissed", error: `${row.error ?? ""} | dismissed by ${reviewer.name}: ${body.data.note}` } })
-    await audit("sync.refused.dismissed", `${reviewer.name} declined refused ${row.action} ${row.entity}: ${body.data.note}`)
-    json(res, { ok: true, decision: "dismiss", status: "Dismissed" })
+    await record(body.data.outcome!, null)
+    await audit("sync.refused.dismissed", `${reviewer.name} declined refused ${row.action} ${row.entity} (${body.data.outcome}): ${body.data.note}`, { outcome: body.data.outcome })
+    json(res, { ok: true, decision: "dismiss", status: "Dismissed", outcome: body.data.outcome })
     return
   }
   const op = { id, entity: row.entity, action: row.action, payload: row.payload ?? {} }
@@ -962,6 +999,7 @@ router.post("/refused/:id/resolve", staffSync, async (req: AuthRequest, res: Ser
   if (refusal) { await back(row.error ?? ""); json(res, { error: refusal, code: "FORBIDDEN" }, 403); return }
   try {
     const outcome = await applyOnce(tenantId, op, reviewApplyCtx(origin.deviceId, reviewer.id, origin.syncSchema), reviewApplyHook(req, tenantId, op, reviewer.id, origin.deviceId))
+    await record("applied", outcome)
     await audit("sync.refused.applied", `${reviewer.name} applied refused ${row.action} ${row.entity}: ${body.data.note}`, { outcome })
     try { broadcastToTenant(tenantId, "sync:data-changed", {}) } catch { /* no-op */ }
     json(res, { ok: true, decision: "apply", outcome })

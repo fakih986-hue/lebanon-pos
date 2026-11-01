@@ -239,7 +239,7 @@ if (!ready) {
       await new Promise((r) => setTimeout(r, 5000))
       expect(await prisma.stockAdjustment.findFirst({ where: { tenantId: A.tenantId, id: op.payload.id }, select: { id: true, valueImpact: true } })).toBeNull()
       const cloudStockBefore = Number((await prisma.product.findFirst({ where: { tenantId: A.tenantId, syncId: A.milkSyncId }, select: { stock: true } })).stock)
-      const applied = await call("POST", `/api/sync/refused/${op.id}/resolve`, { decision: "apply", note: "crate counted on the hub" }, maya)
+      const applied = await call("POST", `/api/sync/refused/${op.id}/resolve`, { decision: "apply", note: "crate counted on the hub", previewToken: item.previewToken }, maya)
       expect(applied.status).toBe(200)
       const cloudAdj = await inCloud(() => prisma.stockAdjustment.findFirst({ where: { tenantId: A.tenantId, id: op.payload.id }, select: { id: true, valueImpact: true } }))
       const cloudStockAfter = Number((await prisma.product.findFirst({ where: { tenantId: A.tenantId, syncId: A.milkSyncId }, select: { stock: true } })).stock)

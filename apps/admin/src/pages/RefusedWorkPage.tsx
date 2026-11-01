@@ -10,7 +10,13 @@ type RefusedOp = {
   claimedActor: { id: string | null; name: string | null; knownName: string | null }
   limitations: string[]; effects: Effect[]; payload: unknown
   requiredPermissions: string[]; canResolve: boolean
+  // SPRINT-2 F
+  category?: string
+  evidence?: { label: string | null; deviceCheck: string | null; sessionCheck: string | null; sessionStaff: { id: string; name: string | null } | null; approval: { check?: string; approverName?: string | null } | null; attestation: string | null; heldAt: string | null } | null
+  money?: { direction: "collected" | "paid-out" | "none"; amountUsd: number; method: string | null }
+  previewToken?: string
 }
+const OUTCOMES = ["nothing-to-correct", "manual-correction-acknowledged", "money-recovered-attested"] as const
 
 const OPS = new Set(["inventory.adjust", "inventory.count", "inventory.receive", "customer.create", "customer.update", "debt.create", "debt.payment", "debt.delete", "sale.create", "held-sale.create", "delivery-order.create", "delivery-order.update"])
 
@@ -27,6 +33,7 @@ export function RefusedWorkPage() {
   const [notice, setNotice] = useState("")
   const [deciding, setDeciding] = useState<{ op: RefusedOp; decision: "apply" | "dismiss" } | null>(null)
   const [note, setNote] = useState("")
+  const [outcome, setOutcome] = useState<(typeof OUTCOMES)[number] | "">("")
   const [busy, setBusy] = useState(false)
   const fmt = (iso: string) => new Intl.DateTimeFormat(locale === "ar" ? "ar-LB" : "en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(iso))
   const n = (v: unknown) => (v === null || v === undefined ? "—" : String(v))
@@ -39,10 +46,10 @@ export function RefusedWorkPage() {
   useEffect(() => { void load() }, [])
 
   async function decide() {
-    if (!deciding || note.trim().length < 3) return
+    if (!deciding || note.trim().length < 3 || (deciding.decision === "dismiss" && !outcome)) return
     setBusy(true); setErrorMsg("")
     try {
-      await api(`/api/sync/refused/${encodeURIComponent(deciding.op.id)}/resolve`, { method: "POST", body: JSON.stringify({ decision: deciding.decision, note: note.trim() }) })
+      await api(`/api/sync/refused/${encodeURIComponent(deciding.op.id)}/resolve`, { method: "POST", body: JSON.stringify({ decision: deciding.decision, note: note.trim(), previewToken: deciding.op.previewToken, ...(deciding.decision === "dismiss" ? { outcome } : {}) }) })
       setNotice(deciding.decision === "apply" ? t("refused.applied_ok") : t("refused.dismissed_ok"))
       setDeciding(null); setNote("")
       await load()
@@ -97,6 +104,9 @@ export function RefusedWorkPage() {
               <dd>{o.pushedBy ? (o.pushedBy.name ?? o.pushedBy.id) : "—"}{o.deviceId ? ` · ${t("refused.device")} ${o.deviceId}` : ""}</dd>
               <dt className="font-medium">{t("refused.named_actor")}</dt>
               <dd>{o.claimedActor.knownName ?? o.claimedActor.name ?? t("refused.not_recorded")}</dd>
+              {o.category && <><dt className="font-medium">{t("refused.category")}</dt><dd>{(() => { const k = `refused.cat.${o.category}`; const s = t(k); return s === k ? o.category : s })()}</dd></>}
+              {o.evidence && <><dt className="font-medium">{t("refused.evidence")}</dt><dd>{n(o.evidence.label)}{o.evidence.sessionStaff ? ` · ${t("refused.session_of", { name: o.evidence.sessionStaff.name ?? o.evidence.sessionStaff.id })}` : ""}{o.evidence.approval?.approverName ? ` · ${t("refused.approved_by", { name: o.evidence.approval.approverName, check: o.evidence.approval.check ?? "" })}` : ""}</dd></>}
+              {o.money && o.money.direction !== "none" && <><dt className="font-medium">{t("refused.money")}</dt><dd>{t(o.money.direction === "collected" ? "refused.money_collected" : "refused.money_paid", { amount: o.money.amountUsd.toFixed(2), method: o.money.method ?? "" })}</dd></>}
             </dl>
 
             <div>
@@ -120,8 +130,8 @@ export function RefusedWorkPage() {
 
             {o.status === "Refused" && (o.canResolve ? (
               <div className="flex flex-wrap gap-2">
-                <button className="btn-primary text-sm" onClick={() => { setDeciding({ op: o, decision: "apply" }); setNote("") }}>{t("refused.apply")}</button>
-                <button className="btn-secondary text-sm" onClick={() => { setDeciding({ op: o, decision: "dismiss" }); setNote("") }}>{t("refused.dismiss")}</button>
+                <button className="btn-primary text-sm" onClick={() => { setDeciding({ op: o, decision: "apply" }); setNote(""); setOutcome("") }}>{t("refused.apply")}</button>
+                <button className="btn-secondary text-sm" onClick={() => { setDeciding({ op: o, decision: "dismiss" }); setNote(""); setOutcome("") }}>{t("refused.dismiss")}</button>
               </div>
             ) : <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("refused.needs", { permissions: o.requiredPermissions.join(", ") })}</p>)}
           </article>
@@ -140,9 +150,17 @@ export function RefusedWorkPage() {
               {t("refused.note")}
               <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={500} autoFocus className="input-field mt-1 w-full" />
             </label>
+            {deciding.decision === "dismiss" && (
+              <fieldset className="mt-4 text-sm" style={{ color: "var(--text-primary)" }}>
+                <legend className="font-medium">{t("refused.outcome")}</legend>
+                {OUTCOMES.map((o) => (
+                  <label key={o} className="mt-1 flex items-start gap-2"><input type="radio" name="rw-outcome" checked={outcome === o} onChange={() => setOutcome(o)} /><span>{t(`refused.outcome.${o}`)}</span></label>
+                ))}
+              </fieldset>
+            )}
             <div className="mt-4 flex justify-end gap-2">
               <button className="btn-secondary text-sm" disabled={busy} onClick={() => setDeciding(null)}>{t("admin.cancel")}</button>
-              <button className="btn-primary text-sm" style={{ opacity: busy || note.trim().length < 3 ? 0.5 : 1 }} disabled={busy || note.trim().length < 3} onClick={() => void decide()}>
+              <button className="btn-primary text-sm" style={{ opacity: busy || note.trim().length < 3 || (deciding.decision === "dismiss" && !outcome) ? 0.5 : 1 }} disabled={busy || note.trim().length < 3 || (deciding.decision === "dismiss" && !outcome)} onClick={() => void decide()}>
                 {deciding.decision === "apply" ? t("refused.apply") : t("refused.dismiss")}
               </button>
             </div>

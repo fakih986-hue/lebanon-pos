@@ -315,7 +315,7 @@ describe("enforce-checkout: refused sales are reviewed like other refused work",
     const item = list.find((o) => o.id === op.id)!
     expect(item.reason).toMatch(/^IDENTITY_REQUIRED/)
     expect(item.requiredPermissions).toEqual(["sales.void", "settings.manage"])
-    expect((await call("POST", `/api/sync/refused/${op.id}/resolve`, { decision: "apply", note: "Sami was at the register" }, bearer(owner))).status).toBe(200)
+    expect((await call("POST", `/api/sync/refused/${op.id}/resolve`, { decision: "apply", note: "Sami was at the register", previewToken: item.previewToken }, bearer(owner))).status).toBe(200)
     expect(await saleRow(op)).not.toBeNull()
     expect((await evidence(op))!.limitations).toContain("applied-on-manager-review")
   })

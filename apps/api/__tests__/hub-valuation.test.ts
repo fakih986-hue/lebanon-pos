@@ -282,7 +282,8 @@ describe("daily close: the server's figures, or unknown — never a made-up zero
   // refused under its connection account and applied by a manager on review: valued as untrusted.
   const closeOnCostHiddenTill = async (op: Op) => {
     expect((await asClerk(op)).error).toMatch(/permission/i)
-    const res = await fetch(`${hubUrl}/api/sync/refused/${op.id}/resolve`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}` }, body: JSON.stringify({ decision: "apply", note: "closed on the clerk's till" }) })
+    const previewToken = ((await (await fetch(`${hubUrl}/api/sync/refused`, { headers: { Authorization: `Bearer ${adminToken}` } })).json()) as any).operations?.find((o: any) => o.id === op.id)?.previewToken ?? "no-preview-seen"
+    const res = await fetch(`${hubUrl}/api/sync/refused/${op.id}/resolve`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}` }, body: JSON.stringify({ decision: "apply", note: "closed on the clerk's till", previewToken }) })
     expect(res.status).toBe(200)
   }
   let saleIds: string[] = []

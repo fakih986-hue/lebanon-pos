@@ -223,7 +223,7 @@ if (!ready) {
       const op = queue().find((o) => o.entity === "daily-close" && o.payload?.id === c.id)!
       evidence("clerk close", [op.status, op.error ?? null])
       expect(String(op.error)).toMatch(/permission/i)
-      const applied = await call("POST", `/api/sync/refused/${op.id}/resolve`, { decision: "apply", note: "closed on the clerk's till" }, owner)
+      const applied = await call("POST", `/api/sync/refused/${op.id}/resolve`, { decision: "apply", note: "closed on the clerk's till", previewToken: ((await call("GET", "/api/sync/refused", undefined, owner)).body?.operations as any[] | undefined)?.find((o) => o.id === op.id)?.previewToken }, owner)
       expect(applied.status).toBe(200)
       const hidden = { costOfGoods: 1, returnedCost: 0, grossMargin: 0.5, netProfit: 0.5, costStatus: "server" }
       expect(pick((await hubCloses()).find((x) => x.id === c.id))).toEqual(hidden)
@@ -238,7 +238,7 @@ if (!ready) {
       const c = d.close.closeBusinessDay({ dateKey: "2099-01-05", grossSales: 4, refunds: 0, netSales: 4, expenses: 0, supplierPayments: 0, cashIn: 4, cashOut: 0, unsyncedCountAtClose: 1, note: "", saleIds: [randomUUID()], refundIds: [] })
       const op = () => queue().find((o) => o.entity === "daily-close" && o.payload?.id === c.id)!
       await flush()
-      expect((await call("POST", `/api/sync/refused/${op().id}/resolve`, { decision: "apply", note: "IT review" }, owner)).status).toBe(200)
+      expect((await call("POST", `/api/sync/refused/${op().id}/resolve`, { decision: "apply", note: "IT review", previewToken: ((await call("GET", "/api/sync/refused", undefined, owner)).body?.operations as any[] | undefined)?.find((o) => o.id === op().id)?.previewToken }, owner)).status).toBe(200)
       const unknown = { costOfGoods: null, returnedCost: null, grossMargin: null, netProfit: null, costStatus: "incomplete" }
       expect(pick((await hubCloses()).find((x) => x.id === c.id))).toEqual(unknown)
       expect(pick(await cloudClose(c.id))).toEqual(unknown)

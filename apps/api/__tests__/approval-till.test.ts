@@ -206,6 +206,23 @@ describe("manager approval on the register (its own services, real API)", () => 
     expect(queue().filter((o) => ["sale", "cash-movement"].includes(o.entity) && ["void", "create"].includes(o.action) && o.payload?.id && [sale.id, input.id].includes(o.payload.id)).every((o) => o.status === "Synced")).toBe(true)
   })
 
+  it("the connection expired with completed work queued: nothing is dropped or re-charged; delivered once after signing in again", async () => {
+    const good = storage.getItem("lebanonpos.auth-token")!
+    const expired = (await import("jsonwebtoken")).default.sign({ userId: RANA, tenantId: T, role: "Cashier", tokenVersion: 1 }, process.env.JWT_SECRET!, { expiresIn: -60 })
+    storage.setItem("lebanonpos.auth-token", expired)
+    const sale = sell(1)
+    await flush()
+    const op = queue().find((o) => o.entity === "sale" && o.payload?.id === sale.id)!
+    expect(op).toBeTruthy()
+    expect(op.status).not.toBe("Synced")
+    expect(d.sales.getSales().find((x: any) => x.id === sale.id)?.status).not.toBe("Voided") // the paid sale stands on the register
+    expect(await prisma.sale.count({ where: { tenantId: T, id: sale.id } })).toBe(0)
+    storage.setItem("lebanonpos.auth-token", good) // signed in again
+    await flush()
+    expect(queue().find((o) => o.id === op.id)?.status).toBe("Synced")
+    expect(await prisma.sale.count({ where: { tenantId: T, id: sale.id } })).toBe(1)
+  })
+
   it("offline: no approval is possible, and the work is left as it was", async () => {
     offline = true
     try {

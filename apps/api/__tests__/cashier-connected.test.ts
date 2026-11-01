@@ -144,8 +144,11 @@ describe("a cashier-connected till with a manager unlocked locally (1.0.50 till,
 
   const loginAs = async (pin: string) => (await (await realFetch(`${baseUrl}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin, tenantSubdomain: SUB }) })).json() as any).token as string
   const review = (token: string) => realFetch(`${baseUrl}/api/sync/refused`, { headers: { Authorization: `Bearer ${token}` } })
-  const resolve = (token: string, id: string, decision: string, note = "counted the delivery myself") =>
-    realFetch(`${baseUrl}/api/sync/refused/${id}/resolve`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ decision, note }) })
+  // a decision is about the preview the reviewer saw (SPRINT-2 F); a decline says what happened to the money
+  const resolve = async (token: string, id: string, decision: string, note = "counted the delivery myself") => {
+    const previewToken = ((await (await review(token)).json()) as any).operations?.find((o: any) => o.id === id)?.previewToken ?? "no-preview-seen"
+    return realFetch(`${baseUrl}/api/sync/refused/${id}/resolve`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ decision, note, previewToken, ...(decision === "dismiss" ? { outcome: "nothing-to-correct" } : {}) }) })
+  }
   const serverStock = async () => Number((await prisma.product.findFirst({ where: { tenantId: T, syncId: PRODUCT_SYNC } }))!.stock)
   /** The till's own "Retry failed": put the queued entry back to pending and flush. */
   const retryOnTill = async (id: string) => {

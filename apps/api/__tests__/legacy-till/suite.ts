@@ -418,7 +418,7 @@ export function legacyTillSuite(till: TillUnderTest) {
         const maya = await loginToken("5106")
         const review = (await (await realFetch(`${baseUrl}/api/sync/refused`, { headers: { Authorization: `Bearer ${maya}` } })).json()) as any
         expect(review.operations.some((o: any) => o.id === op.id)).toBe(true)
-        const r = await realFetch(`${baseUrl}/api/sync/refused/${op.id}/resolve`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${maya}` }, body: JSON.stringify({ decision: "apply", note: "crate counted" }) })
+        const r = await realFetch(`${baseUrl}/api/sync/refused/${op.id}/resolve`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${maya}` }, body: JSON.stringify({ decision: "apply", note: "crate counted", previewToken: review.operations.find((o: any) => o.id === op.id)?.previewToken }) })
         expect(r.status).toBe(200)
         const adj = await prisma.stockAdjustment.findFirst({ where: { tenantId: T, id: op.payload.id } }) as any
         evidence(`${till.label} reviewed adjustment`, { sentValueImpact: op.payload.valueImpact ?? null, stored: adj?.valueImpact ?? null })

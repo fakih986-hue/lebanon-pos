@@ -202,6 +202,14 @@ export type HubKey = $Result.DefaultSelection<Prisma.$HubKeyPayload>
  */
 export type ManagerApproval = $Result.DefaultSelection<Prisma.$ManagerApprovalPayload>
 /**
+ * Model ReviewResolution
+ * SPRINT-2 F: one reviewer's decision about one held operation (opId unique: decided once). Kept apart
+ * from the operation, which stays as it was sent, with the evidence it was held with. `outcome` for a
+ * decline says what the reviewer states about money: nothing to correct, a manual correction they
+ * acknowledge (not proof), or money they attest was recovered (the reviewer's statement, not proof).
+ */
+export type ReviewResolution = $Result.DefaultSelection<Prisma.$ReviewResolutionPayload>
+/**
  * Model StaffSession
  * SPRINT-2 C: a staff session — the server verified this staff member's PIN for this enrolled device
  * at authTime. It proves nothing about later presence. Ended when the device switches person,
@@ -827,6 +835,16 @@ export class PrismaClient<
   get managerApproval(): Prisma.ManagerApprovalDelegate<ExtArgs, ClientOptions>;
 
   /**
+   * `prisma.reviewResolution`: Exposes CRUD operations for the **ReviewResolution** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ReviewResolutions
+    * const reviewResolutions = await prisma.reviewResolution.findMany()
+    * ```
+    */
+  get reviewResolution(): Prisma.ReviewResolutionDelegate<ExtArgs, ClientOptions>;
+
+  /**
    * `prisma.staffSession`: Exposes CRUD operations for the **StaffSession** model.
     * Example usage:
     * ```ts
@@ -1312,6 +1330,7 @@ export namespace Prisma {
     OperationEvidence: 'OperationEvidence',
     HubKey: 'HubKey',
     ManagerApproval: 'ManagerApproval',
+    ReviewResolution: 'ReviewResolution',
     StaffSession: 'StaffSession'
   };
 
@@ -1331,7 +1350,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "cashMovement" | "syncOperation" | "device" | "pairingCode" | "rateLimitEntry" | "stockMovement" | "syncClient" | "operationEvidence" | "hubKey" | "managerApproval" | "staffSession"
+      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "cashMovement" | "syncOperation" | "device" | "pairingCode" | "rateLimitEntry" | "stockMovement" | "syncClient" | "operationEvidence" | "hubKey" | "managerApproval" | "reviewResolution" | "staffSession"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -3999,6 +4018,80 @@ export namespace Prisma {
           }
         }
       }
+      ReviewResolution: {
+        payload: Prisma.$ReviewResolutionPayload<ExtArgs>
+        fields: Prisma.ReviewResolutionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ReviewResolutionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReviewResolutionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ReviewResolutionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReviewResolutionPayload>
+          }
+          findFirst: {
+            args: Prisma.ReviewResolutionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReviewResolutionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ReviewResolutionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReviewResolutionPayload>
+          }
+          findMany: {
+            args: Prisma.ReviewResolutionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReviewResolutionPayload>[]
+          }
+          create: {
+            args: Prisma.ReviewResolutionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReviewResolutionPayload>
+          }
+          createMany: {
+            args: Prisma.ReviewResolutionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ReviewResolutionCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReviewResolutionPayload>[]
+          }
+          delete: {
+            args: Prisma.ReviewResolutionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReviewResolutionPayload>
+          }
+          update: {
+            args: Prisma.ReviewResolutionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReviewResolutionPayload>
+          }
+          deleteMany: {
+            args: Prisma.ReviewResolutionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ReviewResolutionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.ReviewResolutionUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReviewResolutionPayload>[]
+          }
+          upsert: {
+            args: Prisma.ReviewResolutionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReviewResolutionPayload>
+          }
+          aggregate: {
+            args: Prisma.ReviewResolutionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateReviewResolution>
+          }
+          groupBy: {
+            args: Prisma.ReviewResolutionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ReviewResolutionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ReviewResolutionCountArgs<ExtArgs>
+            result: $Utils.Optional<ReviewResolutionCountAggregateOutputType> | number
+          }
+        }
+      }
       StaffSession: {
         payload: Prisma.$StaffSessionPayload<ExtArgs>
         fields: Prisma.StaffSessionFieldRefs
@@ -4205,6 +4298,7 @@ export namespace Prisma {
     operationEvidence?: OperationEvidenceOmit
     hubKey?: HubKeyOmit
     managerApproval?: ManagerApprovalOmit
+    reviewResolution?: ReviewResolutionOmit
     staffSession?: StaffSessionOmit
   }
 
@@ -39751,6 +39845,7 @@ export namespace Prisma {
     error: number
     appliedAt: number
     serverValued: number
+    heldEvidence: number
     _all: number
   }
 
@@ -39810,6 +39905,7 @@ export namespace Prisma {
     error?: true
     appliedAt?: true
     serverValued?: true
+    heldEvidence?: true
     _all?: true
   }
 
@@ -39914,6 +40010,7 @@ export namespace Prisma {
     error: string | null
     appliedAt: Date | null
     serverValued: boolean
+    heldEvidence: JsonValue | null
     _count: SyncOperationCountAggregateOutputType | null
     _avg: SyncOperationAvgAggregateOutputType | null
     _sum: SyncOperationSumAggregateOutputType | null
@@ -39950,6 +40047,7 @@ export namespace Prisma {
     error?: boolean
     appliedAt?: boolean
     serverValued?: boolean
+    heldEvidence?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["syncOperation"]>
 
@@ -39968,6 +40066,7 @@ export namespace Prisma {
     error?: boolean
     appliedAt?: boolean
     serverValued?: boolean
+    heldEvidence?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["syncOperation"]>
 
@@ -39986,6 +40085,7 @@ export namespace Prisma {
     error?: boolean
     appliedAt?: boolean
     serverValued?: boolean
+    heldEvidence?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["syncOperation"]>
 
@@ -40004,9 +40104,10 @@ export namespace Prisma {
     error?: boolean
     appliedAt?: boolean
     serverValued?: boolean
+    heldEvidence?: boolean
   }
 
-  export type SyncOperationOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "entity" | "action" | "summary" | "payload" | "status" | "attempts" | "createdAt" | "lastAttemptAt" | "syncedAt" | "error" | "appliedAt" | "serverValued", ExtArgs["result"]["syncOperation"]>
+  export type SyncOperationOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "entity" | "action" | "summary" | "payload" | "status" | "attempts" | "createdAt" | "lastAttemptAt" | "syncedAt" | "error" | "appliedAt" | "serverValued" | "heldEvidence", ExtArgs["result"]["syncOperation"]>
   export type SyncOperationInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }
@@ -40045,6 +40146,11 @@ export namespace Prisma {
        * forwards it with ev.valued = "server"; the cloud values any operation without it itself.
        */
       serverValued: boolean
+      /**
+       * SPRINT-2 F: what this server knew when it held the operation for review (actor, device, session,
+       * approval and attestation checks, evidence label). Never a token or a PIN. Kept with the command.
+       */
+      heldEvidence: Prisma.JsonValue | null
     }, ExtArgs["result"]["syncOperation"]>
     composites: {}
   }
@@ -40483,6 +40589,7 @@ export namespace Prisma {
     readonly error: FieldRef<"SyncOperation", 'String'>
     readonly appliedAt: FieldRef<"SyncOperation", 'DateTime'>
     readonly serverValued: FieldRef<"SyncOperation", 'Boolean'>
+    readonly heldEvidence: FieldRef<"SyncOperation", 'Json'>
   }
     
 
@@ -50055,6 +50162,1149 @@ export namespace Prisma {
 
 
   /**
+   * Model ReviewResolution
+   */
+
+  export type AggregateReviewResolution = {
+    _count: ReviewResolutionCountAggregateOutputType | null
+    _min: ReviewResolutionMinAggregateOutputType | null
+    _max: ReviewResolutionMaxAggregateOutputType | null
+  }
+
+  export type ReviewResolutionMinAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    opId: string | null
+    entity: string | null
+    action: string | null
+    decision: string | null
+    outcome: string | null
+    category: string | null
+    reviewerId: string | null
+    reviewerName: string | null
+    note: string | null
+    previewToken: string | null
+    originalReason: string | null
+    applyResult: string | null
+    createdAt: Date | null
+  }
+
+  export type ReviewResolutionMaxAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    opId: string | null
+    entity: string | null
+    action: string | null
+    decision: string | null
+    outcome: string | null
+    category: string | null
+    reviewerId: string | null
+    reviewerName: string | null
+    note: string | null
+    previewToken: string | null
+    originalReason: string | null
+    applyResult: string | null
+    createdAt: Date | null
+  }
+
+  export type ReviewResolutionCountAggregateOutputType = {
+    id: number
+    tenantId: number
+    opId: number
+    entity: number
+    action: number
+    decision: number
+    outcome: number
+    category: number
+    reviewerId: number
+    reviewerName: number
+    note: number
+    previewToken: number
+    originalReason: number
+    originalEvidence: number
+    money: number
+    applyResult: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type ReviewResolutionMinAggregateInputType = {
+    id?: true
+    tenantId?: true
+    opId?: true
+    entity?: true
+    action?: true
+    decision?: true
+    outcome?: true
+    category?: true
+    reviewerId?: true
+    reviewerName?: true
+    note?: true
+    previewToken?: true
+    originalReason?: true
+    applyResult?: true
+    createdAt?: true
+  }
+
+  export type ReviewResolutionMaxAggregateInputType = {
+    id?: true
+    tenantId?: true
+    opId?: true
+    entity?: true
+    action?: true
+    decision?: true
+    outcome?: true
+    category?: true
+    reviewerId?: true
+    reviewerName?: true
+    note?: true
+    previewToken?: true
+    originalReason?: true
+    applyResult?: true
+    createdAt?: true
+  }
+
+  export type ReviewResolutionCountAggregateInputType = {
+    id?: true
+    tenantId?: true
+    opId?: true
+    entity?: true
+    action?: true
+    decision?: true
+    outcome?: true
+    category?: true
+    reviewerId?: true
+    reviewerName?: true
+    note?: true
+    previewToken?: true
+    originalReason?: true
+    originalEvidence?: true
+    money?: true
+    applyResult?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type ReviewResolutionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ReviewResolution to aggregate.
+     */
+    where?: ReviewResolutionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ReviewResolutions to fetch.
+     */
+    orderBy?: ReviewResolutionOrderByWithRelationInput | ReviewResolutionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ReviewResolutionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ReviewResolutions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ReviewResolutions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ReviewResolutions
+    **/
+    _count?: true | ReviewResolutionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ReviewResolutionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ReviewResolutionMaxAggregateInputType
+  }
+
+  export type GetReviewResolutionAggregateType<T extends ReviewResolutionAggregateArgs> = {
+        [P in keyof T & keyof AggregateReviewResolution]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateReviewResolution[P]>
+      : GetScalarType<T[P], AggregateReviewResolution[P]>
+  }
+
+
+
+
+  export type ReviewResolutionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ReviewResolutionWhereInput
+    orderBy?: ReviewResolutionOrderByWithAggregationInput | ReviewResolutionOrderByWithAggregationInput[]
+    by: ReviewResolutionScalarFieldEnum[] | ReviewResolutionScalarFieldEnum
+    having?: ReviewResolutionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ReviewResolutionCountAggregateInputType | true
+    _min?: ReviewResolutionMinAggregateInputType
+    _max?: ReviewResolutionMaxAggregateInputType
+  }
+
+  export type ReviewResolutionGroupByOutputType = {
+    id: string
+    tenantId: string
+    opId: string
+    entity: string
+    action: string
+    decision: string
+    outcome: string
+    category: string
+    reviewerId: string
+    reviewerName: string
+    note: string
+    previewToken: string
+    originalReason: string | null
+    originalEvidence: JsonValue | null
+    money: JsonValue | null
+    applyResult: string | null
+    createdAt: Date
+    _count: ReviewResolutionCountAggregateOutputType | null
+    _min: ReviewResolutionMinAggregateOutputType | null
+    _max: ReviewResolutionMaxAggregateOutputType | null
+  }
+
+  type GetReviewResolutionGroupByPayload<T extends ReviewResolutionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ReviewResolutionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ReviewResolutionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ReviewResolutionGroupByOutputType[P]>
+            : GetScalarType<T[P], ReviewResolutionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ReviewResolutionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    opId?: boolean
+    entity?: boolean
+    action?: boolean
+    decision?: boolean
+    outcome?: boolean
+    category?: boolean
+    reviewerId?: boolean
+    reviewerName?: boolean
+    note?: boolean
+    previewToken?: boolean
+    originalReason?: boolean
+    originalEvidence?: boolean
+    money?: boolean
+    applyResult?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["reviewResolution"]>
+
+  export type ReviewResolutionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    opId?: boolean
+    entity?: boolean
+    action?: boolean
+    decision?: boolean
+    outcome?: boolean
+    category?: boolean
+    reviewerId?: boolean
+    reviewerName?: boolean
+    note?: boolean
+    previewToken?: boolean
+    originalReason?: boolean
+    originalEvidence?: boolean
+    money?: boolean
+    applyResult?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["reviewResolution"]>
+
+  export type ReviewResolutionSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    opId?: boolean
+    entity?: boolean
+    action?: boolean
+    decision?: boolean
+    outcome?: boolean
+    category?: boolean
+    reviewerId?: boolean
+    reviewerName?: boolean
+    note?: boolean
+    previewToken?: boolean
+    originalReason?: boolean
+    originalEvidence?: boolean
+    money?: boolean
+    applyResult?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["reviewResolution"]>
+
+  export type ReviewResolutionSelectScalar = {
+    id?: boolean
+    tenantId?: boolean
+    opId?: boolean
+    entity?: boolean
+    action?: boolean
+    decision?: boolean
+    outcome?: boolean
+    category?: boolean
+    reviewerId?: boolean
+    reviewerName?: boolean
+    note?: boolean
+    previewToken?: boolean
+    originalReason?: boolean
+    originalEvidence?: boolean
+    money?: boolean
+    applyResult?: boolean
+    createdAt?: boolean
+  }
+
+  export type ReviewResolutionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "opId" | "entity" | "action" | "decision" | "outcome" | "category" | "reviewerId" | "reviewerName" | "note" | "previewToken" | "originalReason" | "originalEvidence" | "money" | "applyResult" | "createdAt", ExtArgs["result"]["reviewResolution"]>
+
+  export type $ReviewResolutionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ReviewResolution"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      tenantId: string
+      opId: string
+      entity: string
+      action: string
+      decision: string
+      outcome: string
+      category: string
+      reviewerId: string
+      reviewerName: string
+      note: string
+      previewToken: string
+      originalReason: string | null
+      originalEvidence: Prisma.JsonValue | null
+      money: Prisma.JsonValue | null
+      applyResult: string | null
+      createdAt: Date
+    }, ExtArgs["result"]["reviewResolution"]>
+    composites: {}
+  }
+
+  type ReviewResolutionGetPayload<S extends boolean | null | undefined | ReviewResolutionDefaultArgs> = $Result.GetResult<Prisma.$ReviewResolutionPayload, S>
+
+  type ReviewResolutionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ReviewResolutionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: ReviewResolutionCountAggregateInputType | true
+    }
+
+  export interface ReviewResolutionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ReviewResolution'], meta: { name: 'ReviewResolution' } }
+    /**
+     * Find zero or one ReviewResolution that matches the filter.
+     * @param {ReviewResolutionFindUniqueArgs} args - Arguments to find a ReviewResolution
+     * @example
+     * // Get one ReviewResolution
+     * const reviewResolution = await prisma.reviewResolution.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ReviewResolutionFindUniqueArgs>(args: SelectSubset<T, ReviewResolutionFindUniqueArgs<ExtArgs>>): Prisma__ReviewResolutionClient<$Result.GetResult<Prisma.$ReviewResolutionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one ReviewResolution that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {ReviewResolutionFindUniqueOrThrowArgs} args - Arguments to find a ReviewResolution
+     * @example
+     * // Get one ReviewResolution
+     * const reviewResolution = await prisma.reviewResolution.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ReviewResolutionFindUniqueOrThrowArgs>(args: SelectSubset<T, ReviewResolutionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ReviewResolutionClient<$Result.GetResult<Prisma.$ReviewResolutionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ReviewResolution that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReviewResolutionFindFirstArgs} args - Arguments to find a ReviewResolution
+     * @example
+     * // Get one ReviewResolution
+     * const reviewResolution = await prisma.reviewResolution.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ReviewResolutionFindFirstArgs>(args?: SelectSubset<T, ReviewResolutionFindFirstArgs<ExtArgs>>): Prisma__ReviewResolutionClient<$Result.GetResult<Prisma.$ReviewResolutionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ReviewResolution that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReviewResolutionFindFirstOrThrowArgs} args - Arguments to find a ReviewResolution
+     * @example
+     * // Get one ReviewResolution
+     * const reviewResolution = await prisma.reviewResolution.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ReviewResolutionFindFirstOrThrowArgs>(args?: SelectSubset<T, ReviewResolutionFindFirstOrThrowArgs<ExtArgs>>): Prisma__ReviewResolutionClient<$Result.GetResult<Prisma.$ReviewResolutionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more ReviewResolutions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReviewResolutionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ReviewResolutions
+     * const reviewResolutions = await prisma.reviewResolution.findMany()
+     * 
+     * // Get first 10 ReviewResolutions
+     * const reviewResolutions = await prisma.reviewResolution.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const reviewResolutionWithIdOnly = await prisma.reviewResolution.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ReviewResolutionFindManyArgs>(args?: SelectSubset<T, ReviewResolutionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReviewResolutionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a ReviewResolution.
+     * @param {ReviewResolutionCreateArgs} args - Arguments to create a ReviewResolution.
+     * @example
+     * // Create one ReviewResolution
+     * const ReviewResolution = await prisma.reviewResolution.create({
+     *   data: {
+     *     // ... data to create a ReviewResolution
+     *   }
+     * })
+     * 
+     */
+    create<T extends ReviewResolutionCreateArgs>(args: SelectSubset<T, ReviewResolutionCreateArgs<ExtArgs>>): Prisma__ReviewResolutionClient<$Result.GetResult<Prisma.$ReviewResolutionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many ReviewResolutions.
+     * @param {ReviewResolutionCreateManyArgs} args - Arguments to create many ReviewResolutions.
+     * @example
+     * // Create many ReviewResolutions
+     * const reviewResolution = await prisma.reviewResolution.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ReviewResolutionCreateManyArgs>(args?: SelectSubset<T, ReviewResolutionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ReviewResolutions and returns the data saved in the database.
+     * @param {ReviewResolutionCreateManyAndReturnArgs} args - Arguments to create many ReviewResolutions.
+     * @example
+     * // Create many ReviewResolutions
+     * const reviewResolution = await prisma.reviewResolution.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ReviewResolutions and only return the `id`
+     * const reviewResolutionWithIdOnly = await prisma.reviewResolution.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ReviewResolutionCreateManyAndReturnArgs>(args?: SelectSubset<T, ReviewResolutionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReviewResolutionPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a ReviewResolution.
+     * @param {ReviewResolutionDeleteArgs} args - Arguments to delete one ReviewResolution.
+     * @example
+     * // Delete one ReviewResolution
+     * const ReviewResolution = await prisma.reviewResolution.delete({
+     *   where: {
+     *     // ... filter to delete one ReviewResolution
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ReviewResolutionDeleteArgs>(args: SelectSubset<T, ReviewResolutionDeleteArgs<ExtArgs>>): Prisma__ReviewResolutionClient<$Result.GetResult<Prisma.$ReviewResolutionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one ReviewResolution.
+     * @param {ReviewResolutionUpdateArgs} args - Arguments to update one ReviewResolution.
+     * @example
+     * // Update one ReviewResolution
+     * const reviewResolution = await prisma.reviewResolution.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ReviewResolutionUpdateArgs>(args: SelectSubset<T, ReviewResolutionUpdateArgs<ExtArgs>>): Prisma__ReviewResolutionClient<$Result.GetResult<Prisma.$ReviewResolutionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more ReviewResolutions.
+     * @param {ReviewResolutionDeleteManyArgs} args - Arguments to filter ReviewResolutions to delete.
+     * @example
+     * // Delete a few ReviewResolutions
+     * const { count } = await prisma.reviewResolution.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ReviewResolutionDeleteManyArgs>(args?: SelectSubset<T, ReviewResolutionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ReviewResolutions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReviewResolutionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ReviewResolutions
+     * const reviewResolution = await prisma.reviewResolution.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ReviewResolutionUpdateManyArgs>(args: SelectSubset<T, ReviewResolutionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ReviewResolutions and returns the data updated in the database.
+     * @param {ReviewResolutionUpdateManyAndReturnArgs} args - Arguments to update many ReviewResolutions.
+     * @example
+     * // Update many ReviewResolutions
+     * const reviewResolution = await prisma.reviewResolution.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more ReviewResolutions and only return the `id`
+     * const reviewResolutionWithIdOnly = await prisma.reviewResolution.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends ReviewResolutionUpdateManyAndReturnArgs>(args: SelectSubset<T, ReviewResolutionUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReviewResolutionPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one ReviewResolution.
+     * @param {ReviewResolutionUpsertArgs} args - Arguments to update or create a ReviewResolution.
+     * @example
+     * // Update or create a ReviewResolution
+     * const reviewResolution = await prisma.reviewResolution.upsert({
+     *   create: {
+     *     // ... data to create a ReviewResolution
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ReviewResolution we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ReviewResolutionUpsertArgs>(args: SelectSubset<T, ReviewResolutionUpsertArgs<ExtArgs>>): Prisma__ReviewResolutionClient<$Result.GetResult<Prisma.$ReviewResolutionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of ReviewResolutions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReviewResolutionCountArgs} args - Arguments to filter ReviewResolutions to count.
+     * @example
+     * // Count the number of ReviewResolutions
+     * const count = await prisma.reviewResolution.count({
+     *   where: {
+     *     // ... the filter for the ReviewResolutions we want to count
+     *   }
+     * })
+    **/
+    count<T extends ReviewResolutionCountArgs>(
+      args?: Subset<T, ReviewResolutionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ReviewResolutionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ReviewResolution.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReviewResolutionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ReviewResolutionAggregateArgs>(args: Subset<T, ReviewResolutionAggregateArgs>): Prisma.PrismaPromise<GetReviewResolutionAggregateType<T>>
+
+    /**
+     * Group by ReviewResolution.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReviewResolutionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ReviewResolutionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ReviewResolutionGroupByArgs['orderBy'] }
+        : { orderBy?: ReviewResolutionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ReviewResolutionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetReviewResolutionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ReviewResolution model
+   */
+  readonly fields: ReviewResolutionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ReviewResolution.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ReviewResolutionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ReviewResolution model
+   */
+  interface ReviewResolutionFieldRefs {
+    readonly id: FieldRef<"ReviewResolution", 'String'>
+    readonly tenantId: FieldRef<"ReviewResolution", 'String'>
+    readonly opId: FieldRef<"ReviewResolution", 'String'>
+    readonly entity: FieldRef<"ReviewResolution", 'String'>
+    readonly action: FieldRef<"ReviewResolution", 'String'>
+    readonly decision: FieldRef<"ReviewResolution", 'String'>
+    readonly outcome: FieldRef<"ReviewResolution", 'String'>
+    readonly category: FieldRef<"ReviewResolution", 'String'>
+    readonly reviewerId: FieldRef<"ReviewResolution", 'String'>
+    readonly reviewerName: FieldRef<"ReviewResolution", 'String'>
+    readonly note: FieldRef<"ReviewResolution", 'String'>
+    readonly previewToken: FieldRef<"ReviewResolution", 'String'>
+    readonly originalReason: FieldRef<"ReviewResolution", 'String'>
+    readonly originalEvidence: FieldRef<"ReviewResolution", 'Json'>
+    readonly money: FieldRef<"ReviewResolution", 'Json'>
+    readonly applyResult: FieldRef<"ReviewResolution", 'String'>
+    readonly createdAt: FieldRef<"ReviewResolution", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ReviewResolution findUnique
+   */
+  export type ReviewResolutionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReviewResolution
+     */
+    select?: ReviewResolutionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReviewResolution
+     */
+    omit?: ReviewResolutionOmit<ExtArgs> | null
+    /**
+     * Filter, which ReviewResolution to fetch.
+     */
+    where: ReviewResolutionWhereUniqueInput
+  }
+
+  /**
+   * ReviewResolution findUniqueOrThrow
+   */
+  export type ReviewResolutionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReviewResolution
+     */
+    select?: ReviewResolutionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReviewResolution
+     */
+    omit?: ReviewResolutionOmit<ExtArgs> | null
+    /**
+     * Filter, which ReviewResolution to fetch.
+     */
+    where: ReviewResolutionWhereUniqueInput
+  }
+
+  /**
+   * ReviewResolution findFirst
+   */
+  export type ReviewResolutionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReviewResolution
+     */
+    select?: ReviewResolutionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReviewResolution
+     */
+    omit?: ReviewResolutionOmit<ExtArgs> | null
+    /**
+     * Filter, which ReviewResolution to fetch.
+     */
+    where?: ReviewResolutionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ReviewResolutions to fetch.
+     */
+    orderBy?: ReviewResolutionOrderByWithRelationInput | ReviewResolutionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ReviewResolutions.
+     */
+    cursor?: ReviewResolutionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ReviewResolutions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ReviewResolutions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ReviewResolutions.
+     */
+    distinct?: ReviewResolutionScalarFieldEnum | ReviewResolutionScalarFieldEnum[]
+  }
+
+  /**
+   * ReviewResolution findFirstOrThrow
+   */
+  export type ReviewResolutionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReviewResolution
+     */
+    select?: ReviewResolutionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReviewResolution
+     */
+    omit?: ReviewResolutionOmit<ExtArgs> | null
+    /**
+     * Filter, which ReviewResolution to fetch.
+     */
+    where?: ReviewResolutionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ReviewResolutions to fetch.
+     */
+    orderBy?: ReviewResolutionOrderByWithRelationInput | ReviewResolutionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ReviewResolutions.
+     */
+    cursor?: ReviewResolutionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ReviewResolutions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ReviewResolutions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ReviewResolutions.
+     */
+    distinct?: ReviewResolutionScalarFieldEnum | ReviewResolutionScalarFieldEnum[]
+  }
+
+  /**
+   * ReviewResolution findMany
+   */
+  export type ReviewResolutionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReviewResolution
+     */
+    select?: ReviewResolutionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReviewResolution
+     */
+    omit?: ReviewResolutionOmit<ExtArgs> | null
+    /**
+     * Filter, which ReviewResolutions to fetch.
+     */
+    where?: ReviewResolutionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ReviewResolutions to fetch.
+     */
+    orderBy?: ReviewResolutionOrderByWithRelationInput | ReviewResolutionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ReviewResolutions.
+     */
+    cursor?: ReviewResolutionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ReviewResolutions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ReviewResolutions.
+     */
+    skip?: number
+    distinct?: ReviewResolutionScalarFieldEnum | ReviewResolutionScalarFieldEnum[]
+  }
+
+  /**
+   * ReviewResolution create
+   */
+  export type ReviewResolutionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReviewResolution
+     */
+    select?: ReviewResolutionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReviewResolution
+     */
+    omit?: ReviewResolutionOmit<ExtArgs> | null
+    /**
+     * The data needed to create a ReviewResolution.
+     */
+    data: XOR<ReviewResolutionCreateInput, ReviewResolutionUncheckedCreateInput>
+  }
+
+  /**
+   * ReviewResolution createMany
+   */
+  export type ReviewResolutionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ReviewResolutions.
+     */
+    data: ReviewResolutionCreateManyInput | ReviewResolutionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ReviewResolution createManyAndReturn
+   */
+  export type ReviewResolutionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReviewResolution
+     */
+    select?: ReviewResolutionSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReviewResolution
+     */
+    omit?: ReviewResolutionOmit<ExtArgs> | null
+    /**
+     * The data used to create many ReviewResolutions.
+     */
+    data: ReviewResolutionCreateManyInput | ReviewResolutionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ReviewResolution update
+   */
+  export type ReviewResolutionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReviewResolution
+     */
+    select?: ReviewResolutionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReviewResolution
+     */
+    omit?: ReviewResolutionOmit<ExtArgs> | null
+    /**
+     * The data needed to update a ReviewResolution.
+     */
+    data: XOR<ReviewResolutionUpdateInput, ReviewResolutionUncheckedUpdateInput>
+    /**
+     * Choose, which ReviewResolution to update.
+     */
+    where: ReviewResolutionWhereUniqueInput
+  }
+
+  /**
+   * ReviewResolution updateMany
+   */
+  export type ReviewResolutionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ReviewResolutions.
+     */
+    data: XOR<ReviewResolutionUpdateManyMutationInput, ReviewResolutionUncheckedUpdateManyInput>
+    /**
+     * Filter which ReviewResolutions to update
+     */
+    where?: ReviewResolutionWhereInput
+    /**
+     * Limit how many ReviewResolutions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ReviewResolution updateManyAndReturn
+   */
+  export type ReviewResolutionUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReviewResolution
+     */
+    select?: ReviewResolutionSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReviewResolution
+     */
+    omit?: ReviewResolutionOmit<ExtArgs> | null
+    /**
+     * The data used to update ReviewResolutions.
+     */
+    data: XOR<ReviewResolutionUpdateManyMutationInput, ReviewResolutionUncheckedUpdateManyInput>
+    /**
+     * Filter which ReviewResolutions to update
+     */
+    where?: ReviewResolutionWhereInput
+    /**
+     * Limit how many ReviewResolutions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ReviewResolution upsert
+   */
+  export type ReviewResolutionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReviewResolution
+     */
+    select?: ReviewResolutionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReviewResolution
+     */
+    omit?: ReviewResolutionOmit<ExtArgs> | null
+    /**
+     * The filter to search for the ReviewResolution to update in case it exists.
+     */
+    where: ReviewResolutionWhereUniqueInput
+    /**
+     * In case the ReviewResolution found by the `where` argument doesn't exist, create a new ReviewResolution with this data.
+     */
+    create: XOR<ReviewResolutionCreateInput, ReviewResolutionUncheckedCreateInput>
+    /**
+     * In case the ReviewResolution was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ReviewResolutionUpdateInput, ReviewResolutionUncheckedUpdateInput>
+  }
+
+  /**
+   * ReviewResolution delete
+   */
+  export type ReviewResolutionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReviewResolution
+     */
+    select?: ReviewResolutionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReviewResolution
+     */
+    omit?: ReviewResolutionOmit<ExtArgs> | null
+    /**
+     * Filter which ReviewResolution to delete.
+     */
+    where: ReviewResolutionWhereUniqueInput
+  }
+
+  /**
+   * ReviewResolution deleteMany
+   */
+  export type ReviewResolutionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ReviewResolutions to delete
+     */
+    where?: ReviewResolutionWhereInput
+    /**
+     * Limit how many ReviewResolutions to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * ReviewResolution without action
+   */
+  export type ReviewResolutionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReviewResolution
+     */
+    select?: ReviewResolutionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReviewResolution
+     */
+    omit?: ReviewResolutionOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Model StaffSession
    */
 
@@ -51677,7 +52927,8 @@ export namespace Prisma {
     syncedAt: 'syncedAt',
     error: 'error',
     appliedAt: 'appliedAt',
-    serverValued: 'serverValued'
+    serverValued: 'serverValued',
+    heldEvidence: 'heldEvidence'
   };
 
   export type SyncOperationScalarFieldEnum = (typeof SyncOperationScalarFieldEnum)[keyof typeof SyncOperationScalarFieldEnum]
@@ -51832,6 +53083,29 @@ export namespace Prisma {
   };
 
   export type ManagerApprovalScalarFieldEnum = (typeof ManagerApprovalScalarFieldEnum)[keyof typeof ManagerApprovalScalarFieldEnum]
+
+
+  export const ReviewResolutionScalarFieldEnum: {
+    id: 'id',
+    tenantId: 'tenantId',
+    opId: 'opId',
+    entity: 'entity',
+    action: 'action',
+    decision: 'decision',
+    outcome: 'outcome',
+    category: 'category',
+    reviewerId: 'reviewerId',
+    reviewerName: 'reviewerName',
+    note: 'note',
+    previewToken: 'previewToken',
+    originalReason: 'originalReason',
+    originalEvidence: 'originalEvidence',
+    money: 'money',
+    applyResult: 'applyResult',
+    createdAt: 'createdAt'
+  };
+
+  export type ReviewResolutionScalarFieldEnum = (typeof ReviewResolutionScalarFieldEnum)[keyof typeof ReviewResolutionScalarFieldEnum]
 
 
   export const StaffSessionScalarFieldEnum: {
@@ -55202,6 +56476,7 @@ export namespace Prisma {
     error?: StringNullableFilter<"SyncOperation"> | string | null
     appliedAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
     serverValued?: BoolFilter<"SyncOperation"> | boolean
+    heldEvidence?: JsonNullableFilter<"SyncOperation">
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }
 
@@ -55220,6 +56495,7 @@ export namespace Prisma {
     error?: SortOrderInput | SortOrder
     appliedAt?: SortOrderInput | SortOrder
     serverValued?: SortOrder
+    heldEvidence?: SortOrderInput | SortOrder
     tenant?: TenantOrderByWithRelationInput
   }
 
@@ -55241,6 +56517,7 @@ export namespace Prisma {
     error?: StringNullableFilter<"SyncOperation"> | string | null
     appliedAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
     serverValued?: BoolFilter<"SyncOperation"> | boolean
+    heldEvidence?: JsonNullableFilter<"SyncOperation">
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }, "id">
 
@@ -55259,6 +56536,7 @@ export namespace Prisma {
     error?: SortOrderInput | SortOrder
     appliedAt?: SortOrderInput | SortOrder
     serverValued?: SortOrder
+    heldEvidence?: SortOrderInput | SortOrder
     _count?: SyncOperationCountOrderByAggregateInput
     _avg?: SyncOperationAvgOrderByAggregateInput
     _max?: SyncOperationMaxOrderByAggregateInput
@@ -55284,6 +56562,7 @@ export namespace Prisma {
     error?: StringNullableWithAggregatesFilter<"SyncOperation"> | string | null
     appliedAt?: DateTimeNullableWithAggregatesFilter<"SyncOperation"> | Date | string | null
     serverValued?: BoolWithAggregatesFilter<"SyncOperation"> | boolean
+    heldEvidence?: JsonNullableWithAggregatesFilter<"SyncOperation">
   }
 
   export type DeviceWhereInput = {
@@ -56040,6 +57319,118 @@ export namespace Prisma {
     usedAt?: DateTimeNullableWithAggregatesFilter<"ManagerApproval"> | Date | string | null
     usedByOpId?: StringNullableWithAggregatesFilter<"ManagerApproval"> | string | null
     cancelledAt?: DateTimeNullableWithAggregatesFilter<"ManagerApproval"> | Date | string | null
+  }
+
+  export type ReviewResolutionWhereInput = {
+    AND?: ReviewResolutionWhereInput | ReviewResolutionWhereInput[]
+    OR?: ReviewResolutionWhereInput[]
+    NOT?: ReviewResolutionWhereInput | ReviewResolutionWhereInput[]
+    id?: StringFilter<"ReviewResolution"> | string
+    tenantId?: StringFilter<"ReviewResolution"> | string
+    opId?: StringFilter<"ReviewResolution"> | string
+    entity?: StringFilter<"ReviewResolution"> | string
+    action?: StringFilter<"ReviewResolution"> | string
+    decision?: StringFilter<"ReviewResolution"> | string
+    outcome?: StringFilter<"ReviewResolution"> | string
+    category?: StringFilter<"ReviewResolution"> | string
+    reviewerId?: StringFilter<"ReviewResolution"> | string
+    reviewerName?: StringFilter<"ReviewResolution"> | string
+    note?: StringFilter<"ReviewResolution"> | string
+    previewToken?: StringFilter<"ReviewResolution"> | string
+    originalReason?: StringNullableFilter<"ReviewResolution"> | string | null
+    originalEvidence?: JsonNullableFilter<"ReviewResolution">
+    money?: JsonNullableFilter<"ReviewResolution">
+    applyResult?: StringNullableFilter<"ReviewResolution"> | string | null
+    createdAt?: DateTimeFilter<"ReviewResolution"> | Date | string
+  }
+
+  export type ReviewResolutionOrderByWithRelationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    opId?: SortOrder
+    entity?: SortOrder
+    action?: SortOrder
+    decision?: SortOrder
+    outcome?: SortOrder
+    category?: SortOrder
+    reviewerId?: SortOrder
+    reviewerName?: SortOrder
+    note?: SortOrder
+    previewToken?: SortOrder
+    originalReason?: SortOrderInput | SortOrder
+    originalEvidence?: SortOrderInput | SortOrder
+    money?: SortOrderInput | SortOrder
+    applyResult?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type ReviewResolutionWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    opId?: string
+    AND?: ReviewResolutionWhereInput | ReviewResolutionWhereInput[]
+    OR?: ReviewResolutionWhereInput[]
+    NOT?: ReviewResolutionWhereInput | ReviewResolutionWhereInput[]
+    tenantId?: StringFilter<"ReviewResolution"> | string
+    entity?: StringFilter<"ReviewResolution"> | string
+    action?: StringFilter<"ReviewResolution"> | string
+    decision?: StringFilter<"ReviewResolution"> | string
+    outcome?: StringFilter<"ReviewResolution"> | string
+    category?: StringFilter<"ReviewResolution"> | string
+    reviewerId?: StringFilter<"ReviewResolution"> | string
+    reviewerName?: StringFilter<"ReviewResolution"> | string
+    note?: StringFilter<"ReviewResolution"> | string
+    previewToken?: StringFilter<"ReviewResolution"> | string
+    originalReason?: StringNullableFilter<"ReviewResolution"> | string | null
+    originalEvidence?: JsonNullableFilter<"ReviewResolution">
+    money?: JsonNullableFilter<"ReviewResolution">
+    applyResult?: StringNullableFilter<"ReviewResolution"> | string | null
+    createdAt?: DateTimeFilter<"ReviewResolution"> | Date | string
+  }, "id" | "opId">
+
+  export type ReviewResolutionOrderByWithAggregationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    opId?: SortOrder
+    entity?: SortOrder
+    action?: SortOrder
+    decision?: SortOrder
+    outcome?: SortOrder
+    category?: SortOrder
+    reviewerId?: SortOrder
+    reviewerName?: SortOrder
+    note?: SortOrder
+    previewToken?: SortOrder
+    originalReason?: SortOrderInput | SortOrder
+    originalEvidence?: SortOrderInput | SortOrder
+    money?: SortOrderInput | SortOrder
+    applyResult?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _count?: ReviewResolutionCountOrderByAggregateInput
+    _max?: ReviewResolutionMaxOrderByAggregateInput
+    _min?: ReviewResolutionMinOrderByAggregateInput
+  }
+
+  export type ReviewResolutionScalarWhereWithAggregatesInput = {
+    AND?: ReviewResolutionScalarWhereWithAggregatesInput | ReviewResolutionScalarWhereWithAggregatesInput[]
+    OR?: ReviewResolutionScalarWhereWithAggregatesInput[]
+    NOT?: ReviewResolutionScalarWhereWithAggregatesInput | ReviewResolutionScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ReviewResolution"> | string
+    tenantId?: StringWithAggregatesFilter<"ReviewResolution"> | string
+    opId?: StringWithAggregatesFilter<"ReviewResolution"> | string
+    entity?: StringWithAggregatesFilter<"ReviewResolution"> | string
+    action?: StringWithAggregatesFilter<"ReviewResolution"> | string
+    decision?: StringWithAggregatesFilter<"ReviewResolution"> | string
+    outcome?: StringWithAggregatesFilter<"ReviewResolution"> | string
+    category?: StringWithAggregatesFilter<"ReviewResolution"> | string
+    reviewerId?: StringWithAggregatesFilter<"ReviewResolution"> | string
+    reviewerName?: StringWithAggregatesFilter<"ReviewResolution"> | string
+    note?: StringWithAggregatesFilter<"ReviewResolution"> | string
+    previewToken?: StringWithAggregatesFilter<"ReviewResolution"> | string
+    originalReason?: StringNullableWithAggregatesFilter<"ReviewResolution"> | string | null
+    originalEvidence?: JsonNullableWithAggregatesFilter<"ReviewResolution">
+    money?: JsonNullableWithAggregatesFilter<"ReviewResolution">
+    applyResult?: StringNullableWithAggregatesFilter<"ReviewResolution"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"ReviewResolution"> | Date | string
   }
 
   export type StaffSessionWhereInput = {
@@ -59626,6 +61017,7 @@ export namespace Prisma {
     error?: string | null
     appliedAt?: Date | string | null
     serverValued?: boolean
+    heldEvidence?: NullableJsonNullValueInput | InputJsonValue
     tenant: TenantCreateNestedOneWithoutSyncOperationsInput
   }
 
@@ -59644,6 +61036,7 @@ export namespace Prisma {
     error?: string | null
     appliedAt?: Date | string | null
     serverValued?: boolean
+    heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SyncOperationUpdateInput = {
@@ -59660,6 +61053,7 @@ export namespace Prisma {
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     serverValued?: BoolFieldUpdateOperationsInput | boolean
+    heldEvidence?: NullableJsonNullValueInput | InputJsonValue
     tenant?: TenantUpdateOneRequiredWithoutSyncOperationsNestedInput
   }
 
@@ -59678,6 +61072,7 @@ export namespace Prisma {
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     serverValued?: BoolFieldUpdateOperationsInput | boolean
+    heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SyncOperationCreateManyInput = {
@@ -59695,6 +61090,7 @@ export namespace Prisma {
     error?: string | null
     appliedAt?: Date | string | null
     serverValued?: boolean
+    heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SyncOperationUpdateManyMutationInput = {
@@ -59711,6 +61107,7 @@ export namespace Prisma {
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     serverValued?: BoolFieldUpdateOperationsInput | boolean
+    heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SyncOperationUncheckedUpdateManyInput = {
@@ -59728,6 +61125,7 @@ export namespace Prisma {
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     serverValued?: BoolFieldUpdateOperationsInput | boolean
+    heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type DeviceCreateInput = {
@@ -60613,6 +62011,146 @@ export namespace Prisma {
     usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     usedByOpId?: NullableStringFieldUpdateOperationsInput | string | null
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ReviewResolutionCreateInput = {
+    id?: string
+    tenantId: string
+    opId: string
+    entity: string
+    action: string
+    decision: string
+    outcome: string
+    category: string
+    reviewerId: string
+    reviewerName: string
+    note: string
+    previewToken: string
+    originalReason?: string | null
+    originalEvidence?: NullableJsonNullValueInput | InputJsonValue
+    money?: NullableJsonNullValueInput | InputJsonValue
+    applyResult?: string | null
+    createdAt?: Date | string
+  }
+
+  export type ReviewResolutionUncheckedCreateInput = {
+    id?: string
+    tenantId: string
+    opId: string
+    entity: string
+    action: string
+    decision: string
+    outcome: string
+    category: string
+    reviewerId: string
+    reviewerName: string
+    note: string
+    previewToken: string
+    originalReason?: string | null
+    originalEvidence?: NullableJsonNullValueInput | InputJsonValue
+    money?: NullableJsonNullValueInput | InputJsonValue
+    applyResult?: string | null
+    createdAt?: Date | string
+  }
+
+  export type ReviewResolutionUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    opId?: StringFieldUpdateOperationsInput | string
+    entity?: StringFieldUpdateOperationsInput | string
+    action?: StringFieldUpdateOperationsInput | string
+    decision?: StringFieldUpdateOperationsInput | string
+    outcome?: StringFieldUpdateOperationsInput | string
+    category?: StringFieldUpdateOperationsInput | string
+    reviewerId?: StringFieldUpdateOperationsInput | string
+    reviewerName?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    previewToken?: StringFieldUpdateOperationsInput | string
+    originalReason?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEvidence?: NullableJsonNullValueInput | InputJsonValue
+    money?: NullableJsonNullValueInput | InputJsonValue
+    applyResult?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ReviewResolutionUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    opId?: StringFieldUpdateOperationsInput | string
+    entity?: StringFieldUpdateOperationsInput | string
+    action?: StringFieldUpdateOperationsInput | string
+    decision?: StringFieldUpdateOperationsInput | string
+    outcome?: StringFieldUpdateOperationsInput | string
+    category?: StringFieldUpdateOperationsInput | string
+    reviewerId?: StringFieldUpdateOperationsInput | string
+    reviewerName?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    previewToken?: StringFieldUpdateOperationsInput | string
+    originalReason?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEvidence?: NullableJsonNullValueInput | InputJsonValue
+    money?: NullableJsonNullValueInput | InputJsonValue
+    applyResult?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ReviewResolutionCreateManyInput = {
+    id?: string
+    tenantId: string
+    opId: string
+    entity: string
+    action: string
+    decision: string
+    outcome: string
+    category: string
+    reviewerId: string
+    reviewerName: string
+    note: string
+    previewToken: string
+    originalReason?: string | null
+    originalEvidence?: NullableJsonNullValueInput | InputJsonValue
+    money?: NullableJsonNullValueInput | InputJsonValue
+    applyResult?: string | null
+    createdAt?: Date | string
+  }
+
+  export type ReviewResolutionUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    opId?: StringFieldUpdateOperationsInput | string
+    entity?: StringFieldUpdateOperationsInput | string
+    action?: StringFieldUpdateOperationsInput | string
+    decision?: StringFieldUpdateOperationsInput | string
+    outcome?: StringFieldUpdateOperationsInput | string
+    category?: StringFieldUpdateOperationsInput | string
+    reviewerId?: StringFieldUpdateOperationsInput | string
+    reviewerName?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    previewToken?: StringFieldUpdateOperationsInput | string
+    originalReason?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEvidence?: NullableJsonNullValueInput | InputJsonValue
+    money?: NullableJsonNullValueInput | InputJsonValue
+    applyResult?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ReviewResolutionUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    opId?: StringFieldUpdateOperationsInput | string
+    entity?: StringFieldUpdateOperationsInput | string
+    action?: StringFieldUpdateOperationsInput | string
+    decision?: StringFieldUpdateOperationsInput | string
+    outcome?: StringFieldUpdateOperationsInput | string
+    category?: StringFieldUpdateOperationsInput | string
+    reviewerId?: StringFieldUpdateOperationsInput | string
+    reviewerName?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    previewToken?: StringFieldUpdateOperationsInput | string
+    originalReason?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEvidence?: NullableJsonNullValueInput | InputJsonValue
+    money?: NullableJsonNullValueInput | InputJsonValue
+    applyResult?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type StaffSessionCreateInput = {
@@ -63479,6 +65017,7 @@ export namespace Prisma {
     error?: SortOrder
     appliedAt?: SortOrder
     serverValued?: SortOrder
+    heldEvidence?: SortOrder
   }
 
   export type SyncOperationAvgOrderByAggregateInput = {
@@ -63964,6 +65503,62 @@ export namespace Prisma {
     usedAt?: SortOrder
     usedByOpId?: SortOrder
     cancelledAt?: SortOrder
+  }
+
+  export type ReviewResolutionCountOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    opId?: SortOrder
+    entity?: SortOrder
+    action?: SortOrder
+    decision?: SortOrder
+    outcome?: SortOrder
+    category?: SortOrder
+    reviewerId?: SortOrder
+    reviewerName?: SortOrder
+    note?: SortOrder
+    previewToken?: SortOrder
+    originalReason?: SortOrder
+    originalEvidence?: SortOrder
+    money?: SortOrder
+    applyResult?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type ReviewResolutionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    opId?: SortOrder
+    entity?: SortOrder
+    action?: SortOrder
+    decision?: SortOrder
+    outcome?: SortOrder
+    category?: SortOrder
+    reviewerId?: SortOrder
+    reviewerName?: SortOrder
+    note?: SortOrder
+    previewToken?: SortOrder
+    originalReason?: SortOrder
+    applyResult?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type ReviewResolutionMinOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    opId?: SortOrder
+    entity?: SortOrder
+    action?: SortOrder
+    decision?: SortOrder
+    outcome?: SortOrder
+    category?: SortOrder
+    reviewerId?: SortOrder
+    reviewerName?: SortOrder
+    note?: SortOrder
+    previewToken?: SortOrder
+    originalReason?: SortOrder
+    applyResult?: SortOrder
+    createdAt?: SortOrder
   }
 
   export type StaffSessionCountOrderByAggregateInput = {
@@ -68154,6 +69749,7 @@ export namespace Prisma {
     error?: string | null
     appliedAt?: Date | string | null
     serverValued?: boolean
+    heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SyncOperationUncheckedCreateWithoutTenantInput = {
@@ -68170,6 +69766,7 @@ export namespace Prisma {
     error?: string | null
     appliedAt?: Date | string | null
     serverValued?: boolean
+    heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SyncOperationCreateOrConnectWithoutTenantInput = {
@@ -69147,6 +70744,7 @@ export namespace Prisma {
     error?: StringNullableFilter<"SyncOperation"> | string | null
     appliedAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
     serverValued?: BoolFilter<"SyncOperation"> | boolean
+    heldEvidence?: JsonNullableFilter<"SyncOperation">
   }
 
   export type DeliveryOrderUpsertWithWhereUniqueWithoutTenantInput = {
@@ -78911,6 +80509,7 @@ export namespace Prisma {
     error?: string | null
     appliedAt?: Date | string | null
     serverValued?: boolean
+    heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type DeliveryOrderCreateManyTenantInput = {
@@ -79947,6 +81546,7 @@ export namespace Prisma {
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     serverValued?: BoolFieldUpdateOperationsInput | boolean
+    heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SyncOperationUncheckedUpdateWithoutTenantInput = {
@@ -79963,6 +81563,7 @@ export namespace Prisma {
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     serverValued?: BoolFieldUpdateOperationsInput | boolean
+    heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SyncOperationUncheckedUpdateManyWithoutTenantInput = {
@@ -79979,6 +81580,7 @@ export namespace Prisma {
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     serverValued?: BoolFieldUpdateOperationsInput | boolean
+    heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type DeliveryOrderUpdateWithoutTenantInput = {
