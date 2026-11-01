@@ -42,6 +42,10 @@ export function RefusedWorkPage() {
   // button that opened it, or (once that item is decided and gone) to the next item's first decision button
   const dialogRef = useRef<HTMLDivElement>(null)
   const openerRef = useRef<HTMLElement | null>(null)
+  // after a decision the item is gone: focus moves to the next item's first decision button (the previous one when it
+  // was the last), or to the list heading when nothing is left
+  const focusAfter = useRef<string | "heading" | null>(null)
+  const headingRef = useRef<HTMLHeadingElement>(null)
   useEffect(() => {
     if (!deciding) return
     const back = openerRef.current
@@ -49,19 +53,38 @@ export function RefusedWorkPage() {
     document.addEventListener("focusin", trap)
     return () => {
       document.removeEventListener("focusin", trap)
+      if (focusAfter.current) return // decided: focus moves once the list is reloaded
       if (back && back.isConnected) back.focus()
-      else document.querySelector<HTMLElement>("main article button")?.focus()
+      else headingRef.current?.focus()
     }
   }, [deciding])
+  useEffect(() => {
+    const target = focusAfter.current
+    if (!target || loading) return
+    focusAfter.current = null
+    const next = target === "heading" ? null : document.querySelector<HTMLElement>(`article[data-op="${CSS.escape(target)}"] button`)
+    if (next) next.focus(); else headingRef.current?.focus()
+  }, [ops, loading])
+  const onDialogKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Escape" && !busy) { setDeciding(null); return }
+    if (e.key !== "Tab" || !dialogRef.current) return
+    const f = [...dialogRef.current.querySelectorAll<HTMLElement>("textarea, input, button:not([disabled])")]
+    if (f.length === 0) return
+    if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus() }
+    else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus() }
+  }
   const openDecision = (e: React.MouseEvent<HTMLElement>, op: RefusedOp, decision: "apply" | "dismiss") => { openerRef.current = e.currentTarget; setDeciding({ op, decision }); setNote(""); setOutcome("") }
   const [note, setNote] = useState("")
   const [outcome, setOutcome] = useState<(typeof OUTCOMES)[number] | "">("")
   const [busy, setBusy] = useState(false)
   const fmt = (iso: string) => new Intl.DateTimeFormat(locale === "ar" ? "ar-LB" : "en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(iso))
   const n = (v: unknown) => (v === null || v === undefined ? "—" : String(v))
-  // a server reason may start with its code ("SESSION_REVIEW: …"): the sentence is shown, the code kept beside it for support
-  const reasonCode = (r: string | null | undefined) => r?.match(/^([A-Z][A-Z_]+):s/)?.[1] ?? null
-  const reasonText = (r: string | null | undefined) => (r ? r.replace(/^[A-Z][A-Z_]+:s/, "") : "—")
+  // a server reason may start with its code ("SESSION_REVIEW: …"): a known code is explained in the reader's language,
+  // the server's own sentence is kept beside it, and a support reference (ERR-…) is shown on its own
+  const reasonCode = (r: string | null | undefined) => r?.match(/^([A-Z][A-Z_]+):\s/)?.[1] ?? (r && /permission|lacks /i.test(r) ? "PERMISSION" : null)
+  const reasonText = (r: string | null | undefined) => (r ? r.replace(/^[A-Z][A-Z_]+:\s/, "").replace(/\s*\(?(reference|support reference)?:?\s*ERR-[0-9A-F]{8}\)?\.?/gi, "").trim() : "—")
+  const supportRef = (r: string | null | undefined) => r?.match(/ERR-[0-9A-F]{8}/)?.[0] ?? null
+  const explain = (r: string | null | undefined) => { const c = reasonCode(r); const k = `refused.code.${c}`; const s = c ? t(k) : k; return s === k ? t("refused.code.unknown") : s }
   const evidenceLabel = (v: string | null | undefined) => { if (!v) return "—"; const k = `refused.evlabel.${v}`; const s = t(k); return s === k ? v : s }
 
   async function load() {
@@ -80,6 +103,9 @@ export function RefusedWorkPage() {
     try {
       await api(`/api/sync/refused/${encodeURIComponent(deciding.op.id)}/resolve`, { method: "POST", body: JSON.stringify({ decision: deciding.decision, note: note.trim(), previewToken: deciding.op.previewToken, ...(deciding.decision === "dismiss" ? { outcome } : {}) }) })
       setNotice(deciding.decision === "apply" ? t("refused.applied_ok") : t("refused.dismissed_ok"))
+      const at = ops.findIndex((o) => o.id === deciding.op.id)
+      const next = ops.filter((o) => o.id !== deciding.op.id && o.status === "Refused" && o.canResolve)
+      focusAfter.current = (ops.slice(at + 1).find((o) => next.includes(o)) ?? next[next.length - 1])?.id ?? "heading"
       setDeciding(null); setNote("")
       await load()
     } catch (e) {
@@ -114,7 +140,7 @@ export function RefusedWorkPage() {
   return (
     <div className="space-y-6 pb-12">
       <div className="animate-fade-in">
-        <h1 className="text-3xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>{t("refused.title")}</h1>
+        <h1 ref={headingRef} tabIndex={-1} className="text-3xl font-bold tracking-tight outline-none" style={{ color: "var(--text-primary)" }}>{t("refused.title")}</h1>
         <p className="text-sm mt-1 max-w-3xl" style={{ color: "var(--text-secondary)" }}>{t("refused.subtitle")}</p>
       </div>
 
@@ -125,11 +151,13 @@ export function RefusedWorkPage() {
         : errorMsg && ops.length === 0 ? null
         : ops.length === 0 ? <div className="data-card text-sm" style={{ color: "var(--text-secondary)" }}>{t("refused.empty")}</div>
         : ops.map((o) => (
-          <article key={o.id} className="data-card space-y-3" aria-labelledby={`rw-${o.id}`}>
+          <article key={o.id} data-op={o.id} className="data-card space-y-3" aria-labelledby={`rw-${o.id}`}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <h2 id={`rw-${o.id}`} className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>{opLabel(o)}</h2>
-                <p className="text-sm" style={{ color: "#dc2626" }}>{t("refused.reason")}: <bdi>{reasonText(o.reason)}</bdi>{reasonCode(o.reason) && <span className="text-xs ms-2" style={{ color: "var(--text-muted)" }}>({reasonCode(o.reason)})</span>}</p>
+                <p className="text-sm" style={{ color: "#dc2626" }}>{t("refused.reason")}: {explain(o.reason)}</p>
+                <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{t("refused.server_note")}: <bdi dir="auto">{reasonText(o.reason)}</bdi>{reasonCode(o.reason) && reasonCode(o.reason) !== "PERMISSION" && <span className="ms-2">({reasonCode(o.reason)})</span>}</p>
+                {supportRef(o.reason) && <p className="text-xs" style={{ color: "var(--text-muted)" }}>{t("refused.support_ref")}: <span dir="ltr" className="font-mono">{supportRef(o.reason)}</span></p>}
                 <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{t("refused.when", { time: fmt(o.refusedAt), attempts: o.attempts })}</p>
               </div>
               {o.status === "Resolving" && <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>{t("refused.resolving")}</span>}
@@ -196,7 +224,7 @@ export function RefusedWorkPage() {
 
       {deciding && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.6)" }} onClick={() => !busy && setDeciding(null)}>
-          <div ref={dialogRef} className="data-card w-full" role="dialog" aria-modal="true" aria-labelledby="rw-decide" style={{ maxWidth: "520px" }} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => { if (e.key === "Escape" && !busy) setDeciding(null) }}>
+          <div ref={dialogRef} className="data-card w-full" role="dialog" aria-modal="true" aria-labelledby="rw-decide" style={{ maxWidth: "520px" }} onClick={(e) => e.stopPropagation()} onKeyDown={onDialogKey}>
             <h2 id="rw-decide" className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
               {deciding.decision === "apply" ? t("refused.confirm_apply_title") : t("refused.confirm_dismiss_title")}
             </h2>

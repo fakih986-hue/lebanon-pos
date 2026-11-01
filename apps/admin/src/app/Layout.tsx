@@ -50,7 +50,8 @@ export function Layout() {
   const { t, locale, setLocale } = useI18n()
   const { theme, toggleTheme } = useTheme()
   const [tenantName, setTenantName] = useState("")
-  const [collapsed, setCollapsed] = useState(false)
+  // a phone starts with the sidebar collapsed (icons only), leaving the page usable; the user can expand it
+  const [collapsed, setCollapsed] = useState(() => typeof window !== "undefined" && window.matchMedia?.("(max-width: 767px)").matches === true)
 
   useEffect(() => {
     const stored = localStorage.getItem("lebanonpos.admin.tenant")
