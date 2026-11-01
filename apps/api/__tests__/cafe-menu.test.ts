@@ -270,7 +270,15 @@ describe("café menu: revisions, offline and recovery", () => {
     expect(held.error).toMatch(/^RECIPE_HELD: "Cappuccino" was made with a recipe \(rcp-ghost-/)
     expect(await prisma.sale.count({ where: { id: s.id } })).toBe(0)
     expect(await stock(SID.beans)).toBe(beans)
-    expect((await push(owner, "recipe", "create", { id: REV.ghost, productSyncId: SID.capp, parentRev: REV.capp2, yield: 2, lines: [{ ingredientSyncId: SID.beans, quantity: 25 }, { ingredientSyncId: SID.cups, quantity: 2 }] })).status).toBe("ok")
+    // the same through a live checkout (before payment): refused outright, never left unconfirmed at the register
+    const live = await push(rana, "sale", "create", sale([capp(1, 3, [MEDIUM, WHOLE], { recipeRev: REV.ghost })]), `wt-${randomUUID()}`)
+    expect([live.status, /^RECIPE_HELD:/.test(live.error)]).toEqual(["rejected", true])
+    const arrived = await push(owner, "recipe", "create", { id: REV.ghost, productSyncId: SID.capp, parentRev: REV.capp2, yield: 2, lines: [{ ingredientSyncId: SID.beans, quantity: 25 }, { ingredientSyncId: SID.cups, quantity: 2 }] })
+    expect(arrived.status).toBe("ok")
+    // an operation applied on its first attempt is stamped in UTC like every other record, whatever the database's
+    // own time zone (a hub's embedded database runs in local time; forwarding follows this order)
+    const row = await prisma.syncOperation.findUnique({ where: { id: arrived.opId } })
+    expect(Math.abs(row!.createdAt.getTime() - Date.now())).toBeLessThan(10 * 60_000)
     const again = await call("POST", "/api/sync/push", { deviceId: "cafe-till", operations: [{ id: held.opId, entity: "sale", action: "create", payload: s }] }, { Authorization: `Bearer ${rana}` })
     expect(again.body.results[0].status).toBe("ok")
     // yield 2: one drink = 12.5 g beans, 1 cup

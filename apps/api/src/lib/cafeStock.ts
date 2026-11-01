@@ -100,7 +100,7 @@ export type ConsumedIngredient = {
 export async function consumeIngredient(db: Db, tenantId: string, ingredient: { id: number; syncId: string; name: string; stockUnit: string; cost: unknown }, milli: number, drink: string): Promise<ConsumedIngredient> {
   const qty = fromMilli(milli)
   const taken = await db.$executeRaw`
-    UPDATE "Product" SET "stock" = round(("stock" - ${qty})::numeric, 3)::float8, "updatedAt" = now()
+    UPDATE "Product" SET "stock" = round(("stock" - ${qty})::numeric, 3)::float8, "updatedAt" = (now() AT TIME ZONE 'UTC')
     WHERE "tenantId" = ${tenantId} AND "id" = ${ingredient.id} AND "stock" >= ${qty}`
   if (taken === 0) {
     const now = await db.product.findFirst({ where: { tenantId, id: ingredient.id }, select: { stock: true } })
@@ -125,7 +125,7 @@ export async function consumeIngredient(db: Db, tenantId: string, ingredient: { 
       UPDATE "InventoryBatch" SET
         "quantityRemaining" = round(("quantityRemaining" - ${q})::numeric, 3)::float8,
         "status" = CASE WHEN round(("quantityRemaining" - ${q})::numeric, 3) <= 0 THEN 'Consumed'::"InventoryBatchStatus" ELSE "status" END,
-        "updatedAt" = now()
+        "updatedAt" = (now() AT TIME ZONE 'UTC')
       WHERE "id" = ${lot.id} AND "tenantId" = ${tenantId} AND "quantityRemaining" >= ${q}`
     if (n === 0) continue
     left -= take

@@ -507,6 +507,21 @@ describe("cloudSync", () => {
       vi.unstubAllGlobals()
     })
 
+    it("a drink's recipe pointer is never cleared by a pull from a cloud that has no revision yet; a newer one follows", async () => {
+      vi.mocked(prisma.syncOperation.count).mockResolvedValue(0)
+      vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 5, stockPolicy: "recipe", stockPolicyRev: "initial", stockPolicyHistory: [], recipeRev: "rcp-hub" } as any)
+      vi.mocked(prisma.product.update).mockResolvedValue({} as any)
+      ;(prisma as any).recipeRevision = { findUnique: vi.fn().mockResolvedValue({ parentRev: null }), create: vi.fn() }
+      stubPull({ products: [{ id: 88, syncId: "DRINK-1", name: "Cappuccino", price: 3, stock: 0, stockPolicy: "recipe", recipeRev: null, tenantId: "test-tenant-1" }] })
+      await cloudSync.triggerFullPull()
+      expect(vi.mocked(prisma.product.update).mock.calls[0][0].data).toHaveProperty("recipeRev", "rcp-hub")
+      vi.mocked(prisma.product.update).mockClear()
+      stubPull({ products: [{ id: 88, syncId: "DRINK-1", name: "Cappuccino", price: 3, stock: 0, stockPolicy: "recipe", recipeRev: "rcp-cloud-newer", tenantId: "test-tenant-1" }] })
+      await cloudSync.triggerFullPull()
+      expect(vi.mocked(prisma.product.update).mock.calls[0][0].data).toHaveProperty("recipeRev", "rcp-cloud-newer")
+      vi.unstubAllGlobals()
+    })
+
     it("a store whose stock is kept at its hub (topology hub): a full pull never overwrites the hub's stock or lots", async () => {
       vi.mocked(prisma.tenant.findUnique).mockResolvedValue({ id: "test-tenant-1", name: "Test Store", subdomain: "test", storeTopology: "hub", topologyHubId: "hubi-x", topologyVersion: 1 } as any)
       vi.mocked(prisma.syncOperation.count).mockResolvedValue(0)

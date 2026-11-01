@@ -521,7 +521,7 @@ async function applyOnce(tenantId: string, op: { id: string; entity: string; act
       // Claim: a concurrent duplicate blocks here until this transaction commits or rolls back.
       await (tx as typeof prisma).$executeRaw`
         INSERT INTO "SyncOperation" ("id", "tenantId", "entity", "action", "summary", "payload", "status", "attempts", "createdAt")
-        VALUES (${op.id}, ${tenantId}, ${op.entity}, ${op.action}, ${summary}, ${payloadJson}::jsonb, 'Processing', 0, now())
+        VALUES (${op.id}, ${tenantId}, ${op.entity}, ${op.action}, ${summary}, ${payloadJson}::jsonb, 'Processing', 0, (now() AT TIME ZONE 'UTC'))
         ON CONFLICT ("id") DO NOTHING`
       const [claim] = await (tx as typeof prisma).$queryRaw<Array<{ tenantId: string; appliedAt: Date | null; entity: string; action: string; payload: unknown; status: string }>>`
         SELECT "tenantId", "appliedAt", "entity", "action", "payload", "status" FROM "SyncOperation" WHERE "id" = ${op.id} FOR UPDATE`
@@ -929,6 +929,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         err instanceof CloseConflictError ||
         err instanceof MenuRuleError ||
         err instanceof ProductSetupError ||
+        (err instanceof RecipeHeldError && String(op.id).startsWith("wt-")) ||
         err instanceof IngredientShortError)
       // a close correction based on a close since corrected by someone else: kept for a manager's review
       const opStatus = err instanceof CloseConflictError || heldShort ? "Refused" : isRejected ? "Rejected" : "Failed"
@@ -1406,7 +1407,7 @@ router.post("/checkout-attempt/:opId/cancel", staffSync, async (req: AuthRequest
     const state = await prisma.$transaction(async (tx) => {
       await (tx as typeof prisma).$executeRaw`
         INSERT INTO "SyncOperation" ("id", "tenantId", "entity", "action", "summary", "payload", "status", "attempts", "createdAt")
-        VALUES (${opId}, ${tenantId}, 'sale', 'create', 'checkout attempt cancelled', '{}'::jsonb, 'Cancelled', 0, now())
+        VALUES (${opId}, ${tenantId}, 'sale', 'create', 'checkout attempt cancelled', '{}'::jsonb, 'Cancelled', 0, (now() AT TIME ZONE 'UTC'))
         ON CONFLICT ("id") DO NOTHING`
       // Waits here while the original request holds the claim (it is applying the sale).
       const [row] = await (tx as typeof prisma).$queryRaw<Array<{ tenantId: string; appliedAt: Date | null }>>`

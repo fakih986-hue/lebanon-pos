@@ -821,7 +821,8 @@ async function upsertPulledData(
   // A drink's current recipe: the cloud's when it is the same as, or follows from, this hub's (fast-forward); this
   // hub's when the cloud's is an earlier revision of it (the cloud has not applied the hub's save yet).
   const recipePointer = async (localRev: string | null | undefined, incomingRev: unknown): Promise<string | null | undefined> => {
-    if (typeof incomingRev !== "string" || !incomingRev || !localRev || localRev === incomingRev) return incomingRev as any
+    if (typeof incomingRev !== "string" || !incomingRev) return localRev ?? null // the cloud has none yet: never cleared
+    if (!localRev || localRev === incomingRev) return incomingRev
     for (let rev: string | null = localRev, hops = 0; rev && hops < 200; hops++) {
       if (rev === incomingRev) return localRev // the cloud's is an ancestor of ours: keep ours
       rev = ((await (prisma as any).recipeRevision.findUnique({ where: { id: rev }, select: { parentRev: true } }))?.parentRev ?? null) as string | null
