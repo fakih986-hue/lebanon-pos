@@ -115,10 +115,12 @@ if (!ready) {
     })
     return { id: close.id as string, summary: s }
   }
-  const hubCloses = async (caps = true) => (await call("GET", "/api/sync/pull/full/daily-closes?limit=500", undefined, owner, { "x-titan-sync-schema": "4", ...(caps ? { "x-titan-unknown-cost": "1" } : {}) })).body?.items as any[]
+  const hubCloses = async (caps = true, revisions = false) => (await call("GET", "/api/sync/pull/full/daily-closes?limit=500", undefined, owner, { "x-titan-sync-schema": "4", ...(caps ? { "x-titan-unknown-cost": "1" } : {}), ...(revisions ? { "x-titan-close-revisions": "1" } : {}) })).body?.items as any[]
   const pick = (c: any) => c && { costOfGoods: c.costOfGoods == null ? null : Number(c.costOfGoods), returnedCost: c.returnedCost == null ? null : Number(c.returnedCost), grossMargin: c.grossMargin == null ? null : Number(c.grossMargin), netProfit: c.netProfit == null ? null : Number(c.netProfit), costStatus: c.costStatus ?? null }
   const cloudClose = (id: string) => inCloud(() => prisma.dailyClose.findFirst({ where: { tenantId: A.tenantId, id } }))
   const asOwner = async () => { storage.setItem("lebanonpos.auth-token", owner); expect((await d.security.unlockWithPin("1501"))?.id).toBe(A.staff.owner); await dispose() }
+  // Rana: the default Cashier preset (sell, reprint, see stock): every approval in the batch is needed
+  const asRana = async () => { storage.setItem("lebanonpos.auth-token", await login("1504")); await d.sync.pullFromServer(true); await dispose(); expect((await d.security.unlockWithPin("1504"))?.id).toBe(A.staff.rana); await dispose() }
   const asClerk = async () => { storage.setItem("lebanonpos.auth-token", await login("1503")); await d.sync.pullFromServer(true); await dispose(); expect((await d.security.unlockWithPin("1503"))?.id).toBe(A.staff.clerk); await dispose() }
 
   beforeAll(async () => {
@@ -203,12 +205,17 @@ if (!ready) {
       // The register lets a manager close the same day again ("This day was already closed."): a new close id for the same date.
       const again = closeDay("2099-01-02", [queue().find((o) => o.entity === "sale")!.payload.id], [])
       await flush()
-      const rows = (await hubCloses()).filter((x) => x.dateKey === "2099-01-02")
+      const rows = (await hubCloses(true, true)).filter((x) => x.dateKey === "2099-01-02")
       const reclose = queue().find((o) => o.entity === "daily-close" && o.payload?.id === again.id)
-      evidence("re-close same date", { closesForDate: rows.length, newCloseStored: rows.some((x) => x.id === again.id), op: reclose ? [reclose.status, reclose.error ?? null] : null })
-      expect(rows).toHaveLength(1)
-      expect(rows[0].id).toBe(again.id) // the latest close of the day is the record
+      const first = rows.find((x) => x.id !== again.id)
+      const fix = rows.find((x) => x.id === again.id)
+      evidence("re-close same date", { closes: rows.length, firstKept: !!first, supersededBy: first?.supersededById ?? null, revision: fix?.revision ?? null, correction: fix?.correction ?? null, op: reclose ? [reclose.status, reclose.error ?? null] : null })
+      // the same register closing the same date again is a correction: a linked revision; the first close is kept
+      expect([rows.length, first?.supersededById, fix?.revision, fix?.revisionOf, fix?.correction]).toEqual([2, again.id, 2, first?.id, "correction"])
       expect(reclose?.status).toBe("Synced")
+      // an older till sees the one close its reports use: the correction
+      const old = (await hubCloses()).filter((x) => x.dateKey === "2099-01-02")
+      expect(old.map((x) => x.id)).toEqual([again.id])
     })
 
     it("cost-hidden close (manager on a clerk-connected till): refused under the clerk's connection, applied on review, valued by the server", async () => {
@@ -288,6 +295,127 @@ if (!ready) {
       expect(atCloud?.attestation).toBe("valid")
       expect(atCloud?.approval).toMatchObject({ check: "valid", approverId: A.staff.manager, permission: "sales.void" })
       expect((await prisma.sale.findFirst({ where: { tenantId: A.tenantId, id }, select: { status: true } }))?.status).toBe("Voided")
+    })
+  })
+
+
+  // SPRINT-2 batch, packaged hub with the cloud unreachable: approvals are checked by the hub (online at the
+  // hub), work is held for forwarding; the hub is then restarted and the cloud comes back after more than an
+  // approval's lifetime (close-batch-resume).
+  if (PHASE === "close-batch") describe("staff-auth batch on the packaged hub, cloud down", { timeout: 300_000 }, () => {
+    it("a cashier's discount at checkout, a refund and a payout, each approved by the manager on the hub; closes per register with a correction; the cashier's own close held for review", async () => {
+      await asRana()
+      // the date the registers close (BATCH_DAY), and the date of the cashier's own (held) close
+      const day = process.env.BATCH_DAY ?? "2099-02-01"
+      const heldDay = `${day.slice(0, 8)}${String(Number(day.slice(8)) + 1).padStart(2, "0")}`
+      if (!d.security.getActiveShift()) expect(d.security.openShift(20)).toBeTruthy()
+      const approval = await mod("features/pos/services/approval.service")
+      const hub = await mod("features/pos/services/hubCheckout.service")
+      const p = local(A.milkSyncId)
+      // checkout: 2 x 1.50 with 0.50 off (the clerk has no discount permission): this sale is approved and sent
+      const id = randomUUID()
+      const sale = d.sales.buildSale({ saleNumber: `S-BT-${id.slice(0, 6)}`, paymentMethod: "Cash", subtotal: 2.5, discountTotal: 0.5, tax: 0, total: 2.5,
+        items: [{ id: p.id, productSyncId: p.syncId, name: p.name, barcode: p.barcode ?? "", quantity: 2, unitPrice: 1.5, total: 3, batchAllocations: [] }] }, id)
+      const ask = (entity: string, action: string, payload: any, permission: string, pin: string) => approval.requestManagerApproval({ entity, action, payload, permission, permissions: [permission], pin })
+      const wrong = await ask("sale", "create", sale, "sales.discount", "0000")
+      expect([wrong.ok, wrong.code]).toEqual([false, "INVALID_PIN"])
+      const granted = await ask("sale", "create", sale, "sales.discount", "1502")
+      expect(granted.ok).toBe(true)
+      const lots = [{ productId: p.id, productName: p.name, barcode: p.barcode ?? "", quantity: 2, fallbackUnitCost: 0 }]
+      const outcome = await hub.checkoutViaHub({ fingerprint: hub.cartFingerprint({ items: [{ id: p.id, quantity: 2, unitPrice: 1.5 }], paymentMethod: "Cash", total: 2.5 }), build: () => sale, lots, stock: [{ productId: p.id, quantity: 2 }], approvalId: granted.grant.approvalId })
+      // the confirmation is lost: the register resends the same sale with the same approval
+      const resend = await d.sync.commitSaleToHub(sale, granted.grant.approvalId)
+      evidence("batch checkout", { outcome: outcome.status, resend: resend.status })
+      expect([outcome.status, resend.status]).toEqual(["committed", "committed"])
+      // refund of one with the manager's approval
+      const sold = d.sales.getSales().find((x: any) => x.id === id)
+      const quantities = { [d.sales.refundLineKeyOf(sold.items[0])]: 1 }
+      const rid = randomUUID()
+      expect(() => d.sales.processRefund({ saleId: id, quantities, reason: "IT", id: rid })).toThrow(/permission/i)
+      expect((await ask("refund", "create", d.sales.refundApprovalPayload({ saleId: id, quantities, reason: "IT", id: rid }), "sales.refund", "1502")).ok).toBe(true)
+      d.sales.processRefund({ saleId: id, quantities, reason: "IT", id: rid })
+      // a payout with the manager's approval
+      const input = { id: randomUUID(), type: "OwnerDraw", amountUsd: 1, reason: "Owner draw", note: "IT batch" }
+      expect(d.cash.createCashMovement(input)).toBeNull()
+      expect((await ask("cash-movement", "create", d.cash.cashMovementApprovalPayload(input), "cash.manage", "1502")).ok).toBe(true)
+      expect(d.cash.createCashMovement(input)).toBeTruthy()
+      // sent on the cashier's own connection: applied on the manager's approvals, not on anyone else's authority
+      await flush()
+      const approved = queue().filter((o) => [rid, input.id].includes(o.payload?.id))
+      evidence("batch approved ops", approved.map((o) => [o.entity, o.status, o.lastError ?? o.error ?? null]))
+      expect(approved.map((o) => o.status)).toEqual(["Synced", "Synced"])
+      // closes: this register, another register of the store the same date, and this register's correction
+      await asOwner()
+      const c1 = closeDay(day, [id], [rid])
+      // another register of the store, paired on the hub, closes the same date
+      const code = (await call("POST", "/api/device/generate-code", {}, owner)).body.code
+      const counter2 = (await call("POST", "/api/device/pair", { code, deviceId: `counter-2-${day}`, deviceName: "Counter 2" })).body as { credential: string }
+      expect(counter2.credential).toBeTruthy()
+      const other = { id: randomUUID(), dateKey: day, registerId: "REG-001", deviceId: `counter-2-${day}`, grossSales: 1, refunds: 0, netSales: 1, expenses: 0, cashIn: 1, cashOut: 0, note: "other register", closedBy: "Owner", createdAt: new Date().toISOString(), saleIds: [], refundIds: [] }
+      const pushed = await call("POST", "/api/sync/push", { deviceId: `counter-2-${day}`, operations: [{ id: randomUUID(), entity: "daily-close", action: "close", payload: other }] }, owner, { "x-device-credential": counter2.credential, "x-titan-sync-schema": "4" })
+      expect(pushed.body?.results?.[0]?.status, JSON.stringify(pushed.body)).toBe("ok")
+      await flush()
+      const c2 = closeDay(day, [id], [rid])
+      await flush()
+      const rows = (await hubCloses(true, true)).filter((x) => x.dateKey === day).map((x) => ({ id: x.id, scope: x.scope, revision: x.revision, revisionOf: x.revisionOf, supersededById: x.supersededById }))
+      evidence("batch closes on hub", rows)
+      expect(rows).toHaveLength(3)
+      expect(rows.find((x) => x.id === c2.id)).toMatchObject({ revision: 2, revisionOf: c1.id, supersededById: null })
+      expect(rows.find((x) => x.id === c1.id)?.supersededById).toBe(c2.id)
+      // the other register keeps the default label REG-001 too: its device tells it apart
+      expect(rows.find((x) => x.id === other.id)).toMatchObject({ scope: `device:counter-2-${day}`, revision: 1 })
+      // the cashier closes the day (no accounting permission), on her own connection: refused, held for review
+      await asRana()
+      const clerkClose = closeDay(heldDay, [id], [rid])
+      await flush()
+      const held = queue().find((o) => o.payload?.id === clerkClose.id)
+      evidence("batch held close", held && [held.status, held.lastError ?? held.error ?? null])
+      expect(held?.status).not.toBe("Synced")
+      // nothing reached the cloud (it is down)
+      expect(await prisma.sale.count({ where: { tenantId: A.tenantId, id } })).toBe(0)
+      for (const [k, v] of Object.entries({ day, sale: id, refund: rid, payout: input.id, clerkClose: clerkClose.id, c1: c1.id, c2: c2.id, other: other.id, at: new Date().toISOString() })) storage.setItem(`it.batch.${k}`, v)
+    })
+  })
+
+  if (PHASE === "close-batch-resume") describe("after a hub restart, the cloud back more than an approval's lifetime later", { timeout: 300_000 }, () => {
+    it("each approval reached the cloud valid (hub-checked, signed, digest matching), the closes and their links match, the sale applied once", async () => {
+      const k = (x: string) => storage.getItem(`it.batch.${x}`)!
+      expect(Date.now() - Date.parse(k("at"))).toBeGreaterThan(120_000)
+      const opIds = { sale: `wt-${k("sale")}`, refund: queue().find((o) => o.payload?.id === k("refund"))!.id, payout: queue().find((o) => o.payload?.id === k("payout"))!.id }
+      const seen: Record<string, unknown> = {}
+      for (const [name, opId] of Object.entries(opIds)) {
+        const e = await inCloud(() => prisma.operationEvidence.findFirst({ where: { tenantId: A.tenantId, opId } }))
+        seen[name] = e && { attestation: e.attestation, check: (e.approval as any)?.check, hubCheck: (e.approval as any)?.hubCheck, permissions: (e.approval as any)?.permissions, approver: (e.approval as any)?.approverName, usedSecondsBeforeForwarding: e && Math.round((Date.parse(String(e.receivedAt)) - Date.parse((e.approval as any)?.consumedAt)) / 1000) }
+        expect(e?.attestation).toBe("valid")
+        expect(e?.approval).toMatchObject({ check: "valid", hubCheck: "valid", approverId: A.staff.manager })
+      }
+      evidence("batch cloud evidence", seen)
+      expect(await prisma.sale.count({ where: { tenantId: A.tenantId, id: k("sale") } })).toBe(1)
+      expect(Number((await prisma.sale.findFirst({ where: { tenantId: A.tenantId, id: k("sale") } }))?.discountTotal)).toBe(0.5)
+      // the closes and their links, as the hub recorded them
+      const cloudRows = await inCloud(async () => { const r = await prisma.dailyClose.findMany({ where: { tenantId: A.tenantId, dateKey: k("day") } }); return r.length === 3 ? r : null })
+      const shape = (r: any) => [r.id, r.scope, r.revision, r.revisionOf ?? null, r.supersededById ?? null]
+      const hubRows = (await hubCloses(true, true)).filter((x) => x.dateKey === k("day"))
+      evidence("batch closes in cloud", cloudRows?.map(shape))
+      expect(cloudRows!.map(shape).sort()).toEqual(hubRows.map(shape).sort())
+    })
+
+    it("review on the hub: a stale preview and a clerk without the permission are refused; the owner applies the cashier's close once; actor and reviewer kept apart; forwarded", async () => {
+      const k = (x: string) => storage.getItem(`it.batch.${x}`)!
+      const opId = queue().find((o) => o.payload?.id === k("clerkClose"))!.id
+      const list = (await call("GET", "/api/sync/refused", undefined, owner)).body.operations as any[]
+      const item = list.find((o) => o.id === opId)
+      expect(item?.category).toBe("permission-missing")
+      expect((await call("POST", `/api/sync/refused/${opId}/resolve`, { decision: "apply", note: "closed on the clerk's till", previewToken: "0".repeat(32) }, owner)).body.code).toBe("STALE_PREVIEW")
+      const clerk = await login("1503")
+      expect((await call("POST", `/api/sync/refused/${opId}/resolve`, { decision: "apply", note: "self-approve", previewToken: item.previewToken }, clerk)).status).toBe(403)
+      const body = { decision: "apply", note: "closed on Rana's till", previewToken: item.previewToken }
+      const [a, b] = await Promise.all([call("POST", `/api/sync/refused/${opId}/resolve`, body, owner), call("POST", `/api/sync/refused/${opId}/resolve`, body, owner)])
+      expect([a.status, b.status].sort()).toEqual([200, 409])
+      const decided = ((await call("GET", "/api/sync/refused/decisions", undefined, owner)).body.decisions as any[]).find((x) => x.opId === opId)
+      evidence("batch review decision", decided && { decision: decided.decision, actor: decided.actor, approver: decided.approver, reviewer: decided.reviewer })
+      expect(decided).toMatchObject({ decision: "apply", actor: { session: { id: A.staff.rana } }, reviewer: { id: A.staff.owner } })
+      expect(await inCloud(() => prisma.dailyClose.findFirst({ where: { tenantId: A.tenantId, id: k("clerkClose") } }))).toBeTruthy()
     })
   })
 
