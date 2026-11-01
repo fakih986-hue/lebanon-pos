@@ -222,6 +222,17 @@ model Product {
   stockPolicyHistory   Json      @default("[]")
   /// SPRINT-1: current policy revision id (minted once by whoever changed it; "initial" = as created)
   stockPolicyRev       String    @default("initial")
+  /// Café batch: false = an ingredient (kept in stock, received and counted, never offered for sale)
+  sellable        Boolean   @default(true)
+  /// Café batch: the unit its stock, lots, counts, waste and recipes use: unit | g | ml
+  stockUnit       String    @default("unit")
+  /// Café batch: how it is usually bought (unit | pack | g | kg | ml | L) and how many stock units one holds
+  purchaseUnit     String?
+  unitsPerPurchase Decimal?  @db.Decimal(18, 4)
+  /// Café batch: the modifier groups offered with it, in order (ModifierGroup.id)
+  modifierGroupIds String[]  @default([])
+  /// Café batch: the current recipe revision of a "recipe" product (RecipeRevision.id); old revisions stay
+  recipeRev        String?
   category        String
   accent          String    @default("emerald")
   favorite        Boolean   @default(false)
@@ -318,6 +329,20 @@ model SaleItem {
   stockPolicyConflict String?
   /// SPRINT-1: the policy revision this line was sold under
   stockPolicyRev      String?
+  /// Café batch: the options chosen, as sold (immutable snapshot): [{groupId, groupName, optionId, name, nameAr, priceDelta}]
+  modifiers        Json?
+  /// Café batch: the preparation note, and the product's own price before options
+  note             String?
+  basePrice        Decimal?  @db.Decimal(18, 4)
+  /// Café batch: the recipe revision the drink was made with, and what the server consumed for it:
+  /// [{ingredientSyncId, productId, name, unit, quantity, allocations: [{batchId, quantity, unitCost}], cost, costKnown}]
+  recipeRev        String?
+  consumption      Json?
+  /// Café batch: known | partial | unknown (ingredient cost); null for lines without a recipe
+  costStatus       String?
+  /// Café batch: set when the sale-time recipe or options could not be applied cleanly (visible to managers)
+  recipeConflict   String?
+  modifierConflict String?
 }
 
 model SaleTender {
@@ -646,6 +671,13 @@ model InventoryBatch {
   status              InventoryBatchStatus @default(Open)
   receivedById        String?
   receivedByName      String?
+  /// Café batch: what the invoice said: bought in purchase units at an actual price per purchase unit; the
+  /// stock quantity and unitCost above are derived from it (unitsPerPurchase stock units per purchase unit)
+  purchaseUnit        String?
+  purchaseQuantity    Decimal? @db.Decimal(18, 4)
+  unitsPerPurchase    Decimal? @db.Decimal(18, 4)
+  purchasePrice       Decimal? @db.Decimal(18, 4)
+  supplierReference   String?
   /// Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
   /// offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
   /// server when it applies the operation (never taken from the client); null for records made before it existed.
@@ -673,6 +705,9 @@ model StockAdjustment {
   batchId           String?
   batchAllocations  Json?
   valueImpact       Decimal  @db.Decimal(18, 4)
+  /// Café batch: the remake/waste event this adjustment belongs to (one per ingredient) and what was wasted
+  wasteRef          String?
+  wasteOf           String?
   createdById       String?
   createdByName     String?
   /// Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
@@ -1122,4 +1157,46 @@ model StaffSession {
 
   @@index([tenantId, deviceId])
   @@index([tenantId, staffId])
+}
+
+/// Café batch: a modifier group (size, milk, sugar, shots, ice). The id is minted once by whoever creates it and
+/// is the same on every server; its options (stable ids) live in `options`:
+/// [{id, name, nameAr, priceDelta, isDefault, available, archived, sortOrder}]. Options are archived, never removed,
+/// so sales that chose them keep displaying them.
+model ModifierGroup {
+  id        String   @id
+  tenantId  String
+  name      String
+  nameAr    String   @default("")
+  required  Boolean  @default(false)
+  minSelect Int      @default(0)
+  maxSelect Int      @default(1)
+  sortOrder Int      @default(0)
+  archived  Boolean  @default(false)
+  options   Json     @default("[]")
+  revision  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, updatedAt])
+}
+
+/// Café batch: one immutable revision of a drink's recipe. Saving a recipe adds a revision (id minted once by
+/// whoever saves it) and moves the product's recipeRev; old revisions stay, so sales made with them resolve.
+/// lines: [{ingredientSyncId, quantity (stock units, at most 3 decimals), when: optionId[], unless: optionId[]}]
+model RecipeRevision {
+  id            String   @id
+  tenantId      String
+  productSyncId String
+  yield         Int      @default(1)
+  lines         Json     @default("[]")
+  note          String   @default("")
+  parentRev     String?
+  createdById   String?
+  createdByName String?
+  attribution   Json?
+  createdAt     DateTime @default(now())
+
+  @@index([tenantId, productSyncId])
+  @@index([tenantId, createdAt])
 }

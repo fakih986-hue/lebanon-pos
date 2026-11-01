@@ -213,6 +213,12 @@ exports.Prisma.ProductScalarFieldEnum = {
   stockPolicyChangedAt: 'stockPolicyChangedAt',
   stockPolicyHistory: 'stockPolicyHistory',
   stockPolicyRev: 'stockPolicyRev',
+  sellable: 'sellable',
+  stockUnit: 'stockUnit',
+  purchaseUnit: 'purchaseUnit',
+  unitsPerPurchase: 'unitsPerPurchase',
+  modifierGroupIds: 'modifierGroupIds',
+  recipeRev: 'recipeRev',
   category: 'category',
   accent: 'accent',
   favorite: 'favorite',
@@ -271,7 +277,15 @@ exports.Prisma.SaleItemScalarFieldEnum = {
   batchAllocations: 'batchAllocations',
   stockPolicy: 'stockPolicy',
   stockPolicyConflict: 'stockPolicyConflict',
-  stockPolicyRev: 'stockPolicyRev'
+  stockPolicyRev: 'stockPolicyRev',
+  modifiers: 'modifiers',
+  note: 'note',
+  basePrice: 'basePrice',
+  recipeRev: 'recipeRev',
+  consumption: 'consumption',
+  costStatus: 'costStatus',
+  recipeConflict: 'recipeConflict',
+  modifierConflict: 'modifierConflict'
 };
 
 exports.Prisma.SaleTenderScalarFieldEnum = {
@@ -506,6 +520,11 @@ exports.Prisma.InventoryBatchScalarFieldEnum = {
   status: 'status',
   receivedById: 'receivedById',
   receivedByName: 'receivedByName',
+  purchaseUnit: 'purchaseUnit',
+  purchaseQuantity: 'purchaseQuantity',
+  unitsPerPurchase: 'unitsPerPurchase',
+  purchasePrice: 'purchasePrice',
+  supplierReference: 'supplierReference',
   attribution: 'attribution'
 };
 
@@ -524,6 +543,8 @@ exports.Prisma.StockAdjustmentScalarFieldEnum = {
   batchId: 'batchId',
   batchAllocations: 'batchAllocations',
   valueImpact: 'valueImpact',
+  wasteRef: 'wasteRef',
+  wasteOf: 'wasteOf',
   createdById: 'createdById',
   createdByName: 'createdByName',
   attribution: 'attribution',
@@ -832,6 +853,36 @@ exports.Prisma.StaffSessionScalarFieldEnum = {
   endReason: 'endReason'
 };
 
+exports.Prisma.ModifierGroupScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  name: 'name',
+  nameAr: 'nameAr',
+  required: 'required',
+  minSelect: 'minSelect',
+  maxSelect: 'maxSelect',
+  sortOrder: 'sortOrder',
+  archived: 'archived',
+  options: 'options',
+  revision: 'revision',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.RecipeRevisionScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  productSyncId: 'productSyncId',
+  yield: 'yield',
+  lines: 'lines',
+  note: 'note',
+  parentRev: 'parentRev',
+  createdById: 'createdById',
+  createdByName: 'createdByName',
+  attribution: 'attribution',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -963,7 +1014,9 @@ exports.Prisma.ModelName = {
   HubKey: 'HubKey',
   ManagerApproval: 'ManagerApproval',
   ReviewResolution: 'ReviewResolution',
-  StaffSession: 'StaffSession'
+  StaffSession: 'StaffSession',
+  ModifierGroup: 'ModifierGroup',
+  RecipeRevision: 'RecipeRevision'
 };
 
 /**

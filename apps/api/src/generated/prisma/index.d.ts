@@ -216,6 +216,21 @@ export type ReviewResolution = $Result.DefaultSelection<Prisma.$ReviewResolution
  * signs out, or the device is revoked.
  */
 export type StaffSession = $Result.DefaultSelection<Prisma.$StaffSessionPayload>
+/**
+ * Model ModifierGroup
+ * Café batch: a modifier group (size, milk, sugar, shots, ice). The id is minted once by whoever creates it and
+ * is the same on every server; its options (stable ids) live in `options`:
+ * [{id, name, nameAr, priceDelta, isDefault, available, archived, sortOrder}]. Options are archived, never removed,
+ * so sales that chose them keep displaying them.
+ */
+export type ModifierGroup = $Result.DefaultSelection<Prisma.$ModifierGroupPayload>
+/**
+ * Model RecipeRevision
+ * Café batch: one immutable revision of a drink's recipe. Saving a recipe adds a revision (id minted once by
+ * whoever saves it) and moves the product's recipeRev; old revisions stay, so sales made with them resolve.
+ * lines: [{ingredientSyncId, quantity (stock units, at most 3 decimals), when: optionId[], unless: optionId[]}]
+ */
+export type RecipeRevision = $Result.DefaultSelection<Prisma.$RecipeRevisionPayload>
 
 /**
  * Enums
@@ -853,6 +868,26 @@ export class PrismaClient<
     * ```
     */
   get staffSession(): Prisma.StaffSessionDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.modifierGroup`: Exposes CRUD operations for the **ModifierGroup** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ModifierGroups
+    * const modifierGroups = await prisma.modifierGroup.findMany()
+    * ```
+    */
+  get modifierGroup(): Prisma.ModifierGroupDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.recipeRevision`: Exposes CRUD operations for the **RecipeRevision** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more RecipeRevisions
+    * const recipeRevisions = await prisma.recipeRevision.findMany()
+    * ```
+    */
+  get recipeRevision(): Prisma.RecipeRevisionDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -1331,7 +1366,9 @@ export namespace Prisma {
     HubKey: 'HubKey',
     ManagerApproval: 'ManagerApproval',
     ReviewResolution: 'ReviewResolution',
-    StaffSession: 'StaffSession'
+    StaffSession: 'StaffSession',
+    ModifierGroup: 'ModifierGroup',
+    RecipeRevision: 'RecipeRevision'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1350,7 +1387,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "cashMovement" | "syncOperation" | "device" | "pairingCode" | "rateLimitEntry" | "stockMovement" | "syncClient" | "operationEvidence" | "hubKey" | "managerApproval" | "reviewResolution" | "staffSession"
+      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "cashMovement" | "syncOperation" | "device" | "pairingCode" | "rateLimitEntry" | "stockMovement" | "syncClient" | "operationEvidence" | "hubKey" | "managerApproval" | "reviewResolution" | "staffSession" | "modifierGroup" | "recipeRevision"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -4166,6 +4203,154 @@ export namespace Prisma {
           }
         }
       }
+      ModifierGroup: {
+        payload: Prisma.$ModifierGroupPayload<ExtArgs>
+        fields: Prisma.ModifierGroupFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ModifierGroupFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ModifierGroupPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ModifierGroupFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ModifierGroupPayload>
+          }
+          findFirst: {
+            args: Prisma.ModifierGroupFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ModifierGroupPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ModifierGroupFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ModifierGroupPayload>
+          }
+          findMany: {
+            args: Prisma.ModifierGroupFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ModifierGroupPayload>[]
+          }
+          create: {
+            args: Prisma.ModifierGroupCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ModifierGroupPayload>
+          }
+          createMany: {
+            args: Prisma.ModifierGroupCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ModifierGroupCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ModifierGroupPayload>[]
+          }
+          delete: {
+            args: Prisma.ModifierGroupDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ModifierGroupPayload>
+          }
+          update: {
+            args: Prisma.ModifierGroupUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ModifierGroupPayload>
+          }
+          deleteMany: {
+            args: Prisma.ModifierGroupDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ModifierGroupUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.ModifierGroupUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ModifierGroupPayload>[]
+          }
+          upsert: {
+            args: Prisma.ModifierGroupUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ModifierGroupPayload>
+          }
+          aggregate: {
+            args: Prisma.ModifierGroupAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateModifierGroup>
+          }
+          groupBy: {
+            args: Prisma.ModifierGroupGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ModifierGroupGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ModifierGroupCountArgs<ExtArgs>
+            result: $Utils.Optional<ModifierGroupCountAggregateOutputType> | number
+          }
+        }
+      }
+      RecipeRevision: {
+        payload: Prisma.$RecipeRevisionPayload<ExtArgs>
+        fields: Prisma.RecipeRevisionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.RecipeRevisionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RecipeRevisionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.RecipeRevisionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RecipeRevisionPayload>
+          }
+          findFirst: {
+            args: Prisma.RecipeRevisionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RecipeRevisionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.RecipeRevisionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RecipeRevisionPayload>
+          }
+          findMany: {
+            args: Prisma.RecipeRevisionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RecipeRevisionPayload>[]
+          }
+          create: {
+            args: Prisma.RecipeRevisionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RecipeRevisionPayload>
+          }
+          createMany: {
+            args: Prisma.RecipeRevisionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.RecipeRevisionCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RecipeRevisionPayload>[]
+          }
+          delete: {
+            args: Prisma.RecipeRevisionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RecipeRevisionPayload>
+          }
+          update: {
+            args: Prisma.RecipeRevisionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RecipeRevisionPayload>
+          }
+          deleteMany: {
+            args: Prisma.RecipeRevisionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.RecipeRevisionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.RecipeRevisionUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RecipeRevisionPayload>[]
+          }
+          upsert: {
+            args: Prisma.RecipeRevisionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RecipeRevisionPayload>
+          }
+          aggregate: {
+            args: Prisma.RecipeRevisionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateRecipeRevision>
+          }
+          groupBy: {
+            args: Prisma.RecipeRevisionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<RecipeRevisionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.RecipeRevisionCountArgs<ExtArgs>
+            result: $Utils.Optional<RecipeRevisionCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -4300,6 +4485,8 @@ export namespace Prisma {
     managerApproval?: ManagerApprovalOmit
     reviewResolution?: ReviewResolutionOmit
     staffSession?: StaffSessionOmit
+    modifierGroup?: ModifierGroupOmit
+    recipeRevision?: RecipeRevisionOmit
   }
 
   /* Types for Logging */
@@ -9789,6 +9976,7 @@ export namespace Prisma {
     cost: Decimal | null
     stock: number | null
     stockPolicyVersion: number | null
+    unitsPerPurchase: Decimal | null
     reorderPoint: number | null
     reorderQuantity: number | null
   }
@@ -9801,6 +9989,7 @@ export namespace Prisma {
     cost: Decimal | null
     stock: number | null
     stockPolicyVersion: number | null
+    unitsPerPurchase: Decimal | null
     reorderPoint: number | null
     reorderQuantity: number | null
   }
@@ -9822,6 +10011,11 @@ export namespace Prisma {
     stockPolicyVersion: number | null
     stockPolicyChangedAt: Date | null
     stockPolicyRev: string | null
+    sellable: boolean | null
+    stockUnit: string | null
+    purchaseUnit: string | null
+    unitsPerPurchase: Decimal | null
+    recipeRev: string | null
     category: string | null
     accent: string | null
     favorite: boolean | null
@@ -9853,6 +10047,11 @@ export namespace Prisma {
     stockPolicyVersion: number | null
     stockPolicyChangedAt: Date | null
     stockPolicyRev: string | null
+    sellable: boolean | null
+    stockUnit: string | null
+    purchaseUnit: string | null
+    unitsPerPurchase: Decimal | null
+    recipeRev: string | null
     category: string | null
     accent: string | null
     favorite: boolean | null
@@ -9886,6 +10085,12 @@ export namespace Prisma {
     stockPolicyChangedAt: number
     stockPolicyHistory: number
     stockPolicyRev: number
+    sellable: number
+    stockUnit: number
+    purchaseUnit: number
+    unitsPerPurchase: number
+    modifierGroupIds: number
+    recipeRev: number
     category: number
     accent: number
     favorite: number
@@ -9910,6 +10115,7 @@ export namespace Prisma {
     cost?: true
     stock?: true
     stockPolicyVersion?: true
+    unitsPerPurchase?: true
     reorderPoint?: true
     reorderQuantity?: true
   }
@@ -9922,6 +10128,7 @@ export namespace Prisma {
     cost?: true
     stock?: true
     stockPolicyVersion?: true
+    unitsPerPurchase?: true
     reorderPoint?: true
     reorderQuantity?: true
   }
@@ -9943,6 +10150,11 @@ export namespace Prisma {
     stockPolicyVersion?: true
     stockPolicyChangedAt?: true
     stockPolicyRev?: true
+    sellable?: true
+    stockUnit?: true
+    purchaseUnit?: true
+    unitsPerPurchase?: true
+    recipeRev?: true
     category?: true
     accent?: true
     favorite?: true
@@ -9974,6 +10186,11 @@ export namespace Prisma {
     stockPolicyVersion?: true
     stockPolicyChangedAt?: true
     stockPolicyRev?: true
+    sellable?: true
+    stockUnit?: true
+    purchaseUnit?: true
+    unitsPerPurchase?: true
+    recipeRev?: true
     category?: true
     accent?: true
     favorite?: true
@@ -10007,6 +10224,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: true
     stockPolicyHistory?: true
     stockPolicyRev?: true
+    sellable?: true
+    stockUnit?: true
+    purchaseUnit?: true
+    unitsPerPurchase?: true
+    modifierGroupIds?: true
+    recipeRev?: true
     category?: true
     accent?: true
     favorite?: true
@@ -10127,6 +10350,12 @@ export namespace Prisma {
     stockPolicyChangedAt: Date | null
     stockPolicyHistory: JsonValue
     stockPolicyRev: string
+    sellable: boolean
+    stockUnit: string
+    purchaseUnit: string | null
+    unitsPerPurchase: Decimal | null
+    modifierGroupIds: string[]
+    recipeRev: string | null
     category: string
     accent: string
     favorite: boolean
@@ -10179,6 +10408,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: boolean
     stockPolicyHistory?: boolean
     stockPolicyRev?: boolean
+    sellable?: boolean
+    stockUnit?: boolean
+    purchaseUnit?: boolean
+    unitsPerPurchase?: boolean
+    modifierGroupIds?: boolean
+    recipeRev?: boolean
     category?: boolean
     accent?: boolean
     favorite?: boolean
@@ -10220,6 +10455,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: boolean
     stockPolicyHistory?: boolean
     stockPolicyRev?: boolean
+    sellable?: boolean
+    stockUnit?: boolean
+    purchaseUnit?: boolean
+    unitsPerPurchase?: boolean
+    modifierGroupIds?: boolean
+    recipeRev?: boolean
     category?: boolean
     accent?: boolean
     favorite?: boolean
@@ -10255,6 +10496,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: boolean
     stockPolicyHistory?: boolean
     stockPolicyRev?: boolean
+    sellable?: boolean
+    stockUnit?: boolean
+    purchaseUnit?: boolean
+    unitsPerPurchase?: boolean
+    modifierGroupIds?: boolean
+    recipeRev?: boolean
     category?: boolean
     accent?: boolean
     favorite?: boolean
@@ -10290,6 +10537,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: boolean
     stockPolicyHistory?: boolean
     stockPolicyRev?: boolean
+    sellable?: boolean
+    stockUnit?: boolean
+    purchaseUnit?: boolean
+    unitsPerPurchase?: boolean
+    modifierGroupIds?: boolean
+    recipeRev?: boolean
     category?: boolean
     accent?: boolean
     favorite?: boolean
@@ -10304,7 +10557,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "syncId" | "tenantId" | "parentId" | "isParent" | "variantName" | "name" | "price" | "wholesalePrice" | "cost" | "stock" | "barcode" | "barcodeAliases" | "stockPolicy" | "stockPolicyVersion" | "stockPolicyChangedAt" | "stockPolicyHistory" | "stockPolicyRev" | "category" | "accent" | "favorite" | "reorderPoint" | "reorderQuantity" | "supplierId" | "supplierName" | "expiryDate" | "image" | "archived" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
+  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "syncId" | "tenantId" | "parentId" | "isParent" | "variantName" | "name" | "price" | "wholesalePrice" | "cost" | "stock" | "barcode" | "barcodeAliases" | "stockPolicy" | "stockPolicyVersion" | "stockPolicyChangedAt" | "stockPolicyHistory" | "stockPolicyRev" | "sellable" | "stockUnit" | "purchaseUnit" | "unitsPerPurchase" | "modifierGroupIds" | "recipeRev" | "category" | "accent" | "favorite" | "reorderPoint" | "reorderQuantity" | "supplierId" | "supplierName" | "expiryDate" | "image" | "archived" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
   export type ProductInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     parent?: boolean | Product$parentArgs<ExtArgs>
@@ -10366,6 +10619,27 @@ export namespace Prisma {
        * SPRINT-1: current policy revision id (minted once by whoever changed it; "initial" = as created)
        */
       stockPolicyRev: string
+      /**
+       * Café batch: false = an ingredient (kept in stock, received and counted, never offered for sale)
+       */
+      sellable: boolean
+      /**
+       * Café batch: the unit its stock, lots, counts, waste and recipes use: unit | g | ml
+       */
+      stockUnit: string
+      /**
+       * Café batch: how it is usually bought (unit | pack | g | kg | ml | L) and how many stock units one holds
+       */
+      purchaseUnit: string | null
+      unitsPerPurchase: Prisma.Decimal | null
+      /**
+       * Café batch: the modifier groups offered with it, in order (ModifierGroup.id)
+       */
+      modifierGroupIds: string[]
+      /**
+       * Café batch: the current recipe revision of a "recipe" product (RecipeRevision.id); old revisions stay
+       */
+      recipeRev: string | null
       category: string
       accent: string
       favorite: boolean
@@ -10826,6 +11100,12 @@ export namespace Prisma {
     readonly stockPolicyChangedAt: FieldRef<"Product", 'DateTime'>
     readonly stockPolicyHistory: FieldRef<"Product", 'Json'>
     readonly stockPolicyRev: FieldRef<"Product", 'String'>
+    readonly sellable: FieldRef<"Product", 'Boolean'>
+    readonly stockUnit: FieldRef<"Product", 'String'>
+    readonly purchaseUnit: FieldRef<"Product", 'String'>
+    readonly unitsPerPurchase: FieldRef<"Product", 'Decimal'>
+    readonly modifierGroupIds: FieldRef<"Product", 'String[]'>
+    readonly recipeRev: FieldRef<"Product", 'String'>
     readonly category: FieldRef<"Product", 'String'>
     readonly accent: FieldRef<"Product", 'String'>
     readonly favorite: FieldRef<"Product", 'Boolean'>
@@ -12888,6 +13168,7 @@ export namespace Prisma {
     total: Decimal | null
     cost: Decimal | null
     lineIndex: number | null
+    basePrice: Decimal | null
   }
 
   export type SaleItemSumAggregateOutputType = {
@@ -12897,6 +13178,7 @@ export namespace Prisma {
     total: Decimal | null
     cost: Decimal | null
     lineIndex: number | null
+    basePrice: Decimal | null
   }
 
   export type SaleItemMinAggregateOutputType = {
@@ -12914,6 +13196,12 @@ export namespace Prisma {
     stockPolicy: string | null
     stockPolicyConflict: string | null
     stockPolicyRev: string | null
+    note: string | null
+    basePrice: Decimal | null
+    recipeRev: string | null
+    costStatus: string | null
+    recipeConflict: string | null
+    modifierConflict: string | null
   }
 
   export type SaleItemMaxAggregateOutputType = {
@@ -12931,6 +13219,12 @@ export namespace Prisma {
     stockPolicy: string | null
     stockPolicyConflict: string | null
     stockPolicyRev: string | null
+    note: string | null
+    basePrice: Decimal | null
+    recipeRev: string | null
+    costStatus: string | null
+    recipeConflict: string | null
+    modifierConflict: string | null
   }
 
   export type SaleItemCountAggregateOutputType = {
@@ -12949,6 +13243,14 @@ export namespace Prisma {
     stockPolicy: number
     stockPolicyConflict: number
     stockPolicyRev: number
+    modifiers: number
+    note: number
+    basePrice: number
+    recipeRev: number
+    consumption: number
+    costStatus: number
+    recipeConflict: number
+    modifierConflict: number
     _all: number
   }
 
@@ -12960,6 +13262,7 @@ export namespace Prisma {
     total?: true
     cost?: true
     lineIndex?: true
+    basePrice?: true
   }
 
   export type SaleItemSumAggregateInputType = {
@@ -12969,6 +13272,7 @@ export namespace Prisma {
     total?: true
     cost?: true
     lineIndex?: true
+    basePrice?: true
   }
 
   export type SaleItemMinAggregateInputType = {
@@ -12986,6 +13290,12 @@ export namespace Prisma {
     stockPolicy?: true
     stockPolicyConflict?: true
     stockPolicyRev?: true
+    note?: true
+    basePrice?: true
+    recipeRev?: true
+    costStatus?: true
+    recipeConflict?: true
+    modifierConflict?: true
   }
 
   export type SaleItemMaxAggregateInputType = {
@@ -13003,6 +13313,12 @@ export namespace Prisma {
     stockPolicy?: true
     stockPolicyConflict?: true
     stockPolicyRev?: true
+    note?: true
+    basePrice?: true
+    recipeRev?: true
+    costStatus?: true
+    recipeConflict?: true
+    modifierConflict?: true
   }
 
   export type SaleItemCountAggregateInputType = {
@@ -13021,6 +13337,14 @@ export namespace Prisma {
     stockPolicy?: true
     stockPolicyConflict?: true
     stockPolicyRev?: true
+    modifiers?: true
+    note?: true
+    basePrice?: true
+    recipeRev?: true
+    consumption?: true
+    costStatus?: true
+    recipeConflict?: true
+    modifierConflict?: true
     _all?: true
   }
 
@@ -13126,6 +13450,14 @@ export namespace Prisma {
     stockPolicy: string
     stockPolicyConflict: string | null
     stockPolicyRev: string | null
+    modifiers: JsonValue | null
+    note: string | null
+    basePrice: Decimal | null
+    recipeRev: string | null
+    consumption: JsonValue | null
+    costStatus: string | null
+    recipeConflict: string | null
+    modifierConflict: string | null
     _count: SaleItemCountAggregateOutputType | null
     _avg: SaleItemAvgAggregateOutputType | null
     _sum: SaleItemSumAggregateOutputType | null
@@ -13163,6 +13495,14 @@ export namespace Prisma {
     stockPolicy?: boolean
     stockPolicyConflict?: boolean
     stockPolicyRev?: boolean
+    modifiers?: boolean
+    note?: boolean
+    basePrice?: boolean
+    recipeRev?: boolean
+    consumption?: boolean
+    costStatus?: boolean
+    recipeConflict?: boolean
+    modifierConflict?: boolean
     sale?: boolean | SaleDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["saleItem"]>
 
@@ -13182,6 +13522,14 @@ export namespace Prisma {
     stockPolicy?: boolean
     stockPolicyConflict?: boolean
     stockPolicyRev?: boolean
+    modifiers?: boolean
+    note?: boolean
+    basePrice?: boolean
+    recipeRev?: boolean
+    consumption?: boolean
+    costStatus?: boolean
+    recipeConflict?: boolean
+    modifierConflict?: boolean
     sale?: boolean | SaleDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["saleItem"]>
 
@@ -13201,6 +13549,14 @@ export namespace Prisma {
     stockPolicy?: boolean
     stockPolicyConflict?: boolean
     stockPolicyRev?: boolean
+    modifiers?: boolean
+    note?: boolean
+    basePrice?: boolean
+    recipeRev?: boolean
+    consumption?: boolean
+    costStatus?: boolean
+    recipeConflict?: boolean
+    modifierConflict?: boolean
     sale?: boolean | SaleDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["saleItem"]>
 
@@ -13220,9 +13576,17 @@ export namespace Prisma {
     stockPolicy?: boolean
     stockPolicyConflict?: boolean
     stockPolicyRev?: boolean
+    modifiers?: boolean
+    note?: boolean
+    basePrice?: boolean
+    recipeRev?: boolean
+    consumption?: boolean
+    costStatus?: boolean
+    recipeConflict?: boolean
+    modifierConflict?: boolean
   }
 
-  export type SaleItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "saleId" | "productId" | "productName" | "barcode" | "quantity" | "unitPrice" | "total" | "cost" | "lineId" | "lineIndex" | "batchAllocations" | "stockPolicy" | "stockPolicyConflict" | "stockPolicyRev", ExtArgs["result"]["saleItem"]>
+  export type SaleItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "saleId" | "productId" | "productName" | "barcode" | "quantity" | "unitPrice" | "total" | "cost" | "lineId" | "lineIndex" | "batchAllocations" | "stockPolicy" | "stockPolicyConflict" | "stockPolicyRev" | "modifiers" | "note" | "basePrice" | "recipeRev" | "consumption" | "costStatus" | "recipeConflict" | "modifierConflict", ExtArgs["result"]["saleItem"]>
   export type SaleItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     sale?: boolean | SaleDefaultArgs<ExtArgs>
   }
@@ -13270,6 +13634,30 @@ export namespace Prisma {
        * SPRINT-1: the policy revision this line was sold under
        */
       stockPolicyRev: string | null
+      /**
+       * Café batch: the options chosen, as sold (immutable snapshot): [{groupId, groupName, optionId, name, nameAr, priceDelta}]
+       */
+      modifiers: Prisma.JsonValue | null
+      /**
+       * Café batch: the preparation note, and the product's own price before options
+       */
+      note: string | null
+      basePrice: Prisma.Decimal | null
+      /**
+       * Café batch: the recipe revision the drink was made with, and what the server consumed for it:
+       * [{ingredientSyncId, productId, name, unit, quantity, allocations: [{batchId, quantity, unitCost}], cost, costKnown}]
+       */
+      recipeRev: string | null
+      consumption: Prisma.JsonValue | null
+      /**
+       * Café batch: known | partial | unknown (ingredient cost); null for lines without a recipe
+       */
+      costStatus: string | null
+      /**
+       * Café batch: set when the sale-time recipe or options could not be applied cleanly (visible to managers)
+       */
+      recipeConflict: string | null
+      modifierConflict: string | null
     }, ExtArgs["result"]["saleItem"]>
     composites: {}
   }
@@ -13709,6 +14097,14 @@ export namespace Prisma {
     readonly stockPolicy: FieldRef<"SaleItem", 'String'>
     readonly stockPolicyConflict: FieldRef<"SaleItem", 'String'>
     readonly stockPolicyRev: FieldRef<"SaleItem", 'String'>
+    readonly modifiers: FieldRef<"SaleItem", 'Json'>
+    readonly note: FieldRef<"SaleItem", 'String'>
+    readonly basePrice: FieldRef<"SaleItem", 'Decimal'>
+    readonly recipeRev: FieldRef<"SaleItem", 'String'>
+    readonly consumption: FieldRef<"SaleItem", 'Json'>
+    readonly costStatus: FieldRef<"SaleItem", 'String'>
+    readonly recipeConflict: FieldRef<"SaleItem", 'String'>
+    readonly modifierConflict: FieldRef<"SaleItem", 'String'>
   }
     
 
@@ -30118,6 +30514,9 @@ export namespace Prisma {
     quantityRemaining: number | null
     unitCost: Decimal | null
     unitPrice: Decimal | null
+    purchaseQuantity: Decimal | null
+    unitsPerPurchase: Decimal | null
+    purchasePrice: Decimal | null
   }
 
   export type InventoryBatchSumAggregateOutputType = {
@@ -30126,6 +30525,9 @@ export namespace Prisma {
     quantityRemaining: number | null
     unitCost: Decimal | null
     unitPrice: Decimal | null
+    purchaseQuantity: Decimal | null
+    unitsPerPurchase: Decimal | null
+    purchasePrice: Decimal | null
   }
 
   export type InventoryBatchMinAggregateOutputType = {
@@ -30148,6 +30550,11 @@ export namespace Prisma {
     status: $Enums.InventoryBatchStatus | null
     receivedById: string | null
     receivedByName: string | null
+    purchaseUnit: string | null
+    purchaseQuantity: Decimal | null
+    unitsPerPurchase: Decimal | null
+    purchasePrice: Decimal | null
+    supplierReference: string | null
   }
 
   export type InventoryBatchMaxAggregateOutputType = {
@@ -30170,6 +30577,11 @@ export namespace Prisma {
     status: $Enums.InventoryBatchStatus | null
     receivedById: string | null
     receivedByName: string | null
+    purchaseUnit: string | null
+    purchaseQuantity: Decimal | null
+    unitsPerPurchase: Decimal | null
+    purchasePrice: Decimal | null
+    supplierReference: string | null
   }
 
   export type InventoryBatchCountAggregateOutputType = {
@@ -30192,6 +30604,11 @@ export namespace Prisma {
     status: number
     receivedById: number
     receivedByName: number
+    purchaseUnit: number
+    purchaseQuantity: number
+    unitsPerPurchase: number
+    purchasePrice: number
+    supplierReference: number
     attribution: number
     _all: number
   }
@@ -30203,6 +30620,9 @@ export namespace Prisma {
     quantityRemaining?: true
     unitCost?: true
     unitPrice?: true
+    purchaseQuantity?: true
+    unitsPerPurchase?: true
+    purchasePrice?: true
   }
 
   export type InventoryBatchSumAggregateInputType = {
@@ -30211,6 +30631,9 @@ export namespace Prisma {
     quantityRemaining?: true
     unitCost?: true
     unitPrice?: true
+    purchaseQuantity?: true
+    unitsPerPurchase?: true
+    purchasePrice?: true
   }
 
   export type InventoryBatchMinAggregateInputType = {
@@ -30233,6 +30656,11 @@ export namespace Prisma {
     status?: true
     receivedById?: true
     receivedByName?: true
+    purchaseUnit?: true
+    purchaseQuantity?: true
+    unitsPerPurchase?: true
+    purchasePrice?: true
+    supplierReference?: true
   }
 
   export type InventoryBatchMaxAggregateInputType = {
@@ -30255,6 +30683,11 @@ export namespace Prisma {
     status?: true
     receivedById?: true
     receivedByName?: true
+    purchaseUnit?: true
+    purchaseQuantity?: true
+    unitsPerPurchase?: true
+    purchasePrice?: true
+    supplierReference?: true
   }
 
   export type InventoryBatchCountAggregateInputType = {
@@ -30277,6 +30710,11 @@ export namespace Prisma {
     status?: true
     receivedById?: true
     receivedByName?: true
+    purchaseUnit?: true
+    purchaseQuantity?: true
+    unitsPerPurchase?: true
+    purchasePrice?: true
+    supplierReference?: true
     attribution?: true
     _all?: true
   }
@@ -30387,6 +30825,11 @@ export namespace Prisma {
     status: $Enums.InventoryBatchStatus
     receivedById: string | null
     receivedByName: string | null
+    purchaseUnit: string | null
+    purchaseQuantity: Decimal | null
+    unitsPerPurchase: Decimal | null
+    purchasePrice: Decimal | null
+    supplierReference: string | null
     attribution: JsonValue | null
     _count: InventoryBatchCountAggregateOutputType | null
     _avg: InventoryBatchAvgAggregateOutputType | null
@@ -30429,6 +30872,11 @@ export namespace Prisma {
     status?: boolean
     receivedById?: boolean
     receivedByName?: boolean
+    purchaseUnit?: boolean
+    purchaseQuantity?: boolean
+    unitsPerPurchase?: boolean
+    purchasePrice?: boolean
+    supplierReference?: boolean
     attribution?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -30455,6 +30903,11 @@ export namespace Prisma {
     status?: boolean
     receivedById?: boolean
     receivedByName?: boolean
+    purchaseUnit?: boolean
+    purchaseQuantity?: boolean
+    unitsPerPurchase?: boolean
+    purchasePrice?: boolean
+    supplierReference?: boolean
     attribution?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -30481,6 +30934,11 @@ export namespace Prisma {
     status?: boolean
     receivedById?: boolean
     receivedByName?: boolean
+    purchaseUnit?: boolean
+    purchaseQuantity?: boolean
+    unitsPerPurchase?: boolean
+    purchasePrice?: boolean
+    supplierReference?: boolean
     attribution?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -30507,10 +30965,15 @@ export namespace Prisma {
     status?: boolean
     receivedById?: boolean
     receivedByName?: boolean
+    purchaseUnit?: boolean
+    purchaseQuantity?: boolean
+    unitsPerPurchase?: boolean
+    purchasePrice?: boolean
+    supplierReference?: boolean
     attribution?: boolean
   }
 
-  export type InventoryBatchOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "batchNumber" | "productId" | "productName" | "barcode" | "initialQuantity" | "quantityRemaining" | "unitCost" | "unitPrice" | "expiryDate" | "supplierId" | "supplierName" | "purchaseOrderNumber" | "receivedAt" | "updatedAt" | "status" | "receivedById" | "receivedByName" | "attribution", ExtArgs["result"]["inventoryBatch"]>
+  export type InventoryBatchOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "batchNumber" | "productId" | "productName" | "barcode" | "initialQuantity" | "quantityRemaining" | "unitCost" | "unitPrice" | "expiryDate" | "supplierId" | "supplierName" | "purchaseOrderNumber" | "receivedAt" | "updatedAt" | "status" | "receivedById" | "receivedByName" | "purchaseUnit" | "purchaseQuantity" | "unitsPerPurchase" | "purchasePrice" | "supplierReference" | "attribution", ExtArgs["result"]["inventoryBatch"]>
   export type InventoryBatchInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -30554,6 +31017,15 @@ export namespace Prisma {
       status: $Enums.InventoryBatchStatus
       receivedById: string | null
       receivedByName: string | null
+      /**
+       * Café batch: what the invoice said: bought in purchase units at an actual price per purchase unit; the
+       * stock quantity and unitCost above are derived from it (unitsPerPurchase stock units per purchase unit)
+       */
+      purchaseUnit: string | null
+      purchaseQuantity: Prisma.Decimal | null
+      unitsPerPurchase: Prisma.Decimal | null
+      purchasePrice: Prisma.Decimal | null
+      supplierReference: string | null
       /**
        * Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
        * offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
@@ -31005,6 +31477,11 @@ export namespace Prisma {
     readonly status: FieldRef<"InventoryBatch", 'InventoryBatchStatus'>
     readonly receivedById: FieldRef<"InventoryBatch", 'String'>
     readonly receivedByName: FieldRef<"InventoryBatch", 'String'>
+    readonly purchaseUnit: FieldRef<"InventoryBatch", 'String'>
+    readonly purchaseQuantity: FieldRef<"InventoryBatch", 'Decimal'>
+    readonly unitsPerPurchase: FieldRef<"InventoryBatch", 'Decimal'>
+    readonly purchasePrice: FieldRef<"InventoryBatch", 'Decimal'>
+    readonly supplierReference: FieldRef<"InventoryBatch", 'String'>
     readonly attribution: FieldRef<"InventoryBatch", 'Json'>
   }
     
@@ -31481,6 +31958,8 @@ export namespace Prisma {
     note: string | null
     batchId: string | null
     valueImpact: Decimal | null
+    wasteRef: string | null
+    wasteOf: string | null
     createdById: string | null
     createdByName: string | null
     createdAt: Date | null
@@ -31500,6 +31979,8 @@ export namespace Prisma {
     note: string | null
     batchId: string | null
     valueImpact: Decimal | null
+    wasteRef: string | null
+    wasteOf: string | null
     createdById: string | null
     createdByName: string | null
     createdAt: Date | null
@@ -31520,6 +32001,8 @@ export namespace Prisma {
     batchId: number
     batchAllocations: number
     valueImpact: number
+    wasteRef: number
+    wasteOf: number
     createdById: number
     createdByName: number
     attribution: number
@@ -31558,6 +32041,8 @@ export namespace Prisma {
     note?: true
     batchId?: true
     valueImpact?: true
+    wasteRef?: true
+    wasteOf?: true
     createdById?: true
     createdByName?: true
     createdAt?: true
@@ -31577,6 +32062,8 @@ export namespace Prisma {
     note?: true
     batchId?: true
     valueImpact?: true
+    wasteRef?: true
+    wasteOf?: true
     createdById?: true
     createdByName?: true
     createdAt?: true
@@ -31597,6 +32084,8 @@ export namespace Prisma {
     batchId?: true
     batchAllocations?: true
     valueImpact?: true
+    wasteRef?: true
+    wasteOf?: true
     createdById?: true
     createdByName?: true
     attribution?: true
@@ -31705,6 +32194,8 @@ export namespace Prisma {
     batchId: string | null
     batchAllocations: JsonValue | null
     valueImpact: Decimal
+    wasteRef: string | null
+    wasteOf: string | null
     createdById: string | null
     createdByName: string | null
     attribution: JsonValue | null
@@ -31745,6 +32236,8 @@ export namespace Prisma {
     batchId?: boolean
     batchAllocations?: boolean
     valueImpact?: boolean
+    wasteRef?: boolean
+    wasteOf?: boolean
     createdById?: boolean
     createdByName?: boolean
     attribution?: boolean
@@ -31768,6 +32261,8 @@ export namespace Prisma {
     batchId?: boolean
     batchAllocations?: boolean
     valueImpact?: boolean
+    wasteRef?: boolean
+    wasteOf?: boolean
     createdById?: boolean
     createdByName?: boolean
     attribution?: boolean
@@ -31791,6 +32286,8 @@ export namespace Prisma {
     batchId?: boolean
     batchAllocations?: boolean
     valueImpact?: boolean
+    wasteRef?: boolean
+    wasteOf?: boolean
     createdById?: boolean
     createdByName?: boolean
     attribution?: boolean
@@ -31814,13 +32311,15 @@ export namespace Prisma {
     batchId?: boolean
     batchAllocations?: boolean
     valueImpact?: boolean
+    wasteRef?: boolean
+    wasteOf?: boolean
     createdById?: boolean
     createdByName?: boolean
     attribution?: boolean
     createdAt?: boolean
   }
 
-  export type StockAdjustmentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "adjustmentNumber" | "productId" | "productName" | "barcode" | "quantityBefore" | "quantityChange" | "quantityAfter" | "reason" | "note" | "batchId" | "batchAllocations" | "valueImpact" | "createdById" | "createdByName" | "attribution" | "createdAt", ExtArgs["result"]["stockAdjustment"]>
+  export type StockAdjustmentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "adjustmentNumber" | "productId" | "productName" | "barcode" | "quantityBefore" | "quantityChange" | "quantityAfter" | "reason" | "note" | "batchId" | "batchAllocations" | "valueImpact" | "wasteRef" | "wasteOf" | "createdById" | "createdByName" | "attribution" | "createdAt", ExtArgs["result"]["stockAdjustment"]>
   export type StockAdjustmentInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -31855,6 +32354,11 @@ export namespace Prisma {
       batchId: string | null
       batchAllocations: Prisma.JsonValue | null
       valueImpact: Prisma.Decimal
+      /**
+       * Café batch: the remake/waste event this adjustment belongs to (one per ingredient) and what was wasted
+       */
+      wasteRef: string | null
+      wasteOf: string | null
       createdById: string | null
       createdByName: string | null
       /**
@@ -32303,6 +32807,8 @@ export namespace Prisma {
     readonly batchId: FieldRef<"StockAdjustment", 'String'>
     readonly batchAllocations: FieldRef<"StockAdjustment", 'Json'>
     readonly valueImpact: FieldRef<"StockAdjustment", 'Decimal'>
+    readonly wasteRef: FieldRef<"StockAdjustment", 'String'>
+    readonly wasteOf: FieldRef<"StockAdjustment", 'String'>
     readonly createdById: FieldRef<"StockAdjustment", 'String'>
     readonly createdByName: FieldRef<"StockAdjustment", 'String'>
     readonly attribution: FieldRef<"StockAdjustment", 'Json'>
@@ -53092,6 +53598,2246 @@ export namespace Prisma {
 
 
   /**
+   * Model ModifierGroup
+   */
+
+  export type AggregateModifierGroup = {
+    _count: ModifierGroupCountAggregateOutputType | null
+    _avg: ModifierGroupAvgAggregateOutputType | null
+    _sum: ModifierGroupSumAggregateOutputType | null
+    _min: ModifierGroupMinAggregateOutputType | null
+    _max: ModifierGroupMaxAggregateOutputType | null
+  }
+
+  export type ModifierGroupAvgAggregateOutputType = {
+    minSelect: number | null
+    maxSelect: number | null
+    sortOrder: number | null
+    revision: number | null
+  }
+
+  export type ModifierGroupSumAggregateOutputType = {
+    minSelect: number | null
+    maxSelect: number | null
+    sortOrder: number | null
+    revision: number | null
+  }
+
+  export type ModifierGroupMinAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    name: string | null
+    nameAr: string | null
+    required: boolean | null
+    minSelect: number | null
+    maxSelect: number | null
+    sortOrder: number | null
+    archived: boolean | null
+    revision: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ModifierGroupMaxAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    name: string | null
+    nameAr: string | null
+    required: boolean | null
+    minSelect: number | null
+    maxSelect: number | null
+    sortOrder: number | null
+    archived: boolean | null
+    revision: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ModifierGroupCountAggregateOutputType = {
+    id: number
+    tenantId: number
+    name: number
+    nameAr: number
+    required: number
+    minSelect: number
+    maxSelect: number
+    sortOrder: number
+    archived: number
+    options: number
+    revision: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type ModifierGroupAvgAggregateInputType = {
+    minSelect?: true
+    maxSelect?: true
+    sortOrder?: true
+    revision?: true
+  }
+
+  export type ModifierGroupSumAggregateInputType = {
+    minSelect?: true
+    maxSelect?: true
+    sortOrder?: true
+    revision?: true
+  }
+
+  export type ModifierGroupMinAggregateInputType = {
+    id?: true
+    tenantId?: true
+    name?: true
+    nameAr?: true
+    required?: true
+    minSelect?: true
+    maxSelect?: true
+    sortOrder?: true
+    archived?: true
+    revision?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ModifierGroupMaxAggregateInputType = {
+    id?: true
+    tenantId?: true
+    name?: true
+    nameAr?: true
+    required?: true
+    minSelect?: true
+    maxSelect?: true
+    sortOrder?: true
+    archived?: true
+    revision?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ModifierGroupCountAggregateInputType = {
+    id?: true
+    tenantId?: true
+    name?: true
+    nameAr?: true
+    required?: true
+    minSelect?: true
+    maxSelect?: true
+    sortOrder?: true
+    archived?: true
+    options?: true
+    revision?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type ModifierGroupAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ModifierGroup to aggregate.
+     */
+    where?: ModifierGroupWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ModifierGroups to fetch.
+     */
+    orderBy?: ModifierGroupOrderByWithRelationInput | ModifierGroupOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ModifierGroupWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ModifierGroups from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ModifierGroups.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ModifierGroups
+    **/
+    _count?: true | ModifierGroupCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ModifierGroupAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ModifierGroupSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ModifierGroupMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ModifierGroupMaxAggregateInputType
+  }
+
+  export type GetModifierGroupAggregateType<T extends ModifierGroupAggregateArgs> = {
+        [P in keyof T & keyof AggregateModifierGroup]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateModifierGroup[P]>
+      : GetScalarType<T[P], AggregateModifierGroup[P]>
+  }
+
+
+
+
+  export type ModifierGroupGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ModifierGroupWhereInput
+    orderBy?: ModifierGroupOrderByWithAggregationInput | ModifierGroupOrderByWithAggregationInput[]
+    by: ModifierGroupScalarFieldEnum[] | ModifierGroupScalarFieldEnum
+    having?: ModifierGroupScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ModifierGroupCountAggregateInputType | true
+    _avg?: ModifierGroupAvgAggregateInputType
+    _sum?: ModifierGroupSumAggregateInputType
+    _min?: ModifierGroupMinAggregateInputType
+    _max?: ModifierGroupMaxAggregateInputType
+  }
+
+  export type ModifierGroupGroupByOutputType = {
+    id: string
+    tenantId: string
+    name: string
+    nameAr: string
+    required: boolean
+    minSelect: number
+    maxSelect: number
+    sortOrder: number
+    archived: boolean
+    options: JsonValue
+    revision: number
+    createdAt: Date
+    updatedAt: Date
+    _count: ModifierGroupCountAggregateOutputType | null
+    _avg: ModifierGroupAvgAggregateOutputType | null
+    _sum: ModifierGroupSumAggregateOutputType | null
+    _min: ModifierGroupMinAggregateOutputType | null
+    _max: ModifierGroupMaxAggregateOutputType | null
+  }
+
+  type GetModifierGroupGroupByPayload<T extends ModifierGroupGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ModifierGroupGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ModifierGroupGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ModifierGroupGroupByOutputType[P]>
+            : GetScalarType<T[P], ModifierGroupGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ModifierGroupSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    name?: boolean
+    nameAr?: boolean
+    required?: boolean
+    minSelect?: boolean
+    maxSelect?: boolean
+    sortOrder?: boolean
+    archived?: boolean
+    options?: boolean
+    revision?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["modifierGroup"]>
+
+  export type ModifierGroupSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    name?: boolean
+    nameAr?: boolean
+    required?: boolean
+    minSelect?: boolean
+    maxSelect?: boolean
+    sortOrder?: boolean
+    archived?: boolean
+    options?: boolean
+    revision?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["modifierGroup"]>
+
+  export type ModifierGroupSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    name?: boolean
+    nameAr?: boolean
+    required?: boolean
+    minSelect?: boolean
+    maxSelect?: boolean
+    sortOrder?: boolean
+    archived?: boolean
+    options?: boolean
+    revision?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["modifierGroup"]>
+
+  export type ModifierGroupSelectScalar = {
+    id?: boolean
+    tenantId?: boolean
+    name?: boolean
+    nameAr?: boolean
+    required?: boolean
+    minSelect?: boolean
+    maxSelect?: boolean
+    sortOrder?: boolean
+    archived?: boolean
+    options?: boolean
+    revision?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type ModifierGroupOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "nameAr" | "required" | "minSelect" | "maxSelect" | "sortOrder" | "archived" | "options" | "revision" | "createdAt" | "updatedAt", ExtArgs["result"]["modifierGroup"]>
+
+  export type $ModifierGroupPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ModifierGroup"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      tenantId: string
+      name: string
+      nameAr: string
+      required: boolean
+      minSelect: number
+      maxSelect: number
+      sortOrder: number
+      archived: boolean
+      options: Prisma.JsonValue
+      revision: number
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["modifierGroup"]>
+    composites: {}
+  }
+
+  type ModifierGroupGetPayload<S extends boolean | null | undefined | ModifierGroupDefaultArgs> = $Result.GetResult<Prisma.$ModifierGroupPayload, S>
+
+  type ModifierGroupCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ModifierGroupFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: ModifierGroupCountAggregateInputType | true
+    }
+
+  export interface ModifierGroupDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ModifierGroup'], meta: { name: 'ModifierGroup' } }
+    /**
+     * Find zero or one ModifierGroup that matches the filter.
+     * @param {ModifierGroupFindUniqueArgs} args - Arguments to find a ModifierGroup
+     * @example
+     * // Get one ModifierGroup
+     * const modifierGroup = await prisma.modifierGroup.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ModifierGroupFindUniqueArgs>(args: SelectSubset<T, ModifierGroupFindUniqueArgs<ExtArgs>>): Prisma__ModifierGroupClient<$Result.GetResult<Prisma.$ModifierGroupPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one ModifierGroup that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {ModifierGroupFindUniqueOrThrowArgs} args - Arguments to find a ModifierGroup
+     * @example
+     * // Get one ModifierGroup
+     * const modifierGroup = await prisma.modifierGroup.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ModifierGroupFindUniqueOrThrowArgs>(args: SelectSubset<T, ModifierGroupFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ModifierGroupClient<$Result.GetResult<Prisma.$ModifierGroupPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ModifierGroup that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ModifierGroupFindFirstArgs} args - Arguments to find a ModifierGroup
+     * @example
+     * // Get one ModifierGroup
+     * const modifierGroup = await prisma.modifierGroup.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ModifierGroupFindFirstArgs>(args?: SelectSubset<T, ModifierGroupFindFirstArgs<ExtArgs>>): Prisma__ModifierGroupClient<$Result.GetResult<Prisma.$ModifierGroupPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ModifierGroup that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ModifierGroupFindFirstOrThrowArgs} args - Arguments to find a ModifierGroup
+     * @example
+     * // Get one ModifierGroup
+     * const modifierGroup = await prisma.modifierGroup.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ModifierGroupFindFirstOrThrowArgs>(args?: SelectSubset<T, ModifierGroupFindFirstOrThrowArgs<ExtArgs>>): Prisma__ModifierGroupClient<$Result.GetResult<Prisma.$ModifierGroupPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more ModifierGroups that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ModifierGroupFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ModifierGroups
+     * const modifierGroups = await prisma.modifierGroup.findMany()
+     * 
+     * // Get first 10 ModifierGroups
+     * const modifierGroups = await prisma.modifierGroup.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const modifierGroupWithIdOnly = await prisma.modifierGroup.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ModifierGroupFindManyArgs>(args?: SelectSubset<T, ModifierGroupFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ModifierGroupPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a ModifierGroup.
+     * @param {ModifierGroupCreateArgs} args - Arguments to create a ModifierGroup.
+     * @example
+     * // Create one ModifierGroup
+     * const ModifierGroup = await prisma.modifierGroup.create({
+     *   data: {
+     *     // ... data to create a ModifierGroup
+     *   }
+     * })
+     * 
+     */
+    create<T extends ModifierGroupCreateArgs>(args: SelectSubset<T, ModifierGroupCreateArgs<ExtArgs>>): Prisma__ModifierGroupClient<$Result.GetResult<Prisma.$ModifierGroupPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many ModifierGroups.
+     * @param {ModifierGroupCreateManyArgs} args - Arguments to create many ModifierGroups.
+     * @example
+     * // Create many ModifierGroups
+     * const modifierGroup = await prisma.modifierGroup.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ModifierGroupCreateManyArgs>(args?: SelectSubset<T, ModifierGroupCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ModifierGroups and returns the data saved in the database.
+     * @param {ModifierGroupCreateManyAndReturnArgs} args - Arguments to create many ModifierGroups.
+     * @example
+     * // Create many ModifierGroups
+     * const modifierGroup = await prisma.modifierGroup.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ModifierGroups and only return the `id`
+     * const modifierGroupWithIdOnly = await prisma.modifierGroup.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ModifierGroupCreateManyAndReturnArgs>(args?: SelectSubset<T, ModifierGroupCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ModifierGroupPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a ModifierGroup.
+     * @param {ModifierGroupDeleteArgs} args - Arguments to delete one ModifierGroup.
+     * @example
+     * // Delete one ModifierGroup
+     * const ModifierGroup = await prisma.modifierGroup.delete({
+     *   where: {
+     *     // ... filter to delete one ModifierGroup
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ModifierGroupDeleteArgs>(args: SelectSubset<T, ModifierGroupDeleteArgs<ExtArgs>>): Prisma__ModifierGroupClient<$Result.GetResult<Prisma.$ModifierGroupPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one ModifierGroup.
+     * @param {ModifierGroupUpdateArgs} args - Arguments to update one ModifierGroup.
+     * @example
+     * // Update one ModifierGroup
+     * const modifierGroup = await prisma.modifierGroup.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ModifierGroupUpdateArgs>(args: SelectSubset<T, ModifierGroupUpdateArgs<ExtArgs>>): Prisma__ModifierGroupClient<$Result.GetResult<Prisma.$ModifierGroupPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more ModifierGroups.
+     * @param {ModifierGroupDeleteManyArgs} args - Arguments to filter ModifierGroups to delete.
+     * @example
+     * // Delete a few ModifierGroups
+     * const { count } = await prisma.modifierGroup.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ModifierGroupDeleteManyArgs>(args?: SelectSubset<T, ModifierGroupDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ModifierGroups.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ModifierGroupUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ModifierGroups
+     * const modifierGroup = await prisma.modifierGroup.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ModifierGroupUpdateManyArgs>(args: SelectSubset<T, ModifierGroupUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ModifierGroups and returns the data updated in the database.
+     * @param {ModifierGroupUpdateManyAndReturnArgs} args - Arguments to update many ModifierGroups.
+     * @example
+     * // Update many ModifierGroups
+     * const modifierGroup = await prisma.modifierGroup.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more ModifierGroups and only return the `id`
+     * const modifierGroupWithIdOnly = await prisma.modifierGroup.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends ModifierGroupUpdateManyAndReturnArgs>(args: SelectSubset<T, ModifierGroupUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ModifierGroupPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one ModifierGroup.
+     * @param {ModifierGroupUpsertArgs} args - Arguments to update or create a ModifierGroup.
+     * @example
+     * // Update or create a ModifierGroup
+     * const modifierGroup = await prisma.modifierGroup.upsert({
+     *   create: {
+     *     // ... data to create a ModifierGroup
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ModifierGroup we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ModifierGroupUpsertArgs>(args: SelectSubset<T, ModifierGroupUpsertArgs<ExtArgs>>): Prisma__ModifierGroupClient<$Result.GetResult<Prisma.$ModifierGroupPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of ModifierGroups.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ModifierGroupCountArgs} args - Arguments to filter ModifierGroups to count.
+     * @example
+     * // Count the number of ModifierGroups
+     * const count = await prisma.modifierGroup.count({
+     *   where: {
+     *     // ... the filter for the ModifierGroups we want to count
+     *   }
+     * })
+    **/
+    count<T extends ModifierGroupCountArgs>(
+      args?: Subset<T, ModifierGroupCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ModifierGroupCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ModifierGroup.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ModifierGroupAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ModifierGroupAggregateArgs>(args: Subset<T, ModifierGroupAggregateArgs>): Prisma.PrismaPromise<GetModifierGroupAggregateType<T>>
+
+    /**
+     * Group by ModifierGroup.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ModifierGroupGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ModifierGroupGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ModifierGroupGroupByArgs['orderBy'] }
+        : { orderBy?: ModifierGroupGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ModifierGroupGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetModifierGroupGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ModifierGroup model
+   */
+  readonly fields: ModifierGroupFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ModifierGroup.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ModifierGroupClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ModifierGroup model
+   */
+  interface ModifierGroupFieldRefs {
+    readonly id: FieldRef<"ModifierGroup", 'String'>
+    readonly tenantId: FieldRef<"ModifierGroup", 'String'>
+    readonly name: FieldRef<"ModifierGroup", 'String'>
+    readonly nameAr: FieldRef<"ModifierGroup", 'String'>
+    readonly required: FieldRef<"ModifierGroup", 'Boolean'>
+    readonly minSelect: FieldRef<"ModifierGroup", 'Int'>
+    readonly maxSelect: FieldRef<"ModifierGroup", 'Int'>
+    readonly sortOrder: FieldRef<"ModifierGroup", 'Int'>
+    readonly archived: FieldRef<"ModifierGroup", 'Boolean'>
+    readonly options: FieldRef<"ModifierGroup", 'Json'>
+    readonly revision: FieldRef<"ModifierGroup", 'Int'>
+    readonly createdAt: FieldRef<"ModifierGroup", 'DateTime'>
+    readonly updatedAt: FieldRef<"ModifierGroup", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ModifierGroup findUnique
+   */
+  export type ModifierGroupFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ModifierGroup
+     */
+    select?: ModifierGroupSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ModifierGroup
+     */
+    omit?: ModifierGroupOmit<ExtArgs> | null
+    /**
+     * Filter, which ModifierGroup to fetch.
+     */
+    where: ModifierGroupWhereUniqueInput
+  }
+
+  /**
+   * ModifierGroup findUniqueOrThrow
+   */
+  export type ModifierGroupFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ModifierGroup
+     */
+    select?: ModifierGroupSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ModifierGroup
+     */
+    omit?: ModifierGroupOmit<ExtArgs> | null
+    /**
+     * Filter, which ModifierGroup to fetch.
+     */
+    where: ModifierGroupWhereUniqueInput
+  }
+
+  /**
+   * ModifierGroup findFirst
+   */
+  export type ModifierGroupFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ModifierGroup
+     */
+    select?: ModifierGroupSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ModifierGroup
+     */
+    omit?: ModifierGroupOmit<ExtArgs> | null
+    /**
+     * Filter, which ModifierGroup to fetch.
+     */
+    where?: ModifierGroupWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ModifierGroups to fetch.
+     */
+    orderBy?: ModifierGroupOrderByWithRelationInput | ModifierGroupOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ModifierGroups.
+     */
+    cursor?: ModifierGroupWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ModifierGroups from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ModifierGroups.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ModifierGroups.
+     */
+    distinct?: ModifierGroupScalarFieldEnum | ModifierGroupScalarFieldEnum[]
+  }
+
+  /**
+   * ModifierGroup findFirstOrThrow
+   */
+  export type ModifierGroupFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ModifierGroup
+     */
+    select?: ModifierGroupSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ModifierGroup
+     */
+    omit?: ModifierGroupOmit<ExtArgs> | null
+    /**
+     * Filter, which ModifierGroup to fetch.
+     */
+    where?: ModifierGroupWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ModifierGroups to fetch.
+     */
+    orderBy?: ModifierGroupOrderByWithRelationInput | ModifierGroupOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ModifierGroups.
+     */
+    cursor?: ModifierGroupWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ModifierGroups from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ModifierGroups.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ModifierGroups.
+     */
+    distinct?: ModifierGroupScalarFieldEnum | ModifierGroupScalarFieldEnum[]
+  }
+
+  /**
+   * ModifierGroup findMany
+   */
+  export type ModifierGroupFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ModifierGroup
+     */
+    select?: ModifierGroupSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ModifierGroup
+     */
+    omit?: ModifierGroupOmit<ExtArgs> | null
+    /**
+     * Filter, which ModifierGroups to fetch.
+     */
+    where?: ModifierGroupWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ModifierGroups to fetch.
+     */
+    orderBy?: ModifierGroupOrderByWithRelationInput | ModifierGroupOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ModifierGroups.
+     */
+    cursor?: ModifierGroupWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ModifierGroups from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ModifierGroups.
+     */
+    skip?: number
+    distinct?: ModifierGroupScalarFieldEnum | ModifierGroupScalarFieldEnum[]
+  }
+
+  /**
+   * ModifierGroup create
+   */
+  export type ModifierGroupCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ModifierGroup
+     */
+    select?: ModifierGroupSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ModifierGroup
+     */
+    omit?: ModifierGroupOmit<ExtArgs> | null
+    /**
+     * The data needed to create a ModifierGroup.
+     */
+    data: XOR<ModifierGroupCreateInput, ModifierGroupUncheckedCreateInput>
+  }
+
+  /**
+   * ModifierGroup createMany
+   */
+  export type ModifierGroupCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ModifierGroups.
+     */
+    data: ModifierGroupCreateManyInput | ModifierGroupCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ModifierGroup createManyAndReturn
+   */
+  export type ModifierGroupCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ModifierGroup
+     */
+    select?: ModifierGroupSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ModifierGroup
+     */
+    omit?: ModifierGroupOmit<ExtArgs> | null
+    /**
+     * The data used to create many ModifierGroups.
+     */
+    data: ModifierGroupCreateManyInput | ModifierGroupCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ModifierGroup update
+   */
+  export type ModifierGroupUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ModifierGroup
+     */
+    select?: ModifierGroupSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ModifierGroup
+     */
+    omit?: ModifierGroupOmit<ExtArgs> | null
+    /**
+     * The data needed to update a ModifierGroup.
+     */
+    data: XOR<ModifierGroupUpdateInput, ModifierGroupUncheckedUpdateInput>
+    /**
+     * Choose, which ModifierGroup to update.
+     */
+    where: ModifierGroupWhereUniqueInput
+  }
+
+  /**
+   * ModifierGroup updateMany
+   */
+  export type ModifierGroupUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ModifierGroups.
+     */
+    data: XOR<ModifierGroupUpdateManyMutationInput, ModifierGroupUncheckedUpdateManyInput>
+    /**
+     * Filter which ModifierGroups to update
+     */
+    where?: ModifierGroupWhereInput
+    /**
+     * Limit how many ModifierGroups to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ModifierGroup updateManyAndReturn
+   */
+  export type ModifierGroupUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ModifierGroup
+     */
+    select?: ModifierGroupSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ModifierGroup
+     */
+    omit?: ModifierGroupOmit<ExtArgs> | null
+    /**
+     * The data used to update ModifierGroups.
+     */
+    data: XOR<ModifierGroupUpdateManyMutationInput, ModifierGroupUncheckedUpdateManyInput>
+    /**
+     * Filter which ModifierGroups to update
+     */
+    where?: ModifierGroupWhereInput
+    /**
+     * Limit how many ModifierGroups to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ModifierGroup upsert
+   */
+  export type ModifierGroupUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ModifierGroup
+     */
+    select?: ModifierGroupSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ModifierGroup
+     */
+    omit?: ModifierGroupOmit<ExtArgs> | null
+    /**
+     * The filter to search for the ModifierGroup to update in case it exists.
+     */
+    where: ModifierGroupWhereUniqueInput
+    /**
+     * In case the ModifierGroup found by the `where` argument doesn't exist, create a new ModifierGroup with this data.
+     */
+    create: XOR<ModifierGroupCreateInput, ModifierGroupUncheckedCreateInput>
+    /**
+     * In case the ModifierGroup was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ModifierGroupUpdateInput, ModifierGroupUncheckedUpdateInput>
+  }
+
+  /**
+   * ModifierGroup delete
+   */
+  export type ModifierGroupDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ModifierGroup
+     */
+    select?: ModifierGroupSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ModifierGroup
+     */
+    omit?: ModifierGroupOmit<ExtArgs> | null
+    /**
+     * Filter which ModifierGroup to delete.
+     */
+    where: ModifierGroupWhereUniqueInput
+  }
+
+  /**
+   * ModifierGroup deleteMany
+   */
+  export type ModifierGroupDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ModifierGroups to delete
+     */
+    where?: ModifierGroupWhereInput
+    /**
+     * Limit how many ModifierGroups to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * ModifierGroup without action
+   */
+  export type ModifierGroupDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ModifierGroup
+     */
+    select?: ModifierGroupSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ModifierGroup
+     */
+    omit?: ModifierGroupOmit<ExtArgs> | null
+  }
+
+
+  /**
+   * Model RecipeRevision
+   */
+
+  export type AggregateRecipeRevision = {
+    _count: RecipeRevisionCountAggregateOutputType | null
+    _avg: RecipeRevisionAvgAggregateOutputType | null
+    _sum: RecipeRevisionSumAggregateOutputType | null
+    _min: RecipeRevisionMinAggregateOutputType | null
+    _max: RecipeRevisionMaxAggregateOutputType | null
+  }
+
+  export type RecipeRevisionAvgAggregateOutputType = {
+    yield: number | null
+  }
+
+  export type RecipeRevisionSumAggregateOutputType = {
+    yield: number | null
+  }
+
+  export type RecipeRevisionMinAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    productSyncId: string | null
+    yield: number | null
+    note: string | null
+    parentRev: string | null
+    createdById: string | null
+    createdByName: string | null
+    createdAt: Date | null
+  }
+
+  export type RecipeRevisionMaxAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    productSyncId: string | null
+    yield: number | null
+    note: string | null
+    parentRev: string | null
+    createdById: string | null
+    createdByName: string | null
+    createdAt: Date | null
+  }
+
+  export type RecipeRevisionCountAggregateOutputType = {
+    id: number
+    tenantId: number
+    productSyncId: number
+    yield: number
+    lines: number
+    note: number
+    parentRev: number
+    createdById: number
+    createdByName: number
+    attribution: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type RecipeRevisionAvgAggregateInputType = {
+    yield?: true
+  }
+
+  export type RecipeRevisionSumAggregateInputType = {
+    yield?: true
+  }
+
+  export type RecipeRevisionMinAggregateInputType = {
+    id?: true
+    tenantId?: true
+    productSyncId?: true
+    yield?: true
+    note?: true
+    parentRev?: true
+    createdById?: true
+    createdByName?: true
+    createdAt?: true
+  }
+
+  export type RecipeRevisionMaxAggregateInputType = {
+    id?: true
+    tenantId?: true
+    productSyncId?: true
+    yield?: true
+    note?: true
+    parentRev?: true
+    createdById?: true
+    createdByName?: true
+    createdAt?: true
+  }
+
+  export type RecipeRevisionCountAggregateInputType = {
+    id?: true
+    tenantId?: true
+    productSyncId?: true
+    yield?: true
+    lines?: true
+    note?: true
+    parentRev?: true
+    createdById?: true
+    createdByName?: true
+    attribution?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type RecipeRevisionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RecipeRevision to aggregate.
+     */
+    where?: RecipeRevisionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RecipeRevisions to fetch.
+     */
+    orderBy?: RecipeRevisionOrderByWithRelationInput | RecipeRevisionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: RecipeRevisionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RecipeRevisions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RecipeRevisions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned RecipeRevisions
+    **/
+    _count?: true | RecipeRevisionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: RecipeRevisionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: RecipeRevisionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: RecipeRevisionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: RecipeRevisionMaxAggregateInputType
+  }
+
+  export type GetRecipeRevisionAggregateType<T extends RecipeRevisionAggregateArgs> = {
+        [P in keyof T & keyof AggregateRecipeRevision]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateRecipeRevision[P]>
+      : GetScalarType<T[P], AggregateRecipeRevision[P]>
+  }
+
+
+
+
+  export type RecipeRevisionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RecipeRevisionWhereInput
+    orderBy?: RecipeRevisionOrderByWithAggregationInput | RecipeRevisionOrderByWithAggregationInput[]
+    by: RecipeRevisionScalarFieldEnum[] | RecipeRevisionScalarFieldEnum
+    having?: RecipeRevisionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: RecipeRevisionCountAggregateInputType | true
+    _avg?: RecipeRevisionAvgAggregateInputType
+    _sum?: RecipeRevisionSumAggregateInputType
+    _min?: RecipeRevisionMinAggregateInputType
+    _max?: RecipeRevisionMaxAggregateInputType
+  }
+
+  export type RecipeRevisionGroupByOutputType = {
+    id: string
+    tenantId: string
+    productSyncId: string
+    yield: number
+    lines: JsonValue
+    note: string
+    parentRev: string | null
+    createdById: string | null
+    createdByName: string | null
+    attribution: JsonValue | null
+    createdAt: Date
+    _count: RecipeRevisionCountAggregateOutputType | null
+    _avg: RecipeRevisionAvgAggregateOutputType | null
+    _sum: RecipeRevisionSumAggregateOutputType | null
+    _min: RecipeRevisionMinAggregateOutputType | null
+    _max: RecipeRevisionMaxAggregateOutputType | null
+  }
+
+  type GetRecipeRevisionGroupByPayload<T extends RecipeRevisionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<RecipeRevisionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof RecipeRevisionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], RecipeRevisionGroupByOutputType[P]>
+            : GetScalarType<T[P], RecipeRevisionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type RecipeRevisionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    productSyncId?: boolean
+    yield?: boolean
+    lines?: boolean
+    note?: boolean
+    parentRev?: boolean
+    createdById?: boolean
+    createdByName?: boolean
+    attribution?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["recipeRevision"]>
+
+  export type RecipeRevisionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    productSyncId?: boolean
+    yield?: boolean
+    lines?: boolean
+    note?: boolean
+    parentRev?: boolean
+    createdById?: boolean
+    createdByName?: boolean
+    attribution?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["recipeRevision"]>
+
+  export type RecipeRevisionSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    productSyncId?: boolean
+    yield?: boolean
+    lines?: boolean
+    note?: boolean
+    parentRev?: boolean
+    createdById?: boolean
+    createdByName?: boolean
+    attribution?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["recipeRevision"]>
+
+  export type RecipeRevisionSelectScalar = {
+    id?: boolean
+    tenantId?: boolean
+    productSyncId?: boolean
+    yield?: boolean
+    lines?: boolean
+    note?: boolean
+    parentRev?: boolean
+    createdById?: boolean
+    createdByName?: boolean
+    attribution?: boolean
+    createdAt?: boolean
+  }
+
+  export type RecipeRevisionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "productSyncId" | "yield" | "lines" | "note" | "parentRev" | "createdById" | "createdByName" | "attribution" | "createdAt", ExtArgs["result"]["recipeRevision"]>
+
+  export type $RecipeRevisionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "RecipeRevision"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      tenantId: string
+      productSyncId: string
+      yield: number
+      lines: Prisma.JsonValue
+      note: string
+      parentRev: string | null
+      createdById: string | null
+      createdByName: string | null
+      attribution: Prisma.JsonValue | null
+      createdAt: Date
+    }, ExtArgs["result"]["recipeRevision"]>
+    composites: {}
+  }
+
+  type RecipeRevisionGetPayload<S extends boolean | null | undefined | RecipeRevisionDefaultArgs> = $Result.GetResult<Prisma.$RecipeRevisionPayload, S>
+
+  type RecipeRevisionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<RecipeRevisionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: RecipeRevisionCountAggregateInputType | true
+    }
+
+  export interface RecipeRevisionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['RecipeRevision'], meta: { name: 'RecipeRevision' } }
+    /**
+     * Find zero or one RecipeRevision that matches the filter.
+     * @param {RecipeRevisionFindUniqueArgs} args - Arguments to find a RecipeRevision
+     * @example
+     * // Get one RecipeRevision
+     * const recipeRevision = await prisma.recipeRevision.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends RecipeRevisionFindUniqueArgs>(args: SelectSubset<T, RecipeRevisionFindUniqueArgs<ExtArgs>>): Prisma__RecipeRevisionClient<$Result.GetResult<Prisma.$RecipeRevisionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one RecipeRevision that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {RecipeRevisionFindUniqueOrThrowArgs} args - Arguments to find a RecipeRevision
+     * @example
+     * // Get one RecipeRevision
+     * const recipeRevision = await prisma.recipeRevision.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends RecipeRevisionFindUniqueOrThrowArgs>(args: SelectSubset<T, RecipeRevisionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RecipeRevisionClient<$Result.GetResult<Prisma.$RecipeRevisionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first RecipeRevision that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RecipeRevisionFindFirstArgs} args - Arguments to find a RecipeRevision
+     * @example
+     * // Get one RecipeRevision
+     * const recipeRevision = await prisma.recipeRevision.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends RecipeRevisionFindFirstArgs>(args?: SelectSubset<T, RecipeRevisionFindFirstArgs<ExtArgs>>): Prisma__RecipeRevisionClient<$Result.GetResult<Prisma.$RecipeRevisionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first RecipeRevision that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RecipeRevisionFindFirstOrThrowArgs} args - Arguments to find a RecipeRevision
+     * @example
+     * // Get one RecipeRevision
+     * const recipeRevision = await prisma.recipeRevision.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends RecipeRevisionFindFirstOrThrowArgs>(args?: SelectSubset<T, RecipeRevisionFindFirstOrThrowArgs<ExtArgs>>): Prisma__RecipeRevisionClient<$Result.GetResult<Prisma.$RecipeRevisionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more RecipeRevisions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RecipeRevisionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all RecipeRevisions
+     * const recipeRevisions = await prisma.recipeRevision.findMany()
+     * 
+     * // Get first 10 RecipeRevisions
+     * const recipeRevisions = await prisma.recipeRevision.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const recipeRevisionWithIdOnly = await prisma.recipeRevision.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends RecipeRevisionFindManyArgs>(args?: SelectSubset<T, RecipeRevisionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RecipeRevisionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a RecipeRevision.
+     * @param {RecipeRevisionCreateArgs} args - Arguments to create a RecipeRevision.
+     * @example
+     * // Create one RecipeRevision
+     * const RecipeRevision = await prisma.recipeRevision.create({
+     *   data: {
+     *     // ... data to create a RecipeRevision
+     *   }
+     * })
+     * 
+     */
+    create<T extends RecipeRevisionCreateArgs>(args: SelectSubset<T, RecipeRevisionCreateArgs<ExtArgs>>): Prisma__RecipeRevisionClient<$Result.GetResult<Prisma.$RecipeRevisionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many RecipeRevisions.
+     * @param {RecipeRevisionCreateManyArgs} args - Arguments to create many RecipeRevisions.
+     * @example
+     * // Create many RecipeRevisions
+     * const recipeRevision = await prisma.recipeRevision.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends RecipeRevisionCreateManyArgs>(args?: SelectSubset<T, RecipeRevisionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many RecipeRevisions and returns the data saved in the database.
+     * @param {RecipeRevisionCreateManyAndReturnArgs} args - Arguments to create many RecipeRevisions.
+     * @example
+     * // Create many RecipeRevisions
+     * const recipeRevision = await prisma.recipeRevision.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many RecipeRevisions and only return the `id`
+     * const recipeRevisionWithIdOnly = await prisma.recipeRevision.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends RecipeRevisionCreateManyAndReturnArgs>(args?: SelectSubset<T, RecipeRevisionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RecipeRevisionPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a RecipeRevision.
+     * @param {RecipeRevisionDeleteArgs} args - Arguments to delete one RecipeRevision.
+     * @example
+     * // Delete one RecipeRevision
+     * const RecipeRevision = await prisma.recipeRevision.delete({
+     *   where: {
+     *     // ... filter to delete one RecipeRevision
+     *   }
+     * })
+     * 
+     */
+    delete<T extends RecipeRevisionDeleteArgs>(args: SelectSubset<T, RecipeRevisionDeleteArgs<ExtArgs>>): Prisma__RecipeRevisionClient<$Result.GetResult<Prisma.$RecipeRevisionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one RecipeRevision.
+     * @param {RecipeRevisionUpdateArgs} args - Arguments to update one RecipeRevision.
+     * @example
+     * // Update one RecipeRevision
+     * const recipeRevision = await prisma.recipeRevision.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends RecipeRevisionUpdateArgs>(args: SelectSubset<T, RecipeRevisionUpdateArgs<ExtArgs>>): Prisma__RecipeRevisionClient<$Result.GetResult<Prisma.$RecipeRevisionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more RecipeRevisions.
+     * @param {RecipeRevisionDeleteManyArgs} args - Arguments to filter RecipeRevisions to delete.
+     * @example
+     * // Delete a few RecipeRevisions
+     * const { count } = await prisma.recipeRevision.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends RecipeRevisionDeleteManyArgs>(args?: SelectSubset<T, RecipeRevisionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more RecipeRevisions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RecipeRevisionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many RecipeRevisions
+     * const recipeRevision = await prisma.recipeRevision.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends RecipeRevisionUpdateManyArgs>(args: SelectSubset<T, RecipeRevisionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more RecipeRevisions and returns the data updated in the database.
+     * @param {RecipeRevisionUpdateManyAndReturnArgs} args - Arguments to update many RecipeRevisions.
+     * @example
+     * // Update many RecipeRevisions
+     * const recipeRevision = await prisma.recipeRevision.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more RecipeRevisions and only return the `id`
+     * const recipeRevisionWithIdOnly = await prisma.recipeRevision.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends RecipeRevisionUpdateManyAndReturnArgs>(args: SelectSubset<T, RecipeRevisionUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RecipeRevisionPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one RecipeRevision.
+     * @param {RecipeRevisionUpsertArgs} args - Arguments to update or create a RecipeRevision.
+     * @example
+     * // Update or create a RecipeRevision
+     * const recipeRevision = await prisma.recipeRevision.upsert({
+     *   create: {
+     *     // ... data to create a RecipeRevision
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the RecipeRevision we want to update
+     *   }
+     * })
+     */
+    upsert<T extends RecipeRevisionUpsertArgs>(args: SelectSubset<T, RecipeRevisionUpsertArgs<ExtArgs>>): Prisma__RecipeRevisionClient<$Result.GetResult<Prisma.$RecipeRevisionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of RecipeRevisions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RecipeRevisionCountArgs} args - Arguments to filter RecipeRevisions to count.
+     * @example
+     * // Count the number of RecipeRevisions
+     * const count = await prisma.recipeRevision.count({
+     *   where: {
+     *     // ... the filter for the RecipeRevisions we want to count
+     *   }
+     * })
+    **/
+    count<T extends RecipeRevisionCountArgs>(
+      args?: Subset<T, RecipeRevisionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], RecipeRevisionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a RecipeRevision.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RecipeRevisionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends RecipeRevisionAggregateArgs>(args: Subset<T, RecipeRevisionAggregateArgs>): Prisma.PrismaPromise<GetRecipeRevisionAggregateType<T>>
+
+    /**
+     * Group by RecipeRevision.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RecipeRevisionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends RecipeRevisionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: RecipeRevisionGroupByArgs['orderBy'] }
+        : { orderBy?: RecipeRevisionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, RecipeRevisionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRecipeRevisionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the RecipeRevision model
+   */
+  readonly fields: RecipeRevisionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for RecipeRevision.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__RecipeRevisionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the RecipeRevision model
+   */
+  interface RecipeRevisionFieldRefs {
+    readonly id: FieldRef<"RecipeRevision", 'String'>
+    readonly tenantId: FieldRef<"RecipeRevision", 'String'>
+    readonly productSyncId: FieldRef<"RecipeRevision", 'String'>
+    readonly yield: FieldRef<"RecipeRevision", 'Int'>
+    readonly lines: FieldRef<"RecipeRevision", 'Json'>
+    readonly note: FieldRef<"RecipeRevision", 'String'>
+    readonly parentRev: FieldRef<"RecipeRevision", 'String'>
+    readonly createdById: FieldRef<"RecipeRevision", 'String'>
+    readonly createdByName: FieldRef<"RecipeRevision", 'String'>
+    readonly attribution: FieldRef<"RecipeRevision", 'Json'>
+    readonly createdAt: FieldRef<"RecipeRevision", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * RecipeRevision findUnique
+   */
+  export type RecipeRevisionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecipeRevision
+     */
+    select?: RecipeRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RecipeRevision
+     */
+    omit?: RecipeRevisionOmit<ExtArgs> | null
+    /**
+     * Filter, which RecipeRevision to fetch.
+     */
+    where: RecipeRevisionWhereUniqueInput
+  }
+
+  /**
+   * RecipeRevision findUniqueOrThrow
+   */
+  export type RecipeRevisionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecipeRevision
+     */
+    select?: RecipeRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RecipeRevision
+     */
+    omit?: RecipeRevisionOmit<ExtArgs> | null
+    /**
+     * Filter, which RecipeRevision to fetch.
+     */
+    where: RecipeRevisionWhereUniqueInput
+  }
+
+  /**
+   * RecipeRevision findFirst
+   */
+  export type RecipeRevisionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecipeRevision
+     */
+    select?: RecipeRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RecipeRevision
+     */
+    omit?: RecipeRevisionOmit<ExtArgs> | null
+    /**
+     * Filter, which RecipeRevision to fetch.
+     */
+    where?: RecipeRevisionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RecipeRevisions to fetch.
+     */
+    orderBy?: RecipeRevisionOrderByWithRelationInput | RecipeRevisionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RecipeRevisions.
+     */
+    cursor?: RecipeRevisionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RecipeRevisions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RecipeRevisions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RecipeRevisions.
+     */
+    distinct?: RecipeRevisionScalarFieldEnum | RecipeRevisionScalarFieldEnum[]
+  }
+
+  /**
+   * RecipeRevision findFirstOrThrow
+   */
+  export type RecipeRevisionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecipeRevision
+     */
+    select?: RecipeRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RecipeRevision
+     */
+    omit?: RecipeRevisionOmit<ExtArgs> | null
+    /**
+     * Filter, which RecipeRevision to fetch.
+     */
+    where?: RecipeRevisionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RecipeRevisions to fetch.
+     */
+    orderBy?: RecipeRevisionOrderByWithRelationInput | RecipeRevisionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RecipeRevisions.
+     */
+    cursor?: RecipeRevisionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RecipeRevisions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RecipeRevisions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RecipeRevisions.
+     */
+    distinct?: RecipeRevisionScalarFieldEnum | RecipeRevisionScalarFieldEnum[]
+  }
+
+  /**
+   * RecipeRevision findMany
+   */
+  export type RecipeRevisionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecipeRevision
+     */
+    select?: RecipeRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RecipeRevision
+     */
+    omit?: RecipeRevisionOmit<ExtArgs> | null
+    /**
+     * Filter, which RecipeRevisions to fetch.
+     */
+    where?: RecipeRevisionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RecipeRevisions to fetch.
+     */
+    orderBy?: RecipeRevisionOrderByWithRelationInput | RecipeRevisionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing RecipeRevisions.
+     */
+    cursor?: RecipeRevisionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RecipeRevisions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RecipeRevisions.
+     */
+    skip?: number
+    distinct?: RecipeRevisionScalarFieldEnum | RecipeRevisionScalarFieldEnum[]
+  }
+
+  /**
+   * RecipeRevision create
+   */
+  export type RecipeRevisionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecipeRevision
+     */
+    select?: RecipeRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RecipeRevision
+     */
+    omit?: RecipeRevisionOmit<ExtArgs> | null
+    /**
+     * The data needed to create a RecipeRevision.
+     */
+    data: XOR<RecipeRevisionCreateInput, RecipeRevisionUncheckedCreateInput>
+  }
+
+  /**
+   * RecipeRevision createMany
+   */
+  export type RecipeRevisionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many RecipeRevisions.
+     */
+    data: RecipeRevisionCreateManyInput | RecipeRevisionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RecipeRevision createManyAndReturn
+   */
+  export type RecipeRevisionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecipeRevision
+     */
+    select?: RecipeRevisionSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the RecipeRevision
+     */
+    omit?: RecipeRevisionOmit<ExtArgs> | null
+    /**
+     * The data used to create many RecipeRevisions.
+     */
+    data: RecipeRevisionCreateManyInput | RecipeRevisionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RecipeRevision update
+   */
+  export type RecipeRevisionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecipeRevision
+     */
+    select?: RecipeRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RecipeRevision
+     */
+    omit?: RecipeRevisionOmit<ExtArgs> | null
+    /**
+     * The data needed to update a RecipeRevision.
+     */
+    data: XOR<RecipeRevisionUpdateInput, RecipeRevisionUncheckedUpdateInput>
+    /**
+     * Choose, which RecipeRevision to update.
+     */
+    where: RecipeRevisionWhereUniqueInput
+  }
+
+  /**
+   * RecipeRevision updateMany
+   */
+  export type RecipeRevisionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update RecipeRevisions.
+     */
+    data: XOR<RecipeRevisionUpdateManyMutationInput, RecipeRevisionUncheckedUpdateManyInput>
+    /**
+     * Filter which RecipeRevisions to update
+     */
+    where?: RecipeRevisionWhereInput
+    /**
+     * Limit how many RecipeRevisions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * RecipeRevision updateManyAndReturn
+   */
+  export type RecipeRevisionUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecipeRevision
+     */
+    select?: RecipeRevisionSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the RecipeRevision
+     */
+    omit?: RecipeRevisionOmit<ExtArgs> | null
+    /**
+     * The data used to update RecipeRevisions.
+     */
+    data: XOR<RecipeRevisionUpdateManyMutationInput, RecipeRevisionUncheckedUpdateManyInput>
+    /**
+     * Filter which RecipeRevisions to update
+     */
+    where?: RecipeRevisionWhereInput
+    /**
+     * Limit how many RecipeRevisions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * RecipeRevision upsert
+   */
+  export type RecipeRevisionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecipeRevision
+     */
+    select?: RecipeRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RecipeRevision
+     */
+    omit?: RecipeRevisionOmit<ExtArgs> | null
+    /**
+     * The filter to search for the RecipeRevision to update in case it exists.
+     */
+    where: RecipeRevisionWhereUniqueInput
+    /**
+     * In case the RecipeRevision found by the `where` argument doesn't exist, create a new RecipeRevision with this data.
+     */
+    create: XOR<RecipeRevisionCreateInput, RecipeRevisionUncheckedCreateInput>
+    /**
+     * In case the RecipeRevision was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<RecipeRevisionUpdateInput, RecipeRevisionUncheckedUpdateInput>
+  }
+
+  /**
+   * RecipeRevision delete
+   */
+  export type RecipeRevisionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecipeRevision
+     */
+    select?: RecipeRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RecipeRevision
+     */
+    omit?: RecipeRevisionOmit<ExtArgs> | null
+    /**
+     * Filter which RecipeRevision to delete.
+     */
+    where: RecipeRevisionWhereUniqueInput
+  }
+
+  /**
+   * RecipeRevision deleteMany
+   */
+  export type RecipeRevisionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RecipeRevisions to delete
+     */
+    where?: RecipeRevisionWhereInput
+    /**
+     * Limit how many RecipeRevisions to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * RecipeRevision without action
+   */
+  export type RecipeRevisionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecipeRevision
+     */
+    select?: RecipeRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RecipeRevision
+     */
+    omit?: RecipeRevisionOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -53206,6 +55952,12 @@ export namespace Prisma {
     stockPolicyChangedAt: 'stockPolicyChangedAt',
     stockPolicyHistory: 'stockPolicyHistory',
     stockPolicyRev: 'stockPolicyRev',
+    sellable: 'sellable',
+    stockUnit: 'stockUnit',
+    purchaseUnit: 'purchaseUnit',
+    unitsPerPurchase: 'unitsPerPurchase',
+    modifierGroupIds: 'modifierGroupIds',
+    recipeRev: 'recipeRev',
     category: 'category',
     accent: 'accent',
     favorite: 'favorite',
@@ -53270,7 +56022,15 @@ export namespace Prisma {
     batchAllocations: 'batchAllocations',
     stockPolicy: 'stockPolicy',
     stockPolicyConflict: 'stockPolicyConflict',
-    stockPolicyRev: 'stockPolicyRev'
+    stockPolicyRev: 'stockPolicyRev',
+    modifiers: 'modifiers',
+    note: 'note',
+    basePrice: 'basePrice',
+    recipeRev: 'recipeRev',
+    consumption: 'consumption',
+    costStatus: 'costStatus',
+    recipeConflict: 'recipeConflict',
+    modifierConflict: 'modifierConflict'
   };
 
   export type SaleItemScalarFieldEnum = (typeof SaleItemScalarFieldEnum)[keyof typeof SaleItemScalarFieldEnum]
@@ -53547,6 +56307,11 @@ export namespace Prisma {
     status: 'status',
     receivedById: 'receivedById',
     receivedByName: 'receivedByName',
+    purchaseUnit: 'purchaseUnit',
+    purchaseQuantity: 'purchaseQuantity',
+    unitsPerPurchase: 'unitsPerPurchase',
+    purchasePrice: 'purchasePrice',
+    supplierReference: 'supplierReference',
     attribution: 'attribution'
   };
 
@@ -53568,6 +56333,8 @@ export namespace Prisma {
     batchId: 'batchId',
     batchAllocations: 'batchAllocations',
     valueImpact: 'valueImpact',
+    wasteRef: 'wasteRef',
+    wasteOf: 'wasteOf',
     createdById: 'createdById',
     createdByName: 'createdByName',
     attribution: 'attribution',
@@ -53928,6 +56695,42 @@ export namespace Prisma {
   };
 
   export type StaffSessionScalarFieldEnum = (typeof StaffSessionScalarFieldEnum)[keyof typeof StaffSessionScalarFieldEnum]
+
+
+  export const ModifierGroupScalarFieldEnum: {
+    id: 'id',
+    tenantId: 'tenantId',
+    name: 'name',
+    nameAr: 'nameAr',
+    required: 'required',
+    minSelect: 'minSelect',
+    maxSelect: 'maxSelect',
+    sortOrder: 'sortOrder',
+    archived: 'archived',
+    options: 'options',
+    revision: 'revision',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type ModifierGroupScalarFieldEnum = (typeof ModifierGroupScalarFieldEnum)[keyof typeof ModifierGroupScalarFieldEnum]
+
+
+  export const RecipeRevisionScalarFieldEnum: {
+    id: 'id',
+    tenantId: 'tenantId',
+    productSyncId: 'productSyncId',
+    yield: 'yield',
+    lines: 'lines',
+    note: 'note',
+    parentRev: 'parentRev',
+    createdById: 'createdById',
+    createdByName: 'createdByName',
+    attribution: 'attribution',
+    createdAt: 'createdAt'
+  };
+
+  export type RecipeRevisionScalarFieldEnum = (typeof RecipeRevisionScalarFieldEnum)[keyof typeof RecipeRevisionScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -54740,6 +57543,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: DateTimeNullableFilter<"Product"> | Date | string | null
     stockPolicyHistory?: JsonFilter<"Product">
     stockPolicyRev?: StringFilter<"Product"> | string
+    sellable?: BoolFilter<"Product"> | boolean
+    stockUnit?: StringFilter<"Product"> | string
+    purchaseUnit?: StringNullableFilter<"Product"> | string | null
+    unitsPerPurchase?: DecimalNullableFilter<"Product"> | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: StringNullableListFilter<"Product">
+    recipeRev?: StringNullableFilter<"Product"> | string | null
     category?: StringFilter<"Product"> | string
     accent?: StringFilter<"Product"> | string
     favorite?: BoolFilter<"Product"> | boolean
@@ -54780,6 +57589,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: SortOrderInput | SortOrder
     stockPolicyHistory?: SortOrder
     stockPolicyRev?: SortOrder
+    sellable?: SortOrder
+    stockUnit?: SortOrder
+    purchaseUnit?: SortOrderInput | SortOrder
+    unitsPerPurchase?: SortOrderInput | SortOrder
+    modifierGroupIds?: SortOrder
+    recipeRev?: SortOrderInput | SortOrder
     category?: SortOrder
     accent?: SortOrder
     favorite?: SortOrder
@@ -54825,6 +57640,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: DateTimeNullableFilter<"Product"> | Date | string | null
     stockPolicyHistory?: JsonFilter<"Product">
     stockPolicyRev?: StringFilter<"Product"> | string
+    sellable?: BoolFilter<"Product"> | boolean
+    stockUnit?: StringFilter<"Product"> | string
+    purchaseUnit?: StringNullableFilter<"Product"> | string | null
+    unitsPerPurchase?: DecimalNullableFilter<"Product"> | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: StringNullableListFilter<"Product">
+    recipeRev?: StringNullableFilter<"Product"> | string | null
     category?: StringFilter<"Product"> | string
     accent?: StringFilter<"Product"> | string
     favorite?: BoolFilter<"Product"> | boolean
@@ -54865,6 +57686,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: SortOrderInput | SortOrder
     stockPolicyHistory?: SortOrder
     stockPolicyRev?: SortOrder
+    sellable?: SortOrder
+    stockUnit?: SortOrder
+    purchaseUnit?: SortOrderInput | SortOrder
+    unitsPerPurchase?: SortOrderInput | SortOrder
+    modifierGroupIds?: SortOrder
+    recipeRev?: SortOrderInput | SortOrder
     category?: SortOrder
     accent?: SortOrder
     favorite?: SortOrder
@@ -54906,6 +57733,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: DateTimeNullableWithAggregatesFilter<"Product"> | Date | string | null
     stockPolicyHistory?: JsonWithAggregatesFilter<"Product">
     stockPolicyRev?: StringWithAggregatesFilter<"Product"> | string
+    sellable?: BoolWithAggregatesFilter<"Product"> | boolean
+    stockUnit?: StringWithAggregatesFilter<"Product"> | string
+    purchaseUnit?: StringNullableWithAggregatesFilter<"Product"> | string | null
+    unitsPerPurchase?: DecimalNullableWithAggregatesFilter<"Product"> | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: StringNullableListFilter<"Product">
+    recipeRev?: StringNullableWithAggregatesFilter<"Product"> | string | null
     category?: StringWithAggregatesFilter<"Product"> | string
     accent?: StringWithAggregatesFilter<"Product"> | string
     favorite?: BoolWithAggregatesFilter<"Product"> | boolean
@@ -55110,6 +57943,14 @@ export namespace Prisma {
     stockPolicy?: StringFilter<"SaleItem"> | string
     stockPolicyConflict?: StringNullableFilter<"SaleItem"> | string | null
     stockPolicyRev?: StringNullableFilter<"SaleItem"> | string | null
+    modifiers?: JsonNullableFilter<"SaleItem">
+    note?: StringNullableFilter<"SaleItem"> | string | null
+    basePrice?: DecimalNullableFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string | null
+    recipeRev?: StringNullableFilter<"SaleItem"> | string | null
+    consumption?: JsonNullableFilter<"SaleItem">
+    costStatus?: StringNullableFilter<"SaleItem"> | string | null
+    recipeConflict?: StringNullableFilter<"SaleItem"> | string | null
+    modifierConflict?: StringNullableFilter<"SaleItem"> | string | null
     sale?: XOR<SaleScalarRelationFilter, SaleWhereInput>
   }
 
@@ -55129,6 +57970,14 @@ export namespace Prisma {
     stockPolicy?: SortOrder
     stockPolicyConflict?: SortOrderInput | SortOrder
     stockPolicyRev?: SortOrderInput | SortOrder
+    modifiers?: SortOrderInput | SortOrder
+    note?: SortOrderInput | SortOrder
+    basePrice?: SortOrderInput | SortOrder
+    recipeRev?: SortOrderInput | SortOrder
+    consumption?: SortOrderInput | SortOrder
+    costStatus?: SortOrderInput | SortOrder
+    recipeConflict?: SortOrderInput | SortOrder
+    modifierConflict?: SortOrderInput | SortOrder
     sale?: SaleOrderByWithRelationInput
   }
 
@@ -55152,6 +58001,14 @@ export namespace Prisma {
     stockPolicy?: StringFilter<"SaleItem"> | string
     stockPolicyConflict?: StringNullableFilter<"SaleItem"> | string | null
     stockPolicyRev?: StringNullableFilter<"SaleItem"> | string | null
+    modifiers?: JsonNullableFilter<"SaleItem">
+    note?: StringNullableFilter<"SaleItem"> | string | null
+    basePrice?: DecimalNullableFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string | null
+    recipeRev?: StringNullableFilter<"SaleItem"> | string | null
+    consumption?: JsonNullableFilter<"SaleItem">
+    costStatus?: StringNullableFilter<"SaleItem"> | string | null
+    recipeConflict?: StringNullableFilter<"SaleItem"> | string | null
+    modifierConflict?: StringNullableFilter<"SaleItem"> | string | null
     sale?: XOR<SaleScalarRelationFilter, SaleWhereInput>
   }, "id" | "saleId_lineId">
 
@@ -55171,6 +58028,14 @@ export namespace Prisma {
     stockPolicy?: SortOrder
     stockPolicyConflict?: SortOrderInput | SortOrder
     stockPolicyRev?: SortOrderInput | SortOrder
+    modifiers?: SortOrderInput | SortOrder
+    note?: SortOrderInput | SortOrder
+    basePrice?: SortOrderInput | SortOrder
+    recipeRev?: SortOrderInput | SortOrder
+    consumption?: SortOrderInput | SortOrder
+    costStatus?: SortOrderInput | SortOrder
+    recipeConflict?: SortOrderInput | SortOrder
+    modifierConflict?: SortOrderInput | SortOrder
     _count?: SaleItemCountOrderByAggregateInput
     _avg?: SaleItemAvgOrderByAggregateInput
     _max?: SaleItemMaxOrderByAggregateInput
@@ -55197,6 +58062,14 @@ export namespace Prisma {
     stockPolicy?: StringWithAggregatesFilter<"SaleItem"> | string
     stockPolicyConflict?: StringNullableWithAggregatesFilter<"SaleItem"> | string | null
     stockPolicyRev?: StringNullableWithAggregatesFilter<"SaleItem"> | string | null
+    modifiers?: JsonNullableWithAggregatesFilter<"SaleItem">
+    note?: StringNullableWithAggregatesFilter<"SaleItem"> | string | null
+    basePrice?: DecimalNullableWithAggregatesFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string | null
+    recipeRev?: StringNullableWithAggregatesFilter<"SaleItem"> | string | null
+    consumption?: JsonNullableWithAggregatesFilter<"SaleItem">
+    costStatus?: StringNullableWithAggregatesFilter<"SaleItem"> | string | null
+    recipeConflict?: StringNullableWithAggregatesFilter<"SaleItem"> | string | null
+    modifierConflict?: StringNullableWithAggregatesFilter<"SaleItem"> | string | null
   }
 
   export type SaleTenderWhereInput = {
@@ -56552,6 +59425,11 @@ export namespace Prisma {
     status?: EnumInventoryBatchStatusFilter<"InventoryBatch"> | $Enums.InventoryBatchStatus
     receivedById?: StringNullableFilter<"InventoryBatch"> | string | null
     receivedByName?: StringNullableFilter<"InventoryBatch"> | string | null
+    purchaseUnit?: StringNullableFilter<"InventoryBatch"> | string | null
+    purchaseQuantity?: DecimalNullableFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: DecimalNullableFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: DecimalNullableFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string | null
+    supplierReference?: StringNullableFilter<"InventoryBatch"> | string | null
     attribution?: JsonNullableFilter<"InventoryBatch">
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
@@ -56578,6 +59456,11 @@ export namespace Prisma {
     status?: SortOrder
     receivedById?: SortOrderInput | SortOrder
     receivedByName?: SortOrderInput | SortOrder
+    purchaseUnit?: SortOrderInput | SortOrder
+    purchaseQuantity?: SortOrderInput | SortOrder
+    unitsPerPurchase?: SortOrderInput | SortOrder
+    purchasePrice?: SortOrderInput | SortOrder
+    supplierReference?: SortOrderInput | SortOrder
     attribution?: SortOrderInput | SortOrder
     tenant?: TenantOrderByWithRelationInput
     product?: ProductOrderByWithRelationInput
@@ -56607,6 +59490,11 @@ export namespace Prisma {
     status?: EnumInventoryBatchStatusFilter<"InventoryBatch"> | $Enums.InventoryBatchStatus
     receivedById?: StringNullableFilter<"InventoryBatch"> | string | null
     receivedByName?: StringNullableFilter<"InventoryBatch"> | string | null
+    purchaseUnit?: StringNullableFilter<"InventoryBatch"> | string | null
+    purchaseQuantity?: DecimalNullableFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: DecimalNullableFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: DecimalNullableFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string | null
+    supplierReference?: StringNullableFilter<"InventoryBatch"> | string | null
     attribution?: JsonNullableFilter<"InventoryBatch">
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
@@ -56633,6 +59521,11 @@ export namespace Prisma {
     status?: SortOrder
     receivedById?: SortOrderInput | SortOrder
     receivedByName?: SortOrderInput | SortOrder
+    purchaseUnit?: SortOrderInput | SortOrder
+    purchaseQuantity?: SortOrderInput | SortOrder
+    unitsPerPurchase?: SortOrderInput | SortOrder
+    purchasePrice?: SortOrderInput | SortOrder
+    supplierReference?: SortOrderInput | SortOrder
     attribution?: SortOrderInput | SortOrder
     _count?: InventoryBatchCountOrderByAggregateInput
     _avg?: InventoryBatchAvgOrderByAggregateInput
@@ -56664,6 +59557,11 @@ export namespace Prisma {
     status?: EnumInventoryBatchStatusWithAggregatesFilter<"InventoryBatch"> | $Enums.InventoryBatchStatus
     receivedById?: StringNullableWithAggregatesFilter<"InventoryBatch"> | string | null
     receivedByName?: StringNullableWithAggregatesFilter<"InventoryBatch"> | string | null
+    purchaseUnit?: StringNullableWithAggregatesFilter<"InventoryBatch"> | string | null
+    purchaseQuantity?: DecimalNullableWithAggregatesFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: DecimalNullableWithAggregatesFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: DecimalNullableWithAggregatesFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string | null
+    supplierReference?: StringNullableWithAggregatesFilter<"InventoryBatch"> | string | null
     attribution?: JsonNullableWithAggregatesFilter<"InventoryBatch">
   }
 
@@ -56685,6 +59583,8 @@ export namespace Prisma {
     batchId?: StringNullableFilter<"StockAdjustment"> | string | null
     batchAllocations?: JsonNullableFilter<"StockAdjustment">
     valueImpact?: DecimalFilter<"StockAdjustment"> | Decimal | DecimalJsLike | number | string
+    wasteRef?: StringNullableFilter<"StockAdjustment"> | string | null
+    wasteOf?: StringNullableFilter<"StockAdjustment"> | string | null
     createdById?: StringNullableFilter<"StockAdjustment"> | string | null
     createdByName?: StringNullableFilter<"StockAdjustment"> | string | null
     attribution?: JsonNullableFilter<"StockAdjustment">
@@ -56708,6 +59608,8 @@ export namespace Prisma {
     batchId?: SortOrderInput | SortOrder
     batchAllocations?: SortOrderInput | SortOrder
     valueImpact?: SortOrder
+    wasteRef?: SortOrderInput | SortOrder
+    wasteOf?: SortOrderInput | SortOrder
     createdById?: SortOrderInput | SortOrder
     createdByName?: SortOrderInput | SortOrder
     attribution?: SortOrderInput | SortOrder
@@ -56734,6 +59636,8 @@ export namespace Prisma {
     batchId?: StringNullableFilter<"StockAdjustment"> | string | null
     batchAllocations?: JsonNullableFilter<"StockAdjustment">
     valueImpact?: DecimalFilter<"StockAdjustment"> | Decimal | DecimalJsLike | number | string
+    wasteRef?: StringNullableFilter<"StockAdjustment"> | string | null
+    wasteOf?: StringNullableFilter<"StockAdjustment"> | string | null
     createdById?: StringNullableFilter<"StockAdjustment"> | string | null
     createdByName?: StringNullableFilter<"StockAdjustment"> | string | null
     attribution?: JsonNullableFilter<"StockAdjustment">
@@ -56757,6 +59661,8 @@ export namespace Prisma {
     batchId?: SortOrderInput | SortOrder
     batchAllocations?: SortOrderInput | SortOrder
     valueImpact?: SortOrder
+    wasteRef?: SortOrderInput | SortOrder
+    wasteOf?: SortOrderInput | SortOrder
     createdById?: SortOrderInput | SortOrder
     createdByName?: SortOrderInput | SortOrder
     attribution?: SortOrderInput | SortOrder
@@ -56786,6 +59692,8 @@ export namespace Prisma {
     batchId?: StringNullableWithAggregatesFilter<"StockAdjustment"> | string | null
     batchAllocations?: JsonNullableWithAggregatesFilter<"StockAdjustment">
     valueImpact?: DecimalWithAggregatesFilter<"StockAdjustment"> | Decimal | DecimalJsLike | number | string
+    wasteRef?: StringNullableWithAggregatesFilter<"StockAdjustment"> | string | null
+    wasteOf?: StringNullableWithAggregatesFilter<"StockAdjustment"> | string | null
     createdById?: StringNullableWithAggregatesFilter<"StockAdjustment"> | string | null
     createdByName?: StringNullableWithAggregatesFilter<"StockAdjustment"> | string | null
     attribution?: JsonNullableWithAggregatesFilter<"StockAdjustment">
@@ -58583,6 +61491,184 @@ export namespace Prisma {
     endReason?: StringNullableWithAggregatesFilter<"StaffSession"> | string | null
   }
 
+  export type ModifierGroupWhereInput = {
+    AND?: ModifierGroupWhereInput | ModifierGroupWhereInput[]
+    OR?: ModifierGroupWhereInput[]
+    NOT?: ModifierGroupWhereInput | ModifierGroupWhereInput[]
+    id?: StringFilter<"ModifierGroup"> | string
+    tenantId?: StringFilter<"ModifierGroup"> | string
+    name?: StringFilter<"ModifierGroup"> | string
+    nameAr?: StringFilter<"ModifierGroup"> | string
+    required?: BoolFilter<"ModifierGroup"> | boolean
+    minSelect?: IntFilter<"ModifierGroup"> | number
+    maxSelect?: IntFilter<"ModifierGroup"> | number
+    sortOrder?: IntFilter<"ModifierGroup"> | number
+    archived?: BoolFilter<"ModifierGroup"> | boolean
+    options?: JsonFilter<"ModifierGroup">
+    revision?: IntFilter<"ModifierGroup"> | number
+    createdAt?: DateTimeFilter<"ModifierGroup"> | Date | string
+    updatedAt?: DateTimeFilter<"ModifierGroup"> | Date | string
+  }
+
+  export type ModifierGroupOrderByWithRelationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    name?: SortOrder
+    nameAr?: SortOrder
+    required?: SortOrder
+    minSelect?: SortOrder
+    maxSelect?: SortOrder
+    sortOrder?: SortOrder
+    archived?: SortOrder
+    options?: SortOrder
+    revision?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ModifierGroupWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: ModifierGroupWhereInput | ModifierGroupWhereInput[]
+    OR?: ModifierGroupWhereInput[]
+    NOT?: ModifierGroupWhereInput | ModifierGroupWhereInput[]
+    tenantId?: StringFilter<"ModifierGroup"> | string
+    name?: StringFilter<"ModifierGroup"> | string
+    nameAr?: StringFilter<"ModifierGroup"> | string
+    required?: BoolFilter<"ModifierGroup"> | boolean
+    minSelect?: IntFilter<"ModifierGroup"> | number
+    maxSelect?: IntFilter<"ModifierGroup"> | number
+    sortOrder?: IntFilter<"ModifierGroup"> | number
+    archived?: BoolFilter<"ModifierGroup"> | boolean
+    options?: JsonFilter<"ModifierGroup">
+    revision?: IntFilter<"ModifierGroup"> | number
+    createdAt?: DateTimeFilter<"ModifierGroup"> | Date | string
+    updatedAt?: DateTimeFilter<"ModifierGroup"> | Date | string
+  }, "id">
+
+  export type ModifierGroupOrderByWithAggregationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    name?: SortOrder
+    nameAr?: SortOrder
+    required?: SortOrder
+    minSelect?: SortOrder
+    maxSelect?: SortOrder
+    sortOrder?: SortOrder
+    archived?: SortOrder
+    options?: SortOrder
+    revision?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: ModifierGroupCountOrderByAggregateInput
+    _avg?: ModifierGroupAvgOrderByAggregateInput
+    _max?: ModifierGroupMaxOrderByAggregateInput
+    _min?: ModifierGroupMinOrderByAggregateInput
+    _sum?: ModifierGroupSumOrderByAggregateInput
+  }
+
+  export type ModifierGroupScalarWhereWithAggregatesInput = {
+    AND?: ModifierGroupScalarWhereWithAggregatesInput | ModifierGroupScalarWhereWithAggregatesInput[]
+    OR?: ModifierGroupScalarWhereWithAggregatesInput[]
+    NOT?: ModifierGroupScalarWhereWithAggregatesInput | ModifierGroupScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ModifierGroup"> | string
+    tenantId?: StringWithAggregatesFilter<"ModifierGroup"> | string
+    name?: StringWithAggregatesFilter<"ModifierGroup"> | string
+    nameAr?: StringWithAggregatesFilter<"ModifierGroup"> | string
+    required?: BoolWithAggregatesFilter<"ModifierGroup"> | boolean
+    minSelect?: IntWithAggregatesFilter<"ModifierGroup"> | number
+    maxSelect?: IntWithAggregatesFilter<"ModifierGroup"> | number
+    sortOrder?: IntWithAggregatesFilter<"ModifierGroup"> | number
+    archived?: BoolWithAggregatesFilter<"ModifierGroup"> | boolean
+    options?: JsonWithAggregatesFilter<"ModifierGroup">
+    revision?: IntWithAggregatesFilter<"ModifierGroup"> | number
+    createdAt?: DateTimeWithAggregatesFilter<"ModifierGroup"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"ModifierGroup"> | Date | string
+  }
+
+  export type RecipeRevisionWhereInput = {
+    AND?: RecipeRevisionWhereInput | RecipeRevisionWhereInput[]
+    OR?: RecipeRevisionWhereInput[]
+    NOT?: RecipeRevisionWhereInput | RecipeRevisionWhereInput[]
+    id?: StringFilter<"RecipeRevision"> | string
+    tenantId?: StringFilter<"RecipeRevision"> | string
+    productSyncId?: StringFilter<"RecipeRevision"> | string
+    yield?: IntFilter<"RecipeRevision"> | number
+    lines?: JsonFilter<"RecipeRevision">
+    note?: StringFilter<"RecipeRevision"> | string
+    parentRev?: StringNullableFilter<"RecipeRevision"> | string | null
+    createdById?: StringNullableFilter<"RecipeRevision"> | string | null
+    createdByName?: StringNullableFilter<"RecipeRevision"> | string | null
+    attribution?: JsonNullableFilter<"RecipeRevision">
+    createdAt?: DateTimeFilter<"RecipeRevision"> | Date | string
+  }
+
+  export type RecipeRevisionOrderByWithRelationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    productSyncId?: SortOrder
+    yield?: SortOrder
+    lines?: SortOrder
+    note?: SortOrder
+    parentRev?: SortOrderInput | SortOrder
+    createdById?: SortOrderInput | SortOrder
+    createdByName?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type RecipeRevisionWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: RecipeRevisionWhereInput | RecipeRevisionWhereInput[]
+    OR?: RecipeRevisionWhereInput[]
+    NOT?: RecipeRevisionWhereInput | RecipeRevisionWhereInput[]
+    tenantId?: StringFilter<"RecipeRevision"> | string
+    productSyncId?: StringFilter<"RecipeRevision"> | string
+    yield?: IntFilter<"RecipeRevision"> | number
+    lines?: JsonFilter<"RecipeRevision">
+    note?: StringFilter<"RecipeRevision"> | string
+    parentRev?: StringNullableFilter<"RecipeRevision"> | string | null
+    createdById?: StringNullableFilter<"RecipeRevision"> | string | null
+    createdByName?: StringNullableFilter<"RecipeRevision"> | string | null
+    attribution?: JsonNullableFilter<"RecipeRevision">
+    createdAt?: DateTimeFilter<"RecipeRevision"> | Date | string
+  }, "id">
+
+  export type RecipeRevisionOrderByWithAggregationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    productSyncId?: SortOrder
+    yield?: SortOrder
+    lines?: SortOrder
+    note?: SortOrder
+    parentRev?: SortOrderInput | SortOrder
+    createdById?: SortOrderInput | SortOrder
+    createdByName?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _count?: RecipeRevisionCountOrderByAggregateInput
+    _avg?: RecipeRevisionAvgOrderByAggregateInput
+    _max?: RecipeRevisionMaxOrderByAggregateInput
+    _min?: RecipeRevisionMinOrderByAggregateInput
+    _sum?: RecipeRevisionSumOrderByAggregateInput
+  }
+
+  export type RecipeRevisionScalarWhereWithAggregatesInput = {
+    AND?: RecipeRevisionScalarWhereWithAggregatesInput | RecipeRevisionScalarWhereWithAggregatesInput[]
+    OR?: RecipeRevisionScalarWhereWithAggregatesInput[]
+    NOT?: RecipeRevisionScalarWhereWithAggregatesInput | RecipeRevisionScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"RecipeRevision"> | string
+    tenantId?: StringWithAggregatesFilter<"RecipeRevision"> | string
+    productSyncId?: StringWithAggregatesFilter<"RecipeRevision"> | string
+    yield?: IntWithAggregatesFilter<"RecipeRevision"> | number
+    lines?: JsonWithAggregatesFilter<"RecipeRevision">
+    note?: StringWithAggregatesFilter<"RecipeRevision"> | string
+    parentRev?: StringNullableWithAggregatesFilter<"RecipeRevision"> | string | null
+    createdById?: StringNullableWithAggregatesFilter<"RecipeRevision"> | string | null
+    createdByName?: StringNullableWithAggregatesFilter<"RecipeRevision"> | string | null
+    attribution?: JsonNullableWithAggregatesFilter<"RecipeRevision">
+    createdAt?: DateTimeWithAggregatesFilter<"RecipeRevision"> | Date | string
+  }
+
   export type TenantCreateInput = {
     id?: string
     name: string
@@ -59224,6 +62310,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -59264,6 +62356,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -59299,6 +62397,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -59339,6 +62443,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -59377,6 +62487,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -59407,6 +62523,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -59440,6 +62562,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -59683,6 +62811,14 @@ export namespace Prisma {
     stockPolicy?: string
     stockPolicyConflict?: string | null
     stockPolicyRev?: string | null
+    modifiers?: NullableJsonNullValueInput | InputJsonValue
+    note?: string | null
+    basePrice?: Decimal | DecimalJsLike | number | string | null
+    recipeRev?: string | null
+    consumption?: NullableJsonNullValueInput | InputJsonValue
+    costStatus?: string | null
+    recipeConflict?: string | null
+    modifierConflict?: string | null
     sale: SaleCreateNestedOneWithoutItemsInput
   }
 
@@ -59702,6 +62838,14 @@ export namespace Prisma {
     stockPolicy?: string
     stockPolicyConflict?: string | null
     stockPolicyRev?: string | null
+    modifiers?: NullableJsonNullValueInput | InputJsonValue
+    note?: string | null
+    basePrice?: Decimal | DecimalJsLike | number | string | null
+    recipeRev?: string | null
+    consumption?: NullableJsonNullValueInput | InputJsonValue
+    costStatus?: string | null
+    recipeConflict?: string | null
+    modifierConflict?: string | null
   }
 
   export type SaleItemUpdateInput = {
@@ -59719,6 +62863,14 @@ export namespace Prisma {
     stockPolicy?: StringFieldUpdateOperationsInput | string
     stockPolicyConflict?: NullableStringFieldUpdateOperationsInput | string | null
     stockPolicyRev?: NullableStringFieldUpdateOperationsInput | string | null
+    modifiers?: NullableJsonNullValueInput | InputJsonValue
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    basePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
+    consumption?: NullableJsonNullValueInput | InputJsonValue
+    costStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    recipeConflict?: NullableStringFieldUpdateOperationsInput | string | null
+    modifierConflict?: NullableStringFieldUpdateOperationsInput | string | null
     sale?: SaleUpdateOneRequiredWithoutItemsNestedInput
   }
 
@@ -59738,6 +62890,14 @@ export namespace Prisma {
     stockPolicy?: StringFieldUpdateOperationsInput | string
     stockPolicyConflict?: NullableStringFieldUpdateOperationsInput | string | null
     stockPolicyRev?: NullableStringFieldUpdateOperationsInput | string | null
+    modifiers?: NullableJsonNullValueInput | InputJsonValue
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    basePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
+    consumption?: NullableJsonNullValueInput | InputJsonValue
+    costStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    recipeConflict?: NullableStringFieldUpdateOperationsInput | string | null
+    modifierConflict?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SaleItemCreateManyInput = {
@@ -59756,6 +62916,14 @@ export namespace Prisma {
     stockPolicy?: string
     stockPolicyConflict?: string | null
     stockPolicyRev?: string | null
+    modifiers?: NullableJsonNullValueInput | InputJsonValue
+    note?: string | null
+    basePrice?: Decimal | DecimalJsLike | number | string | null
+    recipeRev?: string | null
+    consumption?: NullableJsonNullValueInput | InputJsonValue
+    costStatus?: string | null
+    recipeConflict?: string | null
+    modifierConflict?: string | null
   }
 
   export type SaleItemUpdateManyMutationInput = {
@@ -59773,6 +62941,14 @@ export namespace Prisma {
     stockPolicy?: StringFieldUpdateOperationsInput | string
     stockPolicyConflict?: NullableStringFieldUpdateOperationsInput | string | null
     stockPolicyRev?: NullableStringFieldUpdateOperationsInput | string | null
+    modifiers?: NullableJsonNullValueInput | InputJsonValue
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    basePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
+    consumption?: NullableJsonNullValueInput | InputJsonValue
+    costStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    recipeConflict?: NullableStringFieldUpdateOperationsInput | string | null
+    modifierConflict?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SaleItemUncheckedUpdateManyInput = {
@@ -59791,6 +62967,14 @@ export namespace Prisma {
     stockPolicy?: StringFieldUpdateOperationsInput | string
     stockPolicyConflict?: NullableStringFieldUpdateOperationsInput | string | null
     stockPolicyRev?: NullableStringFieldUpdateOperationsInput | string | null
+    modifiers?: NullableJsonNullValueInput | InputJsonValue
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    basePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
+    consumption?: NullableJsonNullValueInput | InputJsonValue
+    costStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    recipeConflict?: NullableStringFieldUpdateOperationsInput | string | null
+    modifierConflict?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SaleTenderCreateInput = {
@@ -61304,6 +64488,11 @@ export namespace Prisma {
     status?: $Enums.InventoryBatchStatus
     receivedById?: string | null
     receivedByName?: string | null
+    purchaseUnit?: string | null
+    purchaseQuantity?: Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: Decimal | DecimalJsLike | number | string | null
+    supplierReference?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
     tenant: TenantCreateNestedOneWithoutInventoryBatchesInput
     product: ProductCreateNestedOneWithoutBatchesInput
@@ -61330,6 +64519,11 @@ export namespace Prisma {
     status?: $Enums.InventoryBatchStatus
     receivedById?: string | null
     receivedByName?: string | null
+    purchaseUnit?: string | null
+    purchaseQuantity?: Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: Decimal | DecimalJsLike | number | string | null
+    supplierReference?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -61350,6 +64544,11 @@ export namespace Prisma {
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
     receivedById?: NullableStringFieldUpdateOperationsInput | string | null
     receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseQuantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierReference?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
     tenant?: TenantUpdateOneRequiredWithoutInventoryBatchesNestedInput
     product?: ProductUpdateOneRequiredWithoutBatchesNestedInput
@@ -61376,6 +64575,11 @@ export namespace Prisma {
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
     receivedById?: NullableStringFieldUpdateOperationsInput | string | null
     receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseQuantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierReference?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -61399,6 +64603,11 @@ export namespace Prisma {
     status?: $Enums.InventoryBatchStatus
     receivedById?: string | null
     receivedByName?: string | null
+    purchaseUnit?: string | null
+    purchaseQuantity?: Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: Decimal | DecimalJsLike | number | string | null
+    supplierReference?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -61419,6 +64628,11 @@ export namespace Prisma {
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
     receivedById?: NullableStringFieldUpdateOperationsInput | string | null
     receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseQuantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierReference?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -61442,6 +64656,11 @@ export namespace Prisma {
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
     receivedById?: NullableStringFieldUpdateOperationsInput | string | null
     receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseQuantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierReference?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -61458,6 +64677,8 @@ export namespace Prisma {
     batchId?: string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
+    wasteRef?: string | null
+    wasteOf?: string | null
     createdById?: string | null
     createdByName?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -61481,6 +64702,8 @@ export namespace Prisma {
     batchId?: string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
+    wasteRef?: string | null
+    wasteOf?: string | null
     createdById?: string | null
     createdByName?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -61500,6 +64723,8 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wasteRef?: NullableStringFieldUpdateOperationsInput | string | null
+    wasteOf?: NullableStringFieldUpdateOperationsInput | string | null
     createdById?: NullableStringFieldUpdateOperationsInput | string | null
     createdByName?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -61523,6 +64748,8 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wasteRef?: NullableStringFieldUpdateOperationsInput | string | null
+    wasteOf?: NullableStringFieldUpdateOperationsInput | string | null
     createdById?: NullableStringFieldUpdateOperationsInput | string | null
     createdByName?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -61544,6 +64771,8 @@ export namespace Prisma {
     batchId?: string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
+    wasteRef?: string | null
+    wasteOf?: string | null
     createdById?: string | null
     createdByName?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -61563,6 +64792,8 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wasteRef?: NullableStringFieldUpdateOperationsInput | string | null
+    wasteOf?: NullableStringFieldUpdateOperationsInput | string | null
     createdById?: NullableStringFieldUpdateOperationsInput | string | null
     createdByName?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -61584,6 +64815,8 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wasteRef?: NullableStringFieldUpdateOperationsInput | string | null
+    wasteOf?: NullableStringFieldUpdateOperationsInput | string | null
     createdById?: NullableStringFieldUpdateOperationsInput | string | null
     createdByName?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -63698,6 +66931,216 @@ export namespace Prisma {
     endReason?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
+  export type ModifierGroupCreateInput = {
+    id: string
+    tenantId: string
+    name: string
+    nameAr?: string
+    required?: boolean
+    minSelect?: number
+    maxSelect?: number
+    sortOrder?: number
+    archived?: boolean
+    options?: JsonNullValueInput | InputJsonValue
+    revision?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ModifierGroupUncheckedCreateInput = {
+    id: string
+    tenantId: string
+    name: string
+    nameAr?: string
+    required?: boolean
+    minSelect?: number
+    maxSelect?: number
+    sortOrder?: number
+    archived?: boolean
+    options?: JsonNullValueInput | InputJsonValue
+    revision?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ModifierGroupUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    nameAr?: StringFieldUpdateOperationsInput | string
+    required?: BoolFieldUpdateOperationsInput | boolean
+    minSelect?: IntFieldUpdateOperationsInput | number
+    maxSelect?: IntFieldUpdateOperationsInput | number
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    archived?: BoolFieldUpdateOperationsInput | boolean
+    options?: JsonNullValueInput | InputJsonValue
+    revision?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ModifierGroupUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    nameAr?: StringFieldUpdateOperationsInput | string
+    required?: BoolFieldUpdateOperationsInput | boolean
+    minSelect?: IntFieldUpdateOperationsInput | number
+    maxSelect?: IntFieldUpdateOperationsInput | number
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    archived?: BoolFieldUpdateOperationsInput | boolean
+    options?: JsonNullValueInput | InputJsonValue
+    revision?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ModifierGroupCreateManyInput = {
+    id: string
+    tenantId: string
+    name: string
+    nameAr?: string
+    required?: boolean
+    minSelect?: number
+    maxSelect?: number
+    sortOrder?: number
+    archived?: boolean
+    options?: JsonNullValueInput | InputJsonValue
+    revision?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ModifierGroupUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    nameAr?: StringFieldUpdateOperationsInput | string
+    required?: BoolFieldUpdateOperationsInput | boolean
+    minSelect?: IntFieldUpdateOperationsInput | number
+    maxSelect?: IntFieldUpdateOperationsInput | number
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    archived?: BoolFieldUpdateOperationsInput | boolean
+    options?: JsonNullValueInput | InputJsonValue
+    revision?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ModifierGroupUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    nameAr?: StringFieldUpdateOperationsInput | string
+    required?: BoolFieldUpdateOperationsInput | boolean
+    minSelect?: IntFieldUpdateOperationsInput | number
+    maxSelect?: IntFieldUpdateOperationsInput | number
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    archived?: BoolFieldUpdateOperationsInput | boolean
+    options?: JsonNullValueInput | InputJsonValue
+    revision?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RecipeRevisionCreateInput = {
+    id: string
+    tenantId: string
+    productSyncId: string
+    yield?: number
+    lines?: JsonNullValueInput | InputJsonValue
+    note?: string
+    parentRev?: string | null
+    createdById?: string | null
+    createdByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type RecipeRevisionUncheckedCreateInput = {
+    id: string
+    tenantId: string
+    productSyncId: string
+    yield?: number
+    lines?: JsonNullValueInput | InputJsonValue
+    note?: string
+    parentRev?: string | null
+    createdById?: string | null
+    createdByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type RecipeRevisionUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    productSyncId?: StringFieldUpdateOperationsInput | string
+    yield?: IntFieldUpdateOperationsInput | number
+    lines?: JsonNullValueInput | InputJsonValue
+    note?: StringFieldUpdateOperationsInput | string
+    parentRev?: NullableStringFieldUpdateOperationsInput | string | null
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    createdByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RecipeRevisionUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    productSyncId?: StringFieldUpdateOperationsInput | string
+    yield?: IntFieldUpdateOperationsInput | number
+    lines?: JsonNullValueInput | InputJsonValue
+    note?: StringFieldUpdateOperationsInput | string
+    parentRev?: NullableStringFieldUpdateOperationsInput | string | null
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    createdByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RecipeRevisionCreateManyInput = {
+    id: string
+    tenantId: string
+    productSyncId: string
+    yield?: number
+    lines?: JsonNullValueInput | InputJsonValue
+    note?: string
+    parentRev?: string | null
+    createdById?: string | null
+    createdByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type RecipeRevisionUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    productSyncId?: StringFieldUpdateOperationsInput | string
+    yield?: IntFieldUpdateOperationsInput | number
+    lines?: JsonNullValueInput | InputJsonValue
+    note?: StringFieldUpdateOperationsInput | string
+    parentRev?: NullableStringFieldUpdateOperationsInput | string | null
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    createdByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RecipeRevisionUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    productSyncId?: StringFieldUpdateOperationsInput | string
+    yield?: IntFieldUpdateOperationsInput | number
+    lines?: JsonNullValueInput | InputJsonValue
+    note?: StringFieldUpdateOperationsInput | string
+    parentRev?: NullableStringFieldUpdateOperationsInput | string | null
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    createdByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -64529,6 +67972,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: SortOrder
     stockPolicyHistory?: SortOrder
     stockPolicyRev?: SortOrder
+    sellable?: SortOrder
+    stockUnit?: SortOrder
+    purchaseUnit?: SortOrder
+    unitsPerPurchase?: SortOrder
+    modifierGroupIds?: SortOrder
+    recipeRev?: SortOrder
     category?: SortOrder
     accent?: SortOrder
     favorite?: SortOrder
@@ -64551,6 +68000,7 @@ export namespace Prisma {
     cost?: SortOrder
     stock?: SortOrder
     stockPolicyVersion?: SortOrder
+    unitsPerPurchase?: SortOrder
     reorderPoint?: SortOrder
     reorderQuantity?: SortOrder
   }
@@ -64572,6 +68022,11 @@ export namespace Prisma {
     stockPolicyVersion?: SortOrder
     stockPolicyChangedAt?: SortOrder
     stockPolicyRev?: SortOrder
+    sellable?: SortOrder
+    stockUnit?: SortOrder
+    purchaseUnit?: SortOrder
+    unitsPerPurchase?: SortOrder
+    recipeRev?: SortOrder
     category?: SortOrder
     accent?: SortOrder
     favorite?: SortOrder
@@ -64603,6 +68058,11 @@ export namespace Prisma {
     stockPolicyVersion?: SortOrder
     stockPolicyChangedAt?: SortOrder
     stockPolicyRev?: SortOrder
+    sellable?: SortOrder
+    stockUnit?: SortOrder
+    purchaseUnit?: SortOrder
+    unitsPerPurchase?: SortOrder
+    recipeRev?: SortOrder
     category?: SortOrder
     accent?: SortOrder
     favorite?: SortOrder
@@ -64625,6 +68085,7 @@ export namespace Prisma {
     cost?: SortOrder
     stock?: SortOrder
     stockPolicyVersion?: SortOrder
+    unitsPerPurchase?: SortOrder
     reorderPoint?: SortOrder
     reorderQuantity?: SortOrder
   }
@@ -64932,6 +68393,14 @@ export namespace Prisma {
     stockPolicy?: SortOrder
     stockPolicyConflict?: SortOrder
     stockPolicyRev?: SortOrder
+    modifiers?: SortOrder
+    note?: SortOrder
+    basePrice?: SortOrder
+    recipeRev?: SortOrder
+    consumption?: SortOrder
+    costStatus?: SortOrder
+    recipeConflict?: SortOrder
+    modifierConflict?: SortOrder
   }
 
   export type SaleItemAvgOrderByAggregateInput = {
@@ -64941,6 +68410,7 @@ export namespace Prisma {
     total?: SortOrder
     cost?: SortOrder
     lineIndex?: SortOrder
+    basePrice?: SortOrder
   }
 
   export type SaleItemMaxOrderByAggregateInput = {
@@ -64958,6 +68428,12 @@ export namespace Prisma {
     stockPolicy?: SortOrder
     stockPolicyConflict?: SortOrder
     stockPolicyRev?: SortOrder
+    note?: SortOrder
+    basePrice?: SortOrder
+    recipeRev?: SortOrder
+    costStatus?: SortOrder
+    recipeConflict?: SortOrder
+    modifierConflict?: SortOrder
   }
 
   export type SaleItemMinOrderByAggregateInput = {
@@ -64975,6 +68451,12 @@ export namespace Prisma {
     stockPolicy?: SortOrder
     stockPolicyConflict?: SortOrder
     stockPolicyRev?: SortOrder
+    note?: SortOrder
+    basePrice?: SortOrder
+    recipeRev?: SortOrder
+    costStatus?: SortOrder
+    recipeConflict?: SortOrder
+    modifierConflict?: SortOrder
   }
 
   export type SaleItemSumOrderByAggregateInput = {
@@ -64984,6 +68466,7 @@ export namespace Prisma {
     total?: SortOrder
     cost?: SortOrder
     lineIndex?: SortOrder
+    basePrice?: SortOrder
   }
 
   export type SaleTenderCountOrderByAggregateInput = {
@@ -65895,6 +69378,11 @@ export namespace Prisma {
     status?: SortOrder
     receivedById?: SortOrder
     receivedByName?: SortOrder
+    purchaseUnit?: SortOrder
+    purchaseQuantity?: SortOrder
+    unitsPerPurchase?: SortOrder
+    purchasePrice?: SortOrder
+    supplierReference?: SortOrder
     attribution?: SortOrder
   }
 
@@ -65904,6 +69392,9 @@ export namespace Prisma {
     quantityRemaining?: SortOrder
     unitCost?: SortOrder
     unitPrice?: SortOrder
+    purchaseQuantity?: SortOrder
+    unitsPerPurchase?: SortOrder
+    purchasePrice?: SortOrder
   }
 
   export type InventoryBatchMaxOrderByAggregateInput = {
@@ -65926,6 +69417,11 @@ export namespace Prisma {
     status?: SortOrder
     receivedById?: SortOrder
     receivedByName?: SortOrder
+    purchaseUnit?: SortOrder
+    purchaseQuantity?: SortOrder
+    unitsPerPurchase?: SortOrder
+    purchasePrice?: SortOrder
+    supplierReference?: SortOrder
   }
 
   export type InventoryBatchMinOrderByAggregateInput = {
@@ -65948,6 +69444,11 @@ export namespace Prisma {
     status?: SortOrder
     receivedById?: SortOrder
     receivedByName?: SortOrder
+    purchaseUnit?: SortOrder
+    purchaseQuantity?: SortOrder
+    unitsPerPurchase?: SortOrder
+    purchasePrice?: SortOrder
+    supplierReference?: SortOrder
   }
 
   export type InventoryBatchSumOrderByAggregateInput = {
@@ -65956,6 +69457,9 @@ export namespace Prisma {
     quantityRemaining?: SortOrder
     unitCost?: SortOrder
     unitPrice?: SortOrder
+    purchaseQuantity?: SortOrder
+    unitsPerPurchase?: SortOrder
+    purchasePrice?: SortOrder
   }
 
   export type EnumInventoryBatchStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -65983,6 +69487,8 @@ export namespace Prisma {
     batchId?: SortOrder
     batchAllocations?: SortOrder
     valueImpact?: SortOrder
+    wasteRef?: SortOrder
+    wasteOf?: SortOrder
     createdById?: SortOrder
     createdByName?: SortOrder
     attribution?: SortOrder
@@ -66011,6 +69517,8 @@ export namespace Prisma {
     note?: SortOrder
     batchId?: SortOrder
     valueImpact?: SortOrder
+    wasteRef?: SortOrder
+    wasteOf?: SortOrder
     createdById?: SortOrder
     createdByName?: SortOrder
     createdAt?: SortOrder
@@ -66030,6 +69538,8 @@ export namespace Prisma {
     note?: SortOrder
     batchId?: SortOrder
     valueImpact?: SortOrder
+    wasteRef?: SortOrder
+    wasteOf?: SortOrder
     createdById?: SortOrder
     createdByName?: SortOrder
     createdAt?: SortOrder
@@ -67195,6 +70705,112 @@ export namespace Prisma {
     expiresAt?: SortOrder
     endedAt?: SortOrder
     endReason?: SortOrder
+  }
+
+  export type ModifierGroupCountOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    name?: SortOrder
+    nameAr?: SortOrder
+    required?: SortOrder
+    minSelect?: SortOrder
+    maxSelect?: SortOrder
+    sortOrder?: SortOrder
+    archived?: SortOrder
+    options?: SortOrder
+    revision?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ModifierGroupAvgOrderByAggregateInput = {
+    minSelect?: SortOrder
+    maxSelect?: SortOrder
+    sortOrder?: SortOrder
+    revision?: SortOrder
+  }
+
+  export type ModifierGroupMaxOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    name?: SortOrder
+    nameAr?: SortOrder
+    required?: SortOrder
+    minSelect?: SortOrder
+    maxSelect?: SortOrder
+    sortOrder?: SortOrder
+    archived?: SortOrder
+    revision?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ModifierGroupMinOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    name?: SortOrder
+    nameAr?: SortOrder
+    required?: SortOrder
+    minSelect?: SortOrder
+    maxSelect?: SortOrder
+    sortOrder?: SortOrder
+    archived?: SortOrder
+    revision?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ModifierGroupSumOrderByAggregateInput = {
+    minSelect?: SortOrder
+    maxSelect?: SortOrder
+    sortOrder?: SortOrder
+    revision?: SortOrder
+  }
+
+  export type RecipeRevisionCountOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    productSyncId?: SortOrder
+    yield?: SortOrder
+    lines?: SortOrder
+    note?: SortOrder
+    parentRev?: SortOrder
+    createdById?: SortOrder
+    createdByName?: SortOrder
+    attribution?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type RecipeRevisionAvgOrderByAggregateInput = {
+    yield?: SortOrder
+  }
+
+  export type RecipeRevisionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    productSyncId?: SortOrder
+    yield?: SortOrder
+    note?: SortOrder
+    parentRev?: SortOrder
+    createdById?: SortOrder
+    createdByName?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type RecipeRevisionMinOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    productSyncId?: SortOrder
+    yield?: SortOrder
+    note?: SortOrder
+    parentRev?: SortOrder
+    createdById?: SortOrder
+    createdByName?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type RecipeRevisionSumOrderByAggregateInput = {
+    yield?: SortOrder
   }
 
   export type StaffUserCreateNestedManyWithoutTenantInput = {
@@ -68486,6 +72102,10 @@ export namespace Prisma {
     set: string[]
   }
 
+  export type ProductCreatemodifierGroupIdsInput = {
+    set: string[]
+  }
+
   export type TenantCreateNestedOneWithoutProductsInput = {
     create?: XOR<TenantCreateWithoutProductsInput, TenantUncheckedCreateWithoutProductsInput>
     connectOrCreate?: TenantCreateOrConnectWithoutProductsInput
@@ -68585,6 +72205,11 @@ export namespace Prisma {
   }
 
   export type ProductUpdatebarcodeAliasesInput = {
+    set?: string[]
+    push?: string | string[]
+  }
+
+  export type ProductUpdatemodifierGroupIdsInput = {
     set?: string[]
     push?: string | string[]
   }
@@ -70553,6 +74178,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -70591,6 +74222,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -71226,6 +74863,11 @@ export namespace Prisma {
     status?: $Enums.InventoryBatchStatus
     receivedById?: string | null
     receivedByName?: string | null
+    purchaseUnit?: string | null
+    purchaseQuantity?: Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: Decimal | DecimalJsLike | number | string | null
+    supplierReference?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
     product: ProductCreateNestedOneWithoutBatchesInput
     supplier?: SupplierCreateNestedOneWithoutInventoryBatchesInput
@@ -71250,6 +74892,11 @@ export namespace Prisma {
     status?: $Enums.InventoryBatchStatus
     receivedById?: string | null
     receivedByName?: string | null
+    purchaseUnit?: string | null
+    purchaseQuantity?: Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: Decimal | DecimalJsLike | number | string | null
+    supplierReference?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -71276,6 +74923,8 @@ export namespace Prisma {
     batchId?: string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
+    wasteRef?: string | null
+    wasteOf?: string | null
     createdById?: string | null
     createdByName?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -71297,6 +74946,8 @@ export namespace Prisma {
     batchId?: string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
+    wasteRef?: string | null
+    wasteOf?: string | null
     createdById?: string | null
     createdByName?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -71766,6 +75417,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: DateTimeNullableFilter<"Product"> | Date | string | null
     stockPolicyHistory?: JsonFilter<"Product">
     stockPolicyRev?: StringFilter<"Product"> | string
+    sellable?: BoolFilter<"Product"> | boolean
+    stockUnit?: StringFilter<"Product"> | string
+    purchaseUnit?: StringNullableFilter<"Product"> | string | null
+    unitsPerPurchase?: DecimalNullableFilter<"Product"> | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: StringNullableListFilter<"Product">
+    recipeRev?: StringNullableFilter<"Product"> | string | null
     category?: StringFilter<"Product"> | string
     accent?: StringFilter<"Product"> | string
     favorite?: BoolFilter<"Product"> | boolean
@@ -72311,6 +75968,11 @@ export namespace Prisma {
     status?: EnumInventoryBatchStatusFilter<"InventoryBatch"> | $Enums.InventoryBatchStatus
     receivedById?: StringNullableFilter<"InventoryBatch"> | string | null
     receivedByName?: StringNullableFilter<"InventoryBatch"> | string | null
+    purchaseUnit?: StringNullableFilter<"InventoryBatch"> | string | null
+    purchaseQuantity?: DecimalNullableFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: DecimalNullableFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: DecimalNullableFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string | null
+    supplierReference?: StringNullableFilter<"InventoryBatch"> | string | null
     attribution?: JsonNullableFilter<"InventoryBatch">
   }
 
@@ -72348,6 +76010,8 @@ export namespace Prisma {
     batchId?: StringNullableFilter<"StockAdjustment"> | string | null
     batchAllocations?: JsonNullableFilter<"StockAdjustment">
     valueImpact?: DecimalFilter<"StockAdjustment"> | Decimal | DecimalJsLike | number | string
+    wasteRef?: StringNullableFilter<"StockAdjustment"> | string | null
+    wasteOf?: StringNullableFilter<"StockAdjustment"> | string | null
     createdById?: StringNullableFilter<"StockAdjustment"> | string | null
     createdByName?: StringNullableFilter<"StockAdjustment"> | string | null
     attribution?: JsonNullableFilter<"StockAdjustment">
@@ -73584,6 +77248,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -73623,6 +77293,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -73662,6 +77338,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -73700,6 +77382,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -73746,6 +77434,11 @@ export namespace Prisma {
     status?: $Enums.InventoryBatchStatus
     receivedById?: string | null
     receivedByName?: string | null
+    purchaseUnit?: string | null
+    purchaseQuantity?: Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: Decimal | DecimalJsLike | number | string | null
+    supplierReference?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
     tenant: TenantCreateNestedOneWithoutInventoryBatchesInput
     supplier?: SupplierCreateNestedOneWithoutInventoryBatchesInput
@@ -73770,6 +77463,11 @@ export namespace Prisma {
     status?: $Enums.InventoryBatchStatus
     receivedById?: string | null
     receivedByName?: string | null
+    purchaseUnit?: string | null
+    purchaseQuantity?: Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: Decimal | DecimalJsLike | number | string | null
+    supplierReference?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -73796,6 +77494,8 @@ export namespace Prisma {
     batchId?: string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
+    wasteRef?: string | null
+    wasteOf?: string | null
     createdById?: string | null
     createdByName?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -73817,6 +77517,8 @@ export namespace Prisma {
     batchId?: string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
+    wasteRef?: string | null
+    wasteOf?: string | null
     createdById?: string | null
     createdByName?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -74061,6 +77763,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -74100,6 +77808,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -74350,6 +78064,14 @@ export namespace Prisma {
     stockPolicy?: string
     stockPolicyConflict?: string | null
     stockPolicyRev?: string | null
+    modifiers?: NullableJsonNullValueInput | InputJsonValue
+    note?: string | null
+    basePrice?: Decimal | DecimalJsLike | number | string | null
+    recipeRev?: string | null
+    consumption?: NullableJsonNullValueInput | InputJsonValue
+    costStatus?: string | null
+    recipeConflict?: string | null
+    modifierConflict?: string | null
   }
 
   export type SaleItemUncheckedCreateWithoutSaleInput = {
@@ -74367,6 +78089,14 @@ export namespace Prisma {
     stockPolicy?: string
     stockPolicyConflict?: string | null
     stockPolicyRev?: string | null
+    modifiers?: NullableJsonNullValueInput | InputJsonValue
+    note?: string | null
+    basePrice?: Decimal | DecimalJsLike | number | string | null
+    recipeRev?: string | null
+    consumption?: NullableJsonNullValueInput | InputJsonValue
+    costStatus?: string | null
+    recipeConflict?: string | null
+    modifierConflict?: string | null
   }
 
   export type SaleItemCreateOrConnectWithoutSaleInput = {
@@ -74624,6 +78354,14 @@ export namespace Prisma {
     stockPolicy?: StringFilter<"SaleItem"> | string
     stockPolicyConflict?: StringNullableFilter<"SaleItem"> | string | null
     stockPolicyRev?: StringNullableFilter<"SaleItem"> | string | null
+    modifiers?: JsonNullableFilter<"SaleItem">
+    note?: StringNullableFilter<"SaleItem"> | string | null
+    basePrice?: DecimalNullableFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string | null
+    recipeRev?: StringNullableFilter<"SaleItem"> | string | null
+    consumption?: JsonNullableFilter<"SaleItem">
+    costStatus?: StringNullableFilter<"SaleItem"> | string | null
+    recipeConflict?: StringNullableFilter<"SaleItem"> | string | null
+    modifierConflict?: StringNullableFilter<"SaleItem"> | string | null
   }
 
   export type SaleRefundUpsertWithWhereUniqueWithoutSaleInput = {
@@ -76854,6 +80592,11 @@ export namespace Prisma {
     status?: $Enums.InventoryBatchStatus
     receivedById?: string | null
     receivedByName?: string | null
+    purchaseUnit?: string | null
+    purchaseQuantity?: Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: Decimal | DecimalJsLike | number | string | null
+    supplierReference?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
     tenant: TenantCreateNestedOneWithoutInventoryBatchesInput
     product: ProductCreateNestedOneWithoutBatchesInput
@@ -76878,6 +80621,11 @@ export namespace Prisma {
     status?: $Enums.InventoryBatchStatus
     receivedById?: string | null
     receivedByName?: string | null
+    purchaseUnit?: string | null
+    purchaseQuantity?: Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: Decimal | DecimalJsLike | number | string | null
+    supplierReference?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -79291,6 +83039,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -79330,6 +83084,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -79542,6 +83302,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -79581,6 +83347,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -79777,6 +83549,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -79816,6 +83594,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -79993,6 +83777,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -80032,6 +83822,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -80397,6 +84193,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -80436,6 +84238,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -80525,6 +84333,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -80564,6 +84378,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -82587,6 +86407,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -82626,6 +86452,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -82803,6 +86635,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -82842,6 +86680,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -82895,6 +86739,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -83129,6 +86979,11 @@ export namespace Prisma {
     status?: $Enums.InventoryBatchStatus
     receivedById?: string | null
     receivedByName?: string | null
+    purchaseUnit?: string | null
+    purchaseQuantity?: Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: Decimal | DecimalJsLike | number | string | null
+    supplierReference?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -83146,6 +87001,8 @@ export namespace Prisma {
     batchId?: string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
+    wasteRef?: string | null
+    wasteOf?: string | null
     createdById?: string | null
     createdByName?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -83374,6 +87231,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -83412,6 +87275,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -83449,6 +87318,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -84105,6 +87980,11 @@ export namespace Prisma {
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
     receivedById?: NullableStringFieldUpdateOperationsInput | string | null
     receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseQuantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierReference?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
     product?: ProductUpdateOneRequiredWithoutBatchesNestedInput
     supplier?: SupplierUpdateOneWithoutInventoryBatchesNestedInput
@@ -84129,6 +88009,11 @@ export namespace Prisma {
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
     receivedById?: NullableStringFieldUpdateOperationsInput | string | null
     receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseQuantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierReference?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -84151,6 +88036,11 @@ export namespace Prisma {
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
     receivedById?: NullableStringFieldUpdateOperationsInput | string | null
     receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseQuantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierReference?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -84167,6 +88057,8 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wasteRef?: NullableStringFieldUpdateOperationsInput | string | null
+    wasteOf?: NullableStringFieldUpdateOperationsInput | string | null
     createdById?: NullableStringFieldUpdateOperationsInput | string | null
     createdByName?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -84188,6 +88080,8 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wasteRef?: NullableStringFieldUpdateOperationsInput | string | null
+    wasteOf?: NullableStringFieldUpdateOperationsInput | string | null
     createdById?: NullableStringFieldUpdateOperationsInput | string | null
     createdByName?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -84208,6 +88102,8 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wasteRef?: NullableStringFieldUpdateOperationsInput | string | null
+    wasteOf?: NullableStringFieldUpdateOperationsInput | string | null
     createdById?: NullableStringFieldUpdateOperationsInput | string | null
     createdByName?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -85047,6 +88943,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: string
+    sellable?: boolean
+    stockUnit?: string
+    purchaseUnit?: string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductCreatemodifierGroupIdsInput | string[]
+    recipeRev?: string | null
     category: string
     accent?: string
     favorite?: boolean
@@ -85080,6 +88982,11 @@ export namespace Prisma {
     status?: $Enums.InventoryBatchStatus
     receivedById?: string | null
     receivedByName?: string | null
+    purchaseUnit?: string | null
+    purchaseQuantity?: Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: Decimal | DecimalJsLike | number | string | null
+    supplierReference?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -85097,6 +89004,8 @@ export namespace Prisma {
     batchId?: string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
+    wasteRef?: string | null
+    wasteOf?: string | null
     createdById?: string | null
     createdByName?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -85146,6 +89055,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -85184,6 +89099,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -85221,6 +89142,12 @@ export namespace Prisma {
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
     stockPolicyRev?: StringFieldUpdateOperationsInput | string
+    sellable?: BoolFieldUpdateOperationsInput | boolean
+    stockUnit?: StringFieldUpdateOperationsInput | string
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    modifierGroupIds?: ProductUpdatemodifierGroupIdsInput | string[]
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -85252,6 +89179,11 @@ export namespace Prisma {
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
     receivedById?: NullableStringFieldUpdateOperationsInput | string | null
     receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseQuantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierReference?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
     tenant?: TenantUpdateOneRequiredWithoutInventoryBatchesNestedInput
     supplier?: SupplierUpdateOneWithoutInventoryBatchesNestedInput
@@ -85276,6 +89208,11 @@ export namespace Prisma {
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
     receivedById?: NullableStringFieldUpdateOperationsInput | string | null
     receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseQuantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierReference?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -85298,6 +89235,11 @@ export namespace Prisma {
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
     receivedById?: NullableStringFieldUpdateOperationsInput | string | null
     receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseQuantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierReference?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -85314,6 +89256,8 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wasteRef?: NullableStringFieldUpdateOperationsInput | string | null
+    wasteOf?: NullableStringFieldUpdateOperationsInput | string | null
     createdById?: NullableStringFieldUpdateOperationsInput | string | null
     createdByName?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -85335,6 +89279,8 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wasteRef?: NullableStringFieldUpdateOperationsInput | string | null
+    wasteOf?: NullableStringFieldUpdateOperationsInput | string | null
     createdById?: NullableStringFieldUpdateOperationsInput | string | null
     createdByName?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -85355,6 +89301,8 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wasteRef?: NullableStringFieldUpdateOperationsInput | string | null
+    wasteOf?: NullableStringFieldUpdateOperationsInput | string | null
     createdById?: NullableStringFieldUpdateOperationsInput | string | null
     createdByName?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
@@ -85457,6 +89405,14 @@ export namespace Prisma {
     stockPolicy?: string
     stockPolicyConflict?: string | null
     stockPolicyRev?: string | null
+    modifiers?: NullableJsonNullValueInput | InputJsonValue
+    note?: string | null
+    basePrice?: Decimal | DecimalJsLike | number | string | null
+    recipeRev?: string | null
+    consumption?: NullableJsonNullValueInput | InputJsonValue
+    costStatus?: string | null
+    recipeConflict?: string | null
+    modifierConflict?: string | null
   }
 
   export type SaleRefundCreateManySaleInput = {
@@ -85494,6 +89450,14 @@ export namespace Prisma {
     stockPolicy?: StringFieldUpdateOperationsInput | string
     stockPolicyConflict?: NullableStringFieldUpdateOperationsInput | string | null
     stockPolicyRev?: NullableStringFieldUpdateOperationsInput | string | null
+    modifiers?: NullableJsonNullValueInput | InputJsonValue
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    basePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
+    consumption?: NullableJsonNullValueInput | InputJsonValue
+    costStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    recipeConflict?: NullableStringFieldUpdateOperationsInput | string | null
+    modifierConflict?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SaleItemUncheckedUpdateWithoutSaleInput = {
@@ -85511,6 +89475,14 @@ export namespace Prisma {
     stockPolicy?: StringFieldUpdateOperationsInput | string
     stockPolicyConflict?: NullableStringFieldUpdateOperationsInput | string | null
     stockPolicyRev?: NullableStringFieldUpdateOperationsInput | string | null
+    modifiers?: NullableJsonNullValueInput | InputJsonValue
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    basePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
+    consumption?: NullableJsonNullValueInput | InputJsonValue
+    costStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    recipeConflict?: NullableStringFieldUpdateOperationsInput | string | null
+    modifierConflict?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SaleItemUncheckedUpdateManyWithoutSaleInput = {
@@ -85528,6 +89500,14 @@ export namespace Prisma {
     stockPolicy?: StringFieldUpdateOperationsInput | string
     stockPolicyConflict?: NullableStringFieldUpdateOperationsInput | string | null
     stockPolicyRev?: NullableStringFieldUpdateOperationsInput | string | null
+    modifiers?: NullableJsonNullValueInput | InputJsonValue
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    basePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    recipeRev?: NullableStringFieldUpdateOperationsInput | string | null
+    consumption?: NullableJsonNullValueInput | InputJsonValue
+    costStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    recipeConflict?: NullableStringFieldUpdateOperationsInput | string | null
+    modifierConflict?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SaleRefundUpdateWithoutSaleInput = {
@@ -85926,6 +89906,11 @@ export namespace Prisma {
     status?: $Enums.InventoryBatchStatus
     receivedById?: string | null
     receivedByName?: string | null
+    purchaseUnit?: string | null
+    purchaseQuantity?: Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: Decimal | DecimalJsLike | number | string | null
+    supplierReference?: string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -86059,6 +90044,11 @@ export namespace Prisma {
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
     receivedById?: NullableStringFieldUpdateOperationsInput | string | null
     receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseQuantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierReference?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
     tenant?: TenantUpdateOneRequiredWithoutInventoryBatchesNestedInput
     product?: ProductUpdateOneRequiredWithoutBatchesNestedInput
@@ -86083,6 +90073,11 @@ export namespace Prisma {
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
     receivedById?: NullableStringFieldUpdateOperationsInput | string | null
     receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseQuantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierReference?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -86105,6 +90100,11 @@ export namespace Prisma {
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
     receivedById?: NullableStringFieldUpdateOperationsInput | string | null
     receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    purchaseQuantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitsPerPurchase?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    purchasePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierReference?: NullableStringFieldUpdateOperationsInput | string | null
     attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
