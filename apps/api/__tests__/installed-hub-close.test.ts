@@ -139,7 +139,7 @@ if (!ready) {
     }
     owner = await login("1501")
     expect(owner).toBeTruthy()
-    if (PHASE === "close" || PHASE === "close-oldclient") {
+    if (PHASE === "close" || PHASE === "close-oldclient" || PHASE === "close-approve") {
       const code = await call("POST", "/api/device/generate-code", {}, owner)
       expect((await d.devices.pairDevice(code.body.code, deviceId, "Close IT till")).ok).toBe(true)
       storage.setItem("lebanonpos.auth-token", owner)
@@ -262,6 +262,32 @@ if (!ready) {
       expect(unknown).not.toHaveProperty("netProfit")
       expect(unknown).not.toHaveProperty("costStatus")
       expect(Number(known.netProfit)).toBe(-1)
+    })
+  })
+
+  if (PHASE === "close-approve") describe("manager approval through the packaged hub, attested to the cloud", { timeout: 240_000 }, () => {
+    it("the owner enrolls the hub key on the hub; a clerk's void approved by the manager reaches the cloud attested, with the approver", async () => {
+      const enroll = await call("POST", "/api/setup/hub-key", { pin: "1501" })
+      evidence("hub key", { status: enroll.status, enrolled: !!enroll.body?.kid })
+      expect(enroll.status).toBe(200)
+      await asClerk() // connected and signed in as the clerk (no void permission), on the enrolled register
+      const id = sell(A.milkSyncId, 1, 1.5, "Cash", undefined)
+      await flush()
+      const sale = d.sales.getSales().find((x: any) => x.id === id)
+      expect(() => d.sales.voidSale(id)).toThrow(/permission/i)
+      const approval = await mod("features/pos/services/approval.service")
+      const r = await approval.requestManagerApproval({ entity: "sale", action: "void", payload: d.sales.voidApprovalPayload(sale), permission: "sales.void", pin: "1502" })
+      evidence("approval", { ok: r.ok, code: r.ok ? null : r.code })
+      expect(r.ok).toBe(true)
+      d.sales.voidSale(id)
+      await flush()
+      const op = queue().find((o) => o.entity === "sale" && o.action === "void" && o.payload?.id === id)!
+      expect(op.status).toBe("Synced")
+      const atCloud = await inCloud(() => prisma.operationEvidence.findFirst({ where: { tenantId: A.tenantId, opId: op.id } }))
+      evidence("cloud evidence", atCloud && { attestation: atCloud.attestation, evidence: atCloud.evidence, approval: atCloud.approval })
+      expect(atCloud?.attestation).toBe("valid")
+      expect(atCloud?.approval).toMatchObject({ check: "valid", approverId: A.staff.manager, permission: "sales.void" })
+      expect((await prisma.sale.findFirst({ where: { tenantId: A.tenantId, id }, select: { status: true } }))?.status).toBe("Voided")
     })
   })
 
