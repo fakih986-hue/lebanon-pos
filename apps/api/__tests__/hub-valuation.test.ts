@@ -438,10 +438,27 @@ describe("daily close: the server's figures, or unknown — never a made-up zero
       const res = await fetch(`${hubUrl}/api/sync/pull`, { headers: { Authorization: `Bearer ${adminToken}`, "x-titan-sync-schema": "4", "x-titan-unknown-cost": "1", ...(revisions ? { "x-titan-close-revisions": "1" } : {}) } })
       return ((await res.json()) as { dailyCloses: any[] }).dailyCloses
     }
-    const old = (await pull(false)).filter((c) => c.dateKey === "2026-10-07")
+    // 2026-10-07: register A corrected (rev 2: 3), register A's second shift (6), register B (5) — none dropped:
+    // one COMBINED close of the three current closes; the close A corrected (2) is left out
+    const all = await pull(false)
+    const old = all.filter((c) => c.dateKey === "2026-10-07")
     expect(old).toHaveLength(1)
     for (const k of ["scope", "revision", "revisionOf", "supersededById"]) expect(old[0]).not.toHaveProperty(k)
-    expect(old[0].supersededById).toBeUndefined()
+    const { combinedCloseId } = await import("../src/lib/dailyClose.js")
+    expect([old[0].id, Number(old[0].netProfit), Number(old[0].costOfGoods), old[0].closedBy]).toEqual([combinedCloseId(TENANT, "2026-10-07"), 14, 3, "3 closes combined"])
+    expect(old[0].note).toMatch(/Combined total of 3 closes .*upgrade to see each register's and shift's close/)
+    // two registers both labelled REG-001 (2026-10-10): combined too (1 + 2)
+    const sameLabel = all.filter((c) => c.dateKey === "2026-10-10")
+    expect([sameLabel.length, Number(sameLabel[0].netProfit), sameLabel[0].closedBy]).toEqual([1, 3, "2 closes combined"])
+    // a date one register closed once is sent as it is (its own id)
+    const single = all.find((c) => c.dateKey === "2026-10-04")
+    expect(single.id).not.toBe(combinedCloseId(TENANT, "2026-10-04"))
+    // an older client without the unknown-cost capability: a combined unknown stays absent, never 0
+    const oldest = await (await fetch(`${hubUrl}/api/sync/pull`, { headers: { Authorization: `Bearer ${adminToken}`, "x-titan-sync-schema": "2" } })).json() as { dailyCloses: any[] }
+    expect(oldest.dailyCloses.filter((c) => c.dateKey === "2026-10-07")).toHaveLength(1)
+    // the same combined close twice (a retried pull): same id, same figures
+    const again = (await pull(false)).find((c) => c.dateKey === "2026-10-07")
+    expect([again.id, Number(again.netProfit)]).toEqual([old[0].id, 14])
     const current = (await pull(true)).filter((c) => c.dateKey === "2026-10-07")
     expect(current).toHaveLength(4)
     expect(current.filter((c) => !c.supersededById)).toHaveLength(3)

@@ -168,14 +168,19 @@ describe("A. staff attribution and server authorization", () => {
     expect(r.status).toBe("rejected")
   })
 
-  // EXPECTED-FAILURE PROBE (known defect S4, fix planned for Sprint 2): the server records the cashier the
-  // till names, not the signed-in account. Vitest counts this as passing while the defect exists; it
-  // turns red when S4 is fixed (then flip it to a plain `it`).
-  it.fails("EXPECTED-FAILURE PROBE (S4, Sprint 2): a cashier cannot record a sale attributed to another staff member", async () => {
+  // S4, now two explicit expectations (the enforced half is in staff-enforce.test.ts): in OBSERVE mode — every
+  // store's default — the server records the cashier the register names; that attribution is a CLAIM, and
+  // the evidence says so. It is not authenticated attribution.
+  it("S4 observe mode: a sale naming another staff member is recorded as named, and recorded as a claim", async () => {
     const pepsi = (await productBy(A, "Pepsi 330ml"))!
     const sale = salePayload([{ productId: pepsi.id, name: pepsi.name, qty: 1, price: 1, barcode: pepsi.barcode }], { cashier: "Owner A", cashierId: ADMIN_A })
-    const r = await push(cashierA, "sale", "create", sale)
-    expect(r.status).not.toBe("ok")
+    const opId = randomUUID()
+    const r = await push(cashierA, "sale", "create", sale, opId)
+    expect(r.status).toBe("ok")
+    expect((await prisma.sale.findFirst({ where: { tenantId: A, id: sale.id }, select: { cashierId: true } }))?.cashierId).toBe(ADMIN_A)
+    const e = (await prisma.operationEvidence.findUnique({ where: { opId } }))!
+    expect([e.evidence, e.actorIdClaimed]).toEqual(["legacy-claimed", ADMIN_A])
+    expect(e.limitations).toEqual(expect.arrayContaining(["connection-account-not-proven-actor", "actor-differs-from-connection-account"]))
   })
 
   it("a cashier cannot push a refund (sales.refund is checked on the signed-in account)", async () => {

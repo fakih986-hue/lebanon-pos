@@ -337,10 +337,10 @@ async function staffIdentity(tenantId: string, device: { check: string; deviceId
 }
 
 /** Work a manager applied on review at an enrolled hub: authorized as that reviewer, as they stand now. */
-async function reviewedAtHub(tenantId: string, reviewerId: string, op: { entity: string; action: string }): Promise<{ refuse: string } | { actor: SaleActor; basis: "session" }> {
+async function reviewedAtHub(tenantId: string, reviewerId: string, op: { entity: string; action: string }): Promise<{ refuse: string } | { actor: SaleActor; basis: "review" }> {
   const r = await prisma.staffUser.findFirst({ where: { id: reviewerId, tenantId, active: true }, select: { id: true, name: true, role: true, permissions: true } })
   if (!r) return { refuse: `HUB_UNSUPPORTED: a ${op.action} ${op.entity} the hub applied on review names a reviewer who is not an active staff member here. Kept for a manager's review.` }
-  return { actor: { id: r.id, name: r.name, permissions: effectivePermissions(r.permissions as any, r.role) }, basis: "session" }
+  return { actor: { id: r.id, name: r.name, permissions: effectivePermissions(r.permissions as any, r.role) }, basis: "review" }
 }
 
 /**
@@ -716,7 +716,8 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
       // else passes through unchanged.
       const ruled = hubOutside ? hubOutside
         : gate && "refuse" in gate ? gate.refuse
-        : enforcedActor ? await makeOpAuthorizer(tenantId, enforcedActor.permissions, enforcedActor.id, approved)(op)
+        // a reviewer's decision at the hub stands as a manager's approval would (see the resolve route)
+        : enforcedActor ? await makeOpAuthorizer(tenantId, enforcedActor.permissions, enforcedActor.id, gate && "basis" in gate && gate.basis === "review" ? [...approved, ...enforcedActor.permissions] : approved)(op)
         : approved.length ? await makeOpAuthorizer(tenantId, actorPermissions, req.auth!.userId, approved)(op)
         : await authorizeOp(op)
       // an approval that does not hold is said so; the operation is kept for a manager's review
@@ -1093,7 +1094,9 @@ router.post("/refused/:id/resolve", staffSync, async (req: AuthRequest, res: Ser
   }
   const op = { id, entity: row.entity, action: row.action, payload: row.payload ?? {} }
   // The reviewer's own authority must allow the operation (the same rules as a push by them).
-  const refusal = await makeOpAuthorizer(tenantId, reviewer.permissions, reviewer.id)(op)
+  // A reviewer who may do the action applies it on their own authority, as a manager's approval would: the
+  // person the register named (a cashier without the permission) does not then need it.
+  const refusal = await makeOpAuthorizer(tenantId, reviewer.permissions, reviewer.id, reviewer.permissions)(op)
   if (refusal) { await back(row.error ?? ""); json(res, { error: refusal, code: "FORBIDDEN" }, 403); return }
   try {
     const outcome = await applyOnce(tenantId, op, reviewApplyCtx(origin.deviceId, reviewer.id, origin.syncSchema), reviewApplyHook(req, tenantId, op, reviewer.id, origin.deviceId, row.heldEvidence as Record<string, unknown> | null))
