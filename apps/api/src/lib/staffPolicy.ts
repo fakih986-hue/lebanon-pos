@@ -36,10 +36,11 @@ export async function storePolicy(tenantId: string): Promise<StaffPolicy> {
   return { mode: asMode(t?.staffSessionMode), version: t?.staffPolicyVersion ?? 0, issuedAt: t?.staffPolicyIssuedAt?.toISOString() ?? null, issuedBy: t?.staffPolicyIssuedBy ?? null }
 }
 
-/** The cloud records a new policy (the next version). */
-export async function issuePolicy(tenantId: string, mode: StaffMode, by: string): Promise<StaffPolicy> {
-  const t = await prisma.tenant.update({ where: { id: tenantId }, data: { staffSessionMode: mode, staffPolicyVersion: { increment: 1 }, staffPolicyIssuedAt: new Date(), staffPolicyIssuedBy: by }, select: { staffSessionMode: true, staffPolicyVersion: true, staffPolicyIssuedAt: true, staffPolicyIssuedBy: true } })
-  return { mode: asMode(t.staffSessionMode), version: t.staffPolicyVersion, issuedAt: t.staffPolicyIssuedAt?.toISOString() ?? null, issuedBy: t.staffPolicyIssuedBy }
+/** The cloud records a new policy (the next version), only if the store is still at `expectedVersion`
+ *  (the version the deciding person looked at); null when someone else decided in between. */
+export async function issuePolicy(tenantId: string, mode: StaffMode, by: string, expectedVersion: number): Promise<StaffPolicy | null> {
+  const n = await prisma.tenant.updateMany({ where: { id: tenantId, staffPolicyVersion: expectedVersion }, data: { staffSessionMode: mode, staffPolicyVersion: { increment: 1 }, staffPolicyIssuedAt: new Date(), staffPolicyIssuedBy: by } })
+  return n.count === 1 ? storePolicy(tenantId) : null
 }
 
 /**

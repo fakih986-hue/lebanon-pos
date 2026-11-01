@@ -10,6 +10,7 @@ import { ProductsPage } from "./pages/ProductsPage"
 import { DriversPage } from "./pages/DriversPage"
 import { StaffPage } from "./pages/StaffPage"
 import { RefusedWorkPage } from "./pages/RefusedWorkPage"
+import { StoreSecurityPage } from "./pages/StoreSecurityPage"
 import { SalesPage } from "./pages/SalesPage"
 import { TenantsPage } from "./pages/TenantsPage"
 import { ReportsPage } from "./pages/ReportsPage"
@@ -45,6 +46,7 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="drivers" element={<DriversPage />} />
                 <Route path="staff" element={<StaffPage />} />
                 <Route path="refused" element={<RefusedWorkPage />} />
+                <Route path="security" element={<StoreSecurityPage />} />
                 <Route path="sales" element={<SalesPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="tenants" element={<TenantsPage />} />

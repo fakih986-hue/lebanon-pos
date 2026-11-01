@@ -160,6 +160,12 @@ export function parseQueueReport(raw: unknown): QueueReport | null {
     return Object.values(r).every((v) => v !== null) ? (r as QueueReport) : null
   } catch { return null }
 }
+/** Why a register's queue does not confirm readiness, in words (an older register sends no report). */
+function queueDetail(q: QueueReport | null, reportedAt: Date | string | null, lastSeenAt: Date | string): string {
+  if (!q || !reportedAt) return "no queue report (an older register cannot send one)"
+  if (new Date(reportedAt) < new Date(lastSeenAt)) return "its queue was confirmed before its latest activity: let it sync again"
+  return `pending ${q.pending}, held ${q.held}, failed ${q.failed}, unfinished ${q.journal}`
+}
 const queueEmpty = (q: QueueReport | null | undefined) => !!q && q.pending === 0 && q.held === 0 && q.failed === 0 && q.staged === 0 && q.journal === 0
 
 /** A register's own report about its queue, sent with its pull (header x-titan-queue). */
@@ -221,7 +227,7 @@ async function hubProof(tenantId: string, label: string, key: HubRow | undefined
   if (r.held > 0) out.push({ code: "hub-held", message: `${label} holds ${r.held} operation(s) for review. Apply or decline them at the hub first.` })
   if (r.openShifts > 0) out.push({ code: "hub-open-shifts", message: `${label} has ${r.openShifts} open shift(s). Close them first.` })
   const regs = (r.registers ?? []).filter((g) => !queueEmpty(g.report) || !g.reportedAt || new Date(g.reportedAt) < new Date(g.lastSeenAt))
-  if (regs.length) out.push({ code: "hub-register-queue", message: `${regs.length} register(s) behind ${label} have unsent work or have not confirmed their queue. Let each one sync (an older register cannot confirm: upgrade it, or retire it at the hub).`, items: regs.map((g) => ({ id: g.deviceId, label: g.label, detail: g.report ? `pending ${g.report.pending}, held ${g.report.held}, failed ${g.report.failed}, journal ${g.report.journal}` : "no queue report" })) })
+  if (regs.length) out.push({ code: "hub-register-queue", message: `${regs.length} register(s) behind ${label} have unsent work or have not confirmed their queue. Let each one sync (an older register cannot confirm: upgrade it, or retire it at the hub).`, items: regs.map((g) => ({ id: g.deviceId, label: g.label, detail: queueDetail(g.report, g.reportedAt, g.lastSeenAt) })) })
   const diff = stockDifferences(r.stock ?? [], cloudStock)
   if (diff.length) {
     const names = new Map((await prisma.product.findMany({ where: { tenantId, syncId: { in: diff.slice(0, 20).map((d) => d.syncId) } }, select: { syncId: true, name: true } })).map((p) => [p.syncId!, p.name]))
@@ -246,7 +252,7 @@ export async function topologyReadiness(tenantId: string, to: TopologyMode, toHu
   // registers connected to the cloud: an empty queue they reported after their latest operation
   const regs = await prisma.syncClient.findMany({ where: { tenantId, retiredAt: null, clientKey: { startsWith: "device:" } }, select: { id: true, clientKey: true, label: true, lastSeenAt: true, queueReport: true, queueReportedAt: true } })
   const unconfirmed = regs.filter((r) => !queueEmpty(r.queueReport as QueueReport | null) || !r.queueReportedAt || r.queueReportedAt < r.lastSeenAt)
-  if (unconfirmed.length) out.push({ code: "register-queue", message: `${unconfirmed.length} register(s) connected to the cloud have unsent work or have not confirmed their queue. Let each one sync; retire the ones no longer in use (an older register cannot confirm: upgrade or retire it).`, items: unconfirmed.map((r) => ({ id: r.id, label: r.label, detail: r.queueReport ? `pending ${(r.queueReport as QueueReport).pending}, held ${(r.queueReport as QueueReport).held}, journal ${(r.queueReport as QueueReport).journal}` : "no queue report" })) })
+  if (unconfirmed.length) out.push({ code: "register-queue", message: `${unconfirmed.length} register(s) connected to the cloud have unsent work or have not confirmed their queue. Let each one sync; retire the ones no longer in use (an older register cannot confirm: upgrade or retire it).`, items: unconfirmed.map((r) => ({ id: r.id, label: r.label, detail: queueDetail(r.queueReport as QueueReport | null, r.queueReportedAt, r.lastSeenAt) })) })
 
   const hubs = await storeHubs(tenantId)
   const active = hubs.filter((h) => h.status === "ACTIVE")

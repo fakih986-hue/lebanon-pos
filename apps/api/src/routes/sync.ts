@@ -218,13 +218,15 @@ router.get("/identity-gate", requireAuth, requireTokenKinds("staff", "hub-local"
 // verified session on an enrolled register in a store that already enforces), with a note; each change is the
 // next version and is audited. A hub adopts it from its pull; it never issues one. Never switched automatically.
 router.post("/identity-mode", requireAuth, requireTokenKinds("staff", "hub-local"), async (req: AuthRequest, res: ServerResponse) => {
-  const body = z.object({ mode: z.enum(["observe", "enforce-checkout", "enforce"]), note: z.string().trim().min(3).max(500) }).safeParse(req.body)
+  const body = z.object({ mode: z.enum(["observe", "enforce-checkout", "enforce"]), note: z.string().trim().min(3).max(500), expectedVersion: z.number().int().min(0).optional() }).safeParse(req.body)
   if (!body.success) { json(res, { error: "Choose observe, enforce-checkout or enforce and write a note.", code: "INVALID" }, 400); return }
   const tenantId = req.auth!.tenantId
   if (isHubServer()) { json(res, { error: "The store's staff policy is issued at the cloud; this hub adopts it from its next sync and keeps it.", code: "HUB_SERVER" }, 409); return }
   const who = await actingPerson(req)
   if (who.basis === "none" || who.basis === "store" || who.permissions === "store" || !who.permissions.has("settings.manage")) { json(res, { error: "Needs the Settings permission (signed in as yourself).", code: "FORBIDDEN" }, 403); return }
   const before = await storePolicy(tenantId)
+  // a decision taken on an older screen is refused: the owner looks again (two owners never silently overwrite)
+  if (body.data.expectedVersion !== undefined && body.data.expectedVersion !== before.version) { json(res, { error: "The store's staff policy changed since you looked at it. Look again before deciding.", code: "POLICY_STALE", policy: before }, 409); return }
   if (body.data.mode !== "observe") {
     // The activation gate: refused (not warned) until every trading client is inside the boundary.
     const blockers = body.data.mode === "enforce" ? await enforceGateBlockers(tenantId) : await identityGateBlockers(tenantId)
@@ -236,7 +238,8 @@ router.post("/identity-mode", requireAuth, requireTokenKinds("staff", "hub-local
       return
     }
   }
-  const after = await issuePolicy(tenantId, body.data.mode, who.staffId ?? "unknown")
+  const after = await issuePolicy(tenantId, body.data.mode, who.staffId ?? "unknown", body.data.expectedVersion ?? before.version)
+  if (!after) { json(res, { error: "The store's staff policy changed since you looked at it. Look again before deciding.", code: "POLICY_STALE", policy: await storePolicy(tenantId) }, 409); return }
   await prisma.auditEvent.create({ data: { tenantId, action: "security.identity_mode.changed", entity: "settings", summary: `${who.name} changed the staff policy from ${before.mode} (version ${before.version}) to ${after.mode} (version ${after.version}): ${body.data.note}`, metadata: { before, after, note: body.data.note } as any, userId: who.staffId ?? "system", userName: who.name ?? "", userRole: "Admin" as any } }).catch(() => undefined)
   json(res, { ok: true, mode: after.mode, version: after.version, before: before.mode })
 })
@@ -968,6 +971,27 @@ router.get("/policy-gate", staffSync, async (req: AuthRequest, res: ServerRespon
 })
 
 /** The owner retires a client that no longer trades (audited). Pushing again re-activates it. */
+// Owner controls: every register and hub this store has seen (retired ones too), with what blocks or concerns it:
+// sync version, enrollment, its own last queue report. Registers seen only through a hub are listed from what the
+// hub signed (their latest forwarded operation).
+router.get("/clients", staffSync, async (req: AuthRequest, res: ServerResponse) => {
+  const tenantId = req.auth!.tenantId
+  if (!(await can(req, "settings.manage")) && !(await can(req, "inventory.manage"))) { json(res, { error: "Needs the Settings permission." }, 403); return }
+  const rows = await prisma.syncClient.findMany({ where: { tenantId }, orderBy: [{ retiredAt: { sort: "asc", nulls: "first" } }, { lastSeenAt: "desc" }] })
+  const devices = new Map((await prisma.device.findMany({ where: { tenantId }, select: { deviceId: true, deviceName: true, status: true, enrolledAt: true, credentialVersion: true } })).map((d) => [d.deviceId, d]))
+  const clients = rows.map((c) => {
+    const kind = c.clientKey.startsWith("hub-bridge@") ? "hub-link" : c.clientKey.startsWith("device:") ? "register" : c.clientKey.startsWith("hub-device:") ? "hub-register" : "account"
+    const deviceId = kind === "register" ? c.clientKey.slice("device:".length) : kind === "hub-register" ? c.clientKey.slice("hub-device:".length) : null
+    const d = kind === "register" && deviceId ? devices.get(deviceId) : null
+    return {
+      id: kind === "hub-register" ? deviceId : c.id, label: d?.deviceName || c.label, kind, syncSchema: c.syncSchema, lastSeenAt: c.lastSeenAt, retiredAt: c.retiredAt, retiredNote: c.retiredNote,
+      enrolled: kind === "register" ? !!(d && d.status === "APPROVED" && d.enrolledAt && d.credentialVersion > 0) : null,
+      queue: c.queueReport ?? null, queueReportedAt: c.queueReportedAt,
+    }
+  })
+  json(res, { clients })
+})
+
 router.post("/clients/:id/retire", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   const tenantId = req.auth!.tenantId
   if (!(await can(req, "inventory.manage"))) { json(res, { error: "Retiring a till needs the Manage inventory permission." }, 403); return }
@@ -982,12 +1006,13 @@ router.post("/clients/:id/retire", staffSync, async (req: AuthRequest, res: Serv
   }
   const row = await prisma.syncClient.findFirst({ where: { id, tenantId } })
   if (!row) { json(res, { error: "Unknown till or hub." }, 404); return }
-  await prisma.syncClient.update({ where: { id }, data: { retiredAt: new Date(), retiredBy: req.auth!.userId, retiredNote: note } })
+  const by = await actingPerson(req)
+  await prisma.syncClient.update({ where: { id }, data: { retiredAt: new Date(), retiredBy: by.staffId ?? req.auth!.userId, retiredNote: note } })
   await prisma.auditEvent.create({ data: {
     tenantId, action: "sync.client_retired", entity: "device",
-    summary: `"${row.label}" (sync ${row.syncSchema}, last seen ${row.lastSeenAt.toISOString()}) was retired from the upgrade check. Note: ${note}`,
+    summary: `"${row.label}" (sync ${row.syncSchema}, last seen ${row.lastSeenAt.toISOString()}) was retired from the upgrade check${by.name ? ` by ${by.name}` : ""}. Note: ${note}`,
     metadata: { clientId: id, clientKey: row.clientKey, syncSchema: row.syncSchema, lastSeenAt: row.lastSeenAt.toISOString(), note },
-    userId: req.auth!.userId, userName: "", userRole: req.auth!.role as any,
+    userId: by.staffId ?? req.auth!.userId, userName: by.name ?? "", userRole: req.auth!.role as any,
   } })
   json(res, { ok: true })
 })
@@ -1019,12 +1044,13 @@ router.post("/clients/:id/readmit", staffSync, async (req: AuthRequest, res: Ser
   const id = String((req.params as any).id)
   const row = await prisma.syncClient.findFirst({ where: { id, tenantId } })
   if (!row) { json(res, { error: "Unknown till or hub." }, 404); return }
+  const by = await actingPerson(req)
   await prisma.syncClient.update({ where: { id }, data: { retiredAt: null, retiredBy: null, retiredNote: null } })
   await prisma.auditEvent.create({ data: {
     tenantId, action: "sync.client_readmitted", entity: "device",
-    summary: `"${row.label}" (sync ${row.syncSchema}) was re-admitted: it may check out again and counts in the upgrade check. Note: ${note}`,
+    summary: `"${row.label}" (sync ${row.syncSchema}) was re-admitted${by.name ? ` by ${by.name}` : ""}: it may check out again and counts in the upgrade check. Note: ${note}`,
     metadata: { clientId: id, clientKey: row.clientKey, syncSchema: row.syncSchema, note },
-    userId: req.auth!.userId, userName: "", userRole: req.auth!.role as any,
+    userId: by.staffId ?? req.auth!.userId, userName: by.name ?? "", userRole: req.auth!.role as any,
   } })
   json(res, { ok: true })
 })

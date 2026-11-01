@@ -128,7 +128,7 @@ beforeAll(async () => {
   tea = { id: t.id, syncId: t.syncId! }; latte = { id: l.id, syncId: l.syncId! }
   // the pilot store enforces (the activation gate is exercised in staff-enforce.test.ts)
   const { issuePolicy } = await import("../src/lib/staffPolicy.js")
-  await issuePolicy(T, "enforce", OWNER)
+  await issuePolicy(T, "enforce", OWNER, (await prisma.tenant.findUnique({ where: { id: T } }))!.staffPolicyVersion)
 })
 
 afterAll(async () => {
