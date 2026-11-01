@@ -480,6 +480,9 @@ async function applyOnce(tenantId: string, op: { id: string; entity: string; act
           // applied under this server's valuation: its forwarded figures are this server's
           serverValued: true,
           status: "Pending",
+          // from here on attempts count forwarding to the cloud (refused deliveries before a review must
+          // not use them up: the hub's bridge forwards only operations under its attempt limit)
+          attempts: 0,
           syncedAt: null,
           lastAttemptAt: new Date(),
           error: null,

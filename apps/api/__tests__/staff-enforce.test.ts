@@ -338,7 +338,10 @@ describe("the cloud enforces too: a hub's forwarded work by its signature", () =
   })
 
   it("work a manager applies on review at the hub is applied in the cloud as that reviewer", async () => {
-    const held = ((await hub("GET", "/api/sync/refused", undefined, { Authorization: `Bearer ${ownerPerson}` })).body.operations as any[]).find((o) => o.entity === "cash-movement" && /OFFLINE_REVIEW/.test(o.reason))
+    const first = ((await hub("GET", "/api/sync/refused", undefined, { Authorization: `Bearer ${ownerPerson}` })).body.operations as any[]).find((o) => o.entity === "cash-movement" && /OFFLINE_REVIEW/.test(o.reason))
+    // the register kept resending it until its own limit (as on the packaged hub): those were refused deliveries, not forwarding attempts
+    await prisma.syncOperation.update({ where: { id: first.id }, data: { attempts: 5 } })
+    const held = ((await hub("GET", "/api/sync/refused", undefined, { Authorization: `Bearer ${ownerPerson}` })).body.operations as any[]).find((o) => o.id === first.id)
     const r = await hub("POST", `/api/sync/refused/${held.id}/resolve`, { decision: "apply", note: "Rana paid the ice man; counted", previewToken: held.previewToken }, { Authorization: `Bearer ${ownerPerson}` })
     expect(r.status).toBe(200)
     await bridge.pushToCloudOnce()

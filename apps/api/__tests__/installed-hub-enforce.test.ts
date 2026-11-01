@@ -347,7 +347,12 @@ if (!ready) {
       const op = draw()
       const ok = (await call(HUB!, "POST", "/api/sync/push", { deviceId: "hub-screen", operations: [{ ...op, ev: { v: 1, session: sess } }] }, local_, asMaya)).body?.results?.[0]
       expect(ok?.status).toBe("ok")
-      expect(await waitFor(() => prisma.cashMovement.findFirst({ where: { tenantId: A.tenantId, id: op.payload.id }, select: { recordedById: true } }))).toMatchObject({ recordedById: A.staff.manager })
+      expect(await waitFor(() => prisma.cashMovement.findFirst({ where: { tenantId: A.tenantId, id: op.payload.id } }))).toBeTruthy()
+      // the server-authorized actor is the session's person (Maya), whatever the local sign-in; this raw
+      // payload names nobody, so the record's own recordedById stays empty (a register always names its user)
+      const e = await cloudEvidence(op.id)
+      evidence("hub screen as Maya", e && { attestation: e.attestation, session: (e.relayed as any)?.sessionStaffId, device: (e.relayed as any)?.enrolledDeviceId })
+      expect([e?.attestation, (e?.relayed as any)?.sessionStaffId]).toEqual(["valid", A.staff.manager])
       // Rana's session on the hub screen: Maya's authority is not kept
       const rana = (await call(HUB!, "POST", "/api/auth/staff-session", { pin: "1504" }, undefined, { "x-device-credential": screen.credential })).body.session as string
       expect((await call(HUB!, "GET", "/api/sync/refused", undefined, local_, { ...asMaya, "x-staff-session": rana })).status).toBe(403)
