@@ -102,6 +102,17 @@ export async function stockWriteRefusal(tenantId: string, onHub: boolean): Promi
   if (onHub) return isStoresHub(t, hubIdentity().hubId) ? null : "This hub is not the store's hub: stock is changed at the store's stock authority."
   return t.mode === "hub" ? "This store's stock is kept at its hub: change it there (the hub sends it to the cloud)." : null
 }
+/**
+ * Delivery orders change stock where they are handled (the cloud's delivery routes). In a hub store that would
+ * compete with the hub's stock, so delivery is not offered there at all (new orders, stock-changing status
+ * changes, the ordering menu); elsewhere the usual stock-authority rule applies. null = delivery may proceed.
+ */
+export const DELIVERY_UNAVAILABLE = "DELIVERY_UNAVAILABLE"
+export async function deliveryRefusal(tenantId: string, onHub: boolean): Promise<string | null> {
+  const t = await storeTopology(tenantId)
+  if (t.mode === "hub") return "Delivery is not available for this store: its stock is kept at its hub, and delivery orders would change stock at the cloud."
+  return stockWriteRefusal(tenantId, onHub)
+}
 export const isTopologyHold = (reason: string | null | undefined) => typeof reason === "string" && /^TOPOLOGY_[A-Z_]+:/.test(reason)
 /** Held work that must reach the stock authority through the store's hub (never applied at the cloud). */
 export const appliesOnlyAtStoresHub = (reason: string | null | undefined) => typeof reason === "string" && /^TOPOLOGY_(USE_HUB|OTHER_HUB):/.test(reason)
@@ -247,6 +258,10 @@ export async function topologyReadiness(tenantId: string, to: TopologyMode, toHu
   if (work.openShifts > 0) {
     const shifts = await prisma.shift.findMany({ where: { tenantId, status: "Open" }, select: { id: true, shiftNumber: true, openedByName: true }, take: 20 })
     out.push({ code: "open-shifts", message: `${work.openShifts} shift(s) are open. Close every shift before changing the store's setup.`, items: shifts.map((s) => ({ id: s.id, label: s.shiftNumber, detail: `opened by ${s.openedByName}` })) })
+  }
+  if (to === "hub") {
+    const open = await prisma.deliveryOrder.findMany({ where: { tenantId, status: { in: ["Pending", "Confirmed", "Preparing", "OutForDelivery"] } }, select: { id: true, orderNumber: true, status: true }, take: 20 })
+    if (open.length) out.push({ code: "open-delivery", message: `${open.length} delivery order(s) are open. Deliver or cancel them first: a hub store does not take delivery orders.`, items: open.map((o) => ({ id: o.id, label: o.orderNumber, detail: o.status })) })
   }
   if (work.held > 0) out.push({ code: "held-work", message: `${work.held} operation(s) are held for review at the cloud. Apply or decline them in Held work first.` })
   // registers connected to the cloud: an empty queue they reported after their latest operation

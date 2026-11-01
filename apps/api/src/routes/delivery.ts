@@ -12,8 +12,26 @@ import { recordStockMovement } from "../lib/ledger.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 import { requirePermission } from "../middleware/permission.js"
 import { broadcastToTenant, broadcastToUser, getConnectedDrivers } from "../ws/index.js"
+import { DELIVERY_UNAVAILABLE, deliveryRefusal } from "../lib/topology.js"
+import { isHubServer } from "../lib/identityGate.js"
 
 const router = Router()
+
+/** Products a customer can order for delivery: packaged, stock-tracked, sellable (never drinks or ingredients). */
+const DELIVERABLE = { isParent: false, sellable: true, stockPolicy: "tracked" } as const
+/** Statuses in which the order's stock is out of the store (taken once, on the first of them). */
+const STOCK_OUT_STATUSES = new Set(["Confirmed", "Preparing", "OutForDelivery", "Delivered"])
+
+/**
+ * Whether this order's stock is currently taken: its "delivery:<id>" Sale movements outnumber its
+ * "delivery-revert:<id>" ones. Read inside the transaction that holds the order's status guard, so the stock
+ * is taken once and given back at most once (it used to be taken again on OutForDelivery after Confirmed).
+ */
+async function deliveryStockTaken(tx: any, tenantId: string, orderId: string): Promise<boolean> {
+  const taken = Number(await tx.stockMovement.count({ where: { tenantId, reference: `delivery:${orderId}`, type: "Sale" } })) || 0
+  const back = Number(await tx.stockMovement.count({ where: { tenantId, reference: `delivery-revert:${orderId}`, type: "Refund" } })) || 0
+  return taken > back
+}
 
 class ValidationError extends Error {
   statusCode = 400
@@ -193,6 +211,12 @@ router.post("/order", async (req: any, res: ServerResponse) => {
       json(res, { error: "Invalid tenant" }, 404)
       return
     }
+    // Before anything is recorded or paid: a store whose stock is kept elsewhere does not take delivery orders.
+    const unavailable = await deliveryRefusal(body.tenantId, isHubServer())
+    if (unavailable) {
+      json(res, { error: unavailable, code: DELIVERY_UNAVAILABLE }, 409)
+      return
+    }
 
     const normalizedItems = new Map<number, number>()
     for (const item of body.items) {
@@ -207,7 +231,7 @@ router.post("/order", async (req: any, res: ServerResponse) => {
 
     const productIds = [...normalizedItems.keys()]
     const products = await prisma.product.findMany({
-      where: { tenantId: body.tenantId, id: { in: productIds }, isParent: false },
+      where: { tenantId: body.tenantId, id: { in: productIds }, ...DELIVERABLE },
       select: { id: true, name: true, barcode: true, price: true, stock: true },
     })
 
@@ -398,7 +422,9 @@ router.get("/tenant", async (req: any, res: ServerResponse) => {
       json(res, { error: "Store not found" }, 404)
       return
     }
-    json(res, tenant)
+    // the ordering app shows this instead of a menu that could not be ordered from
+    const unavailable = await deliveryRefusal(tenant.id, isHubServer())
+    json(res, { ...tenant, delivery: { available: !unavailable, ...(unavailable ? { code: DELIVERY_UNAVAILABLE, reason: unavailable } : {}) } })
   } catch (err) {
     console.error("Tenant lookup error:", err)
     json(res, { error: "Failed to find store" }, 500)
@@ -418,7 +444,7 @@ router.get("/products", async (req: any, res: ServerResponse) => {
     const limit = Math.min(500, Math.max(1, parseInt(q.limit ?? "500") || 500))
     const [products, total] = await Promise.all([
       prisma.product.findMany({
-        where: { tenantId, isParent: false },
+        where: { tenantId, ...DELIVERABLE, archived: false },
         select: {
           id: true, name: true, price: true, barcode: true, category: true,
           image: true, stock: true, isParent: true, parentId: true, variantName: true,
@@ -428,7 +454,7 @@ router.get("/products", async (req: any, res: ServerResponse) => {
         skip,
         take: limit,
       }),
-      prisma.product.count({ where: { tenantId, isParent: false } }),
+      prisma.product.count({ where: { tenantId, ...DELIVERABLE, archived: false } }),
     ])
     const result = products.map(p => ({
       ...p,
@@ -516,6 +542,12 @@ router.patch("/orders/:id", requireAuth, requirePermission("delivery.manage"), a
       json(res, { error: "Not found" }, 404)
       return
     }
+    // A status change moves stock (or closes an order whose stock moved): not where the stock is not kept.
+    // Orders accepted before the store became a hub store are closed with POST /orders/:id/close-without-stock.
+    if (body.status) {
+      const unavailable = await deliveryRefusal(tenantId, isHubServer())
+      if (unavailable) { json(res, { error: `${unavailable} Close this order with "Close without stock change".`, code: DELIVERY_UNAVAILABLE }, 409); return }
+    }
 
     const order = await prisma.$transaction(async (tx) => {
       // Atomic status transition: use updateMany with a status guard so
@@ -534,13 +566,14 @@ router.patch("/orders/:id", requireAuth, requirePermission("delivery.manage"), a
       // Stock handling: decrement when order enters active handling,
       // restore when cancelled. Delivered does NOT decrement again.
       if (updateResult.count > 0 && updated && updated.items.length > 0) {
-        if (body.status === "Confirmed" || body.status === "OutForDelivery") {
+        const taken = await deliveryStockTaken(tx, tenantId, updated.id)
+        if (body.status && STOCK_OUT_STATUSES.has(body.status) && !taken) {
           await decrementProductStock(tx, tenantId, updated.items.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
           // POS-SYNC-AUTHORITY-2A (record-only): mirror the delivery stock-out into the ledger.
           for (const i of updated.items) {
             await recordStockMovement(tx, tenantId, { productId: i.productId, type: "Sale", quantity: -Number(i.quantity), reference: `delivery:${updated.id}`, note: `Delivery ${body.status}`, userId: req.auth?.userId ?? null })
           }
-        } else if (body.status === "Cancelled") {
+        } else if (body.status === "Cancelled" && taken) {
           await increaseProductStock(tx, tenantId, updated.items.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
           for (const i of updated.items) {
             await recordStockMovement(tx, tenantId, { productId: i.productId, type: "Refund", quantity: Number(i.quantity), reference: `delivery-revert:${updated.id}`, note: "Delivery cancelled", userId: req.auth?.userId ?? null })
@@ -562,6 +595,49 @@ router.patch("/orders/:id", requireAuth, requirePermission("delivery.manage"), a
     if (err instanceof ValidationError) { json(res, { error: err.message }, 400); return }
     console.error("Delivery order update error:", err)
     json(res, { error: "Failed to update order" }, 500)
+  }
+})
+
+// Recovery for an order accepted before its store stopped taking delivery orders (a hub store): a manager closes
+// it as delivered or cancelled WITHOUT any stock change here — whatever stock it took stays recorded (a count at
+// the stock authority settles it). Explicit, with a note, attributed and audited; never done automatically.
+const closeWithoutStockSchema = z.object({
+  outcome: z.enum(["Delivered", "Cancelled"]),
+  note: z.string().trim().min(3, "Say why (at least 3 characters)").max(500),
+})
+router.post("/orders/:id/close-without-stock", requireAuth, requirePermission("delivery.manage"), async (req: AuthRequest, res: ServerResponse) => {
+  try {
+    const tenantId = req.auth!.tenantId
+    const body = validate(closeWithoutStockSchema, req.body)
+    const orderId = req.params?.id as string
+    const unavailable = await deliveryRefusal(tenantId, isHubServer())
+    if (!unavailable) { json(res, { error: "Delivery works normally in this store: change the order's status instead.", code: "DELIVERY_AVAILABLE" }, 409); return }
+    const actor = await prisma.staffUser.findFirst({ where: { id: req.auth!.userId, tenantId }, select: { id: true, name: true } })
+    const result = await prisma.$transaction(async (tx) => {
+      const closed = await tx.deliveryOrder.updateMany({
+        where: { id: orderId, tenantId, status: { notIn: ["Cancelled", "Delivered"] } },
+        data: { status: body.outcome, ...(body.outcome === "Delivered" ? { deliveredAt: new Date() } : { cancelledAt: new Date(), cancelledReason: body.note }), notes: body.note, updatedAt: new Date() } as any,
+      })
+      const order = await tx.deliveryOrder.findFirst({ where: { id: orderId, tenantId }, include: { items: true } })
+      if (!order) return { status: 404 as const }
+      if (closed.count === 0) return { status: 409 as const, order }
+      const stockTaken = await deliveryStockTaken(tx, tenantId, orderId)
+      await tx.auditEvent.create({ data: {
+        tenantId, action: "delivery.closed_without_stock", entity: "delivery-order",
+        summary: `${order.orderNumber} closed as ${body.outcome} without a stock change (${stockTaken ? "its stock had been taken at the cloud and stays taken" : "no stock had been taken"}): ${body.note}`,
+        metadata: { orderId, outcome: body.outcome, stockTaken, note: body.note, reason: unavailable },
+        userId: actor?.id ?? req.auth!.userId, userName: actor?.name ?? "", userRole: String(req.auth!.role ?? ""),
+      } as any })
+      return { status: 200 as const, order }
+    })
+    if (result.status === 404) { json(res, { error: "Not found" }, 404); return }
+    if (result.status === 409) { json(res, { error: "This order is already closed.", code: "ORDER_CLOSED", order: result.order }, 409); return }
+    broadcastToTenant(tenantId, "order:updated", { order: result.order })
+    json(res, result.order)
+  } catch (err) {
+    if (err instanceof ValidationError) { json(res, { error: err.message }, 400); return }
+    console.error("Delivery close-without-stock error:", err)
+    json(res, { error: "Failed to close the order" }, 500)
   }
 })
 
@@ -655,6 +731,8 @@ router.patch("/driver/orders/:id/status", requireAuth, requireDriver, async (req
     }
 
     const { status: newStatus, paidAmount } = validate(driverStatusSchema, req.body)
+    const unavailable = await deliveryRefusal(order.tenantId, isHubServer())
+    if (unavailable) { json(res, { error: unavailable, code: DELIVERY_UNAVAILABLE }, 409); return }
 
     const updateData: Record<string, unknown> = { status: newStatus }
     if (newStatus === "Delivered") {
@@ -684,11 +762,11 @@ router.patch("/driver/orders/:id/status", requireAuth, requireDriver, async (req
 
       // Stock handling: decrement on active status, restore on cancel
       if (updateResult.count > 0 && result && result.items.length > 0) {
-        if (newStatus === "OutForDelivery") {
+        if (STOCK_OUT_STATUSES.has(newStatus) && !(await deliveryStockTaken(tx, order.tenantId, orderId))) {
           await decrementProductStock(tx, order.tenantId, result.items.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
           // POS-SYNC-AUTHORITY-2A (record-only): mirror the delivery stock-out (driver transition).
           for (const i of result.items) {
-            await recordStockMovement(tx, order.tenantId, { productId: i.productId, type: "Sale", quantity: -Number(i.quantity), reference: `delivery:${orderId}`, note: "Delivery OutForDelivery (driver)" })
+            await recordStockMovement(tx, order.tenantId, { productId: i.productId, type: "Sale", quantity: -Number(i.quantity), reference: `delivery:${orderId}`, note: `Delivery ${newStatus} (driver)` })
           }
         }
       }
@@ -781,6 +859,8 @@ router.post("/driver/orders/:id/accept", requireAuth, requireDriver, async (req:
       json(res, { error: "Driver not found" }, 404)
       return
     }
+    const unavailable = await deliveryRefusal(tenantId, isHubServer())
+    if (unavailable) { json(res, { error: unavailable, code: DELIVERY_UNAVAILABLE }, 409); return }
 
     const updated = await prisma.$transaction(async (tx) => {
       const claim = await tx.deliveryOrder.updateMany({

@@ -158,6 +158,8 @@ export function MenuPage() {
   const [deliveryFee, setDeliveryFee] = useState(2.0)
   const [paymentMethod, setPaymentMethod] = useState("CashOnDelivery")
   const [orderError, setOrderError] = useState<string | null>(null)
+  // the store does not take delivery orders (e.g. its stock is kept at its hub): nothing can be ordered
+  const [unavailable, setUnavailable] = useState(false)
   const [searchInput, setSearchInput] = useState("")
   const [search, setSearch] = useState("")
   const cartRef = useRef<HTMLDivElement>(null)
@@ -169,11 +171,12 @@ export function MenuPage() {
   useEffect(() => {
     if (!tenantSubdomain) return
     setLoading(true)
-    api<{ id: string; name: string }>(`/api/delivery/tenant?subdomain=${tenantSubdomain}`)
+    api<{ id: string; name: string; delivery?: { available: boolean } }>(`/api/delivery/tenant?subdomain=${tenantSubdomain}`)
       .then((tenant) => {
         imageStoreId = tenant.id
         setTenantId(tenant.id)
         setStoreName(tenant.name)
+        if (tenant.delivery && !tenant.delivery.available) { setUnavailable(true); return [] as Product[] }
         api<{ deliveryFee?: number }>(`/api/delivery/settings?tenantId=${tenant.id}`)
           .then(s => setDeliveryFee(s.deliveryFee ?? 2.0))
           .catch(() => {})
@@ -337,6 +340,15 @@ export function MenuPage() {
           className="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:from-emerald-500 hover:to-emerald-400">
           {t("ordering.try_again")}
         </button>
+      </div>
+    </div>
+  )
+
+  if (unavailable) return (
+    <div className="min-h-dvh bg-gradient-page flex items-center justify-center p-6">
+      <div role="status" className="bg-glass border border-glass rounded-2xl p-8 text-center shadow-2xl max-w-sm w-full animate-fade-in">
+        <p className="text-lg font-semibold text-primary mb-2">{storeName}</p>
+        <p className="text-secondary">{t("ordering.delivery_unavailable")}</p>
       </div>
     </div>
   )
