@@ -43,6 +43,7 @@ Legend — Today: **API** = enforced by the server against the *pushing account*
 Candidates: discount above X% or Y amount; price below list; refund above Z or without receipt; void after N minutes; pay-out/owner draw above W; supplier payment above V; stock-policy decision (always). Proposal: start with **price below list, void, refund, pay-out, stock-policy decision** as approval-eligible; thresholds configurable per store, default "always requires the permission (no approval)" until set.
 
 ## 4. Manager approval (canonical rules)
+**Implemented online (`apps/api/src/lib/approvals.ts`, `routes/approvals.ts`):** approvable now — refund (`sales.refund`), void (`sales.void`), cash movement (`cash.manage`), stock adjustment (`inventory.adjust`), checkout discount / price below list / stock-policy decision (`sales.discount`, `sales.price_override`, `inventory.manage`; register UI for checkout pending). No thresholds: an action needs approval exactly when the person lacks its permission. Lifetime 120 s to first use. Binding is to the record and its material values rather than a full payload digest, so a timestamp written at commit cannot invalidate an approval while any change of amount, line, method, currency, record or action does. Offline: not implemented.
 - The cashier remains the **actor**; the manager is recorded as **approver**; the device is not switched to the manager's session.
 - **Online:** manager enters PIN on the till → server verifies (bcrypt) against an approval request containing tenant, device, op id, payload digest (RFC 8785 + SHA-256) and the material fields (amount, currency, items, discount, payout currency) → single-use approval id, expires (proposal 2 minutes), bound to all of the above. The op carries the approval id; the server checks binding, expiry, single use, approver active + permission **at approval time and at receipt**. Retrying the identical op is idempotent (same op id). Any change → new approval.
 - **Offline (if allowed, D2):** requires a **fresh local manager PIN entry** for this op (a cached manager session alone is never enough); the till records approver id, digest, local check, claimed time; labelled `offline-local`; per-capability policy decides accept-with-review or refuse. A modified client can defeat local checks — stated.
@@ -50,6 +51,7 @@ Candidates: discount above X% or Y amount; price below list; refund above Z or w
 - Tests: acceptance plan §E.
 
 ## 5. Review of held operations (decision D5 proposal)
+**Implemented:** one queue (refused work); each item shows its category, the evidence it was held with, the money the register says moved, stock effects, and the permissions that may decide; decisions are whole (apply as sent, or decline with a money outcome) and recorded in `ReviewResolution`. Routing uses the existing mapping below (identity holds: `sales.void` or `settings.manage`).
 | Held operation | Reviewer permission |
 |---|---|
 | Sale / void / refund | `sales.refund` |

@@ -23,7 +23,10 @@ Rollout: cloud → hubs → tills. Rollback limits: a Sprint 2 till against a ro
 - **Enforce** is enabled by the owner after a compatibility check that lists every client seen (any activity, not only the last 14 days) with its `authVersion`; clients below 1 must be upgraded or **retired**. Retirement and re-admission keep their Sprint 1 effects; a retired device that returns is refused at hub checkout and its queued work is held, not applied silently.
 - Enforce never rejects already-completed paid work; it holds it.
 
-## 4. Database (additive; proposed)
+## 4. Database — implemented migrations (all additive)
+`20261101130000_daily_close_unknown_cost` (d678a84), `20261101150000_hub_attestation` (HubKey; OperationEvidence.attestation, attestationKid), `20261101170000_manager_approval` (ManagerApproval; OperationEvidence.approval), `20261101190000_review_resolution` (SyncOperation.heldEvidence; ReviewResolution). Older servers ignore the new request fields (`ev.fwd`, `ev.approval`, `previewToken`, `outcome`); a hub of this branch in front of the deployed cloud forwards attestations the deployed cloud ignores. The review resolve endpoint now requires `previewToken` (and `outcome` for declines): clients of the review must be upgraded with the server (the admin app is).
+
+### Original proposal
 | Table / column | Why |
 |---|---|
 | `DeviceCredential` (id, tenantId, deviceId (server-assigned), issuer, status, keyId?, publicKey?, enrolledBy, enrolledAt, revokedAt, revokedBy, version) — unique (tenantId, deviceId) | enrollment, revocation, rotation |

@@ -31,7 +31,7 @@ flowchart LR
   T2 -- same --> H
   T3 -- same --> C
 ```
-What each arrow can prove is listed in §1; the cloud's verification of a hub JWS proves *the hub said so*, never that an employee typed a PIN.
+What each arrow can prove is listed in §1; the cloud's verification of a hub JWS proves *the hub said so*, never that an employee typed a PIN. Implemented (Phase D): the cloud records `attestation` per relayed operation and keeps the hub's evidence label — an offline claim attested by a hub is still `offline-claimed`. A manager approval proves this server checked that manager's PIN for that record and those values; it does not prove the manager stood at the register.
 
 ## 3. Threat cases
 

@@ -96,6 +96,20 @@ Limits of this slice: only ordinary sales are enforced; hub-relayed operations a
 
 Known limit: a modified register can still name another active seller on a routine offline sale; nothing checked offline can prove who it was.
 
+## Package: staff authentication and approval workflows (branch `dev/staff-auth-approvals`, 2026-11-01)
+
+| Area | Evidence | Status |
+|---|---|---|
+| Daily-close valuation on the frozen packaged 1.0.52 hub (`d678a84`): known, zero, hidden, missing costs; cash and card; refund, expense, supplier payment, cash movement; review; forwarding; outage, restart, reconnect; older-client view; close-history screen | `installed-hub-close.test.ts` against the running packaged hub; browser pane | pass, **one defect**: closing a date again failed forever on the (tenant, date) unique index — fixed `ed4287f` (newer close replaces, earlier kept in audit) |
+| Hub key enrollment (owner-authorized only), attested forwarding, tampered command, replayed attestation, unknown / revoked / rotated / other-store key, concurrent duplicate forwarding, lost acknowledgement, claim stays a claim, attested hub sales in an enforcing store | `hub-attestation.test.ts` (9, hub + cloud handlers); 5 negative controls | pass (`74feadd`) |
+| Online manager approval: refusals (wrong PIN, no permission, inactive, other store, unenrolled, not approvable); approved refund (cashier actor, manager approver, no PIN anywhere); changed values, other record, other operation, other register, expiry, cancel, approver deactivated before receipt; concurrent use; void and cash payout; lockout | `approvals.test.ts` (8); 8 negative controls | pass (`c7003d1`) |
+| The register's own services against the real API: refused locally without approval, approved refund delivered with the approval, staff switch / lock / restart drop unused approvals, server refuses a refund larger than approved, void and payout, offline approval impossible, expired connection keeps completed work queued | `approval-till.test.ts` (6) | pass |
+| Approval dialog: focus, Enter, Escape, keypad, one request in flight, slow server, wrong PIN, shared PIN, focus back to the scanner field, Arabic | `managerApproval.test.tsx` (6, rendered) | pass |
+| Review of held work: device revoked, staff deactivated, PIN reset, permission removed, session ended, hub key revoked — each held with category, held evidence, money, stock effects; stale preview, partial repair, decline without money outcome refused; concurrent decisions; recorded resolution; resend never applies | `review-queue.test.ts` (5); 3 negative controls | pass (`e33ef10`) |
+| Activation gate requires observed identity evidence; a named manager is a claim in an enforcing store | `boundaries.test.ts` (2); 2 negative controls | pass (`7b0aa08`) |
+
+Not done in this package: checkout discount / price override approval on the register UI (server supports `sale:create` approvals; POS integration pending); offline manager approval (policy D2 open); hubs enforcing locally (a hub link remains an activation blocker).
+
 ## Plan by phase (to be filled with evidence as implemented)
 - **B — observe mode:** token kinds (`typ/iss/aud`) on new tokens with old tokens still accepted; `requireCloudKeyOrJwt` refuses non-staff tokens; envelope parsing; derived `actorId`; claimed-vs-derived mismatch audited; evidence labels; no behaviour change for legacy clients (mixed-version tests).
 - **C — devices and sessions:** enrollment with single-use manager-created code; cross-tenant enrollment refused; device credential can't enroll/approve another device; staff session bound to device (use on another device refused); actor substitution refused; staff switch issues a new session and clears approvals; revocation of staff and device; storage deletion and credential recovery on the till.
