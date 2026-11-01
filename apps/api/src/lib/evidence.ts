@@ -13,13 +13,16 @@
  *                      credential and a staff session this server opened for that device after
  *                      checking the person's PIN. Not enforced; the PIN was checked when the session
  *                      started, not for this operation; the device credential is a bearer token
- *  - "hub-attested"    an enrolled hub signed that it verified the actor (Phase D; never produced here)
+ *  - "hub-attested"    an enrolled hub of this store signed the command and its own evidence, which was
+ *                      a staff session it checked (Phase D). The hub vouched; not independent proof
+ *                      that a person entered a PIN
  *  - "offline-claimed" the client says it was done offline under a local PIN check; unverifiable
  *  - "legacy-claimed"  everything else: the pushing token proves only the CONNECTING account (or a
  *                      store-level relay); the acting staff member is whatever the payload names
  */
 import type { TokenKind } from "../middleware/auth.js"
 import type { DeviceCheck, SessionResult } from "./credentials.js"
+import type { AttestationResult } from "./hubAttestation.js"
 
 export type EvidenceLabel = "verified" | "hub-attested" | "staff-session" | "offline-claimed" | "legacy-claimed"
 
@@ -62,6 +65,8 @@ export type ObserveInput = {
   relayed?: Record<string, unknown> | null
   /** The store enforced the session for this operation (the actor was derived from it). */
   enforced?: boolean
+  /** SPRINT-2 D: the relaying hub's attestation as checked here (a hub's cloud link only). */
+  attestation?: AttestationResult | null
 }
 
 /** Fields of a hub's own evidence row that are carried to the cloud with a forwarded operation. */
@@ -89,7 +94,9 @@ export function observeEvidence(i: ObserveInput) {
     if (actor.id && i.accountId && actor.id !== i.accountId) limitations.push("actor-differs-from-connection-account")
   }
   if (i.kind === "hub-local") limitations.push("pushed-by-hub-screen-store-account")
-  if (i.kind === "bridge") limitations.push("relayed-by-hub-without-attestation")
+  const att = i.kind === "bridge" ? (i.attestation ?? { check: "absent" as const, kid: null, srv: null }) : null
+  if (att && att.check !== "valid") limitations.push("relayed-by-hub-without-attestation", `hub-attestation-${att.check}`)
+  if (att?.check === "valid") limitations.push("hub-vouched-not-independent-pin-proof")
   if (!actor.id) limitations.push(actor.name ? "actor-named-without-id" : "no-actor-recorded")
   if (offline) limitations.push("offline-local-pin-claimed")
   if (i.transport === "http-lan") limitations.push("transport-http-lan-unencrypted")
@@ -105,10 +112,15 @@ export function observeEvidence(i: ObserveInput) {
     if (ses!.ended) limitations.push("session-ended-before-receipt")
   }
   if (ses?.staffId && actor.id && ses.staffId !== actor.id && ses.check !== "invalid") limitations.push("claimed-actor-differs-from-session")
-  const relayed = i.kind === "bridge" ? pickRelayed(i.relayed) : null
-  if (relayed) limitations.push("hub-evidence-unattested")
+  // what the hub recorded: as it signed it when the attestation verified, otherwise as it sent it
+  const relayed = att ? pickRelayed(att.check === "valid" ? att.srv : i.relayed) : null
+  if (relayed && att?.check !== "valid") limitations.push("hub-evidence-unattested")
+  // a valid attestation keeps the hub's own label: a client's claim stays a claim
+  const hubLabel = att?.check === "valid" && relayed ? String(relayed.evidence ?? "") : null
   const current = sessionHeld && !ses!.expired && !ses!.ended
-  const evidence: EvidenceLabel = sessionHeld && !offline ? (i.enforced && current ? "verified" : "staff-session") : offline ? "offline-claimed" : "legacy-claimed"
+  const evidence: EvidenceLabel = hubLabel !== null
+    ? (hubLabel === "verified" || hubLabel === "staff-session" ? "hub-attested" : hubLabel === "offline-claimed" ? "offline-claimed" : "legacy-claimed")
+    : sessionHeld && !offline ? (i.enforced && current ? "verified" : "staff-session") : offline ? "offline-claimed" : "legacy-claimed"
   return {
     opId: i.opId, tenantId: i.tenantId, entity: i.entity, action: i.action,
     acceptedBy: i.acceptedBy, transport: i.transport, credentialKind: i.kind,
@@ -120,5 +132,6 @@ export function observeEvidence(i: ObserveInput) {
     enrolledDeviceId: dev?.deviceId ?? null, deviceCheck: dev?.check ?? null,
     sessionId: ses?.sessionId ?? null, sessionStaffId: ses?.staffId ?? null, sessionAuthTime: ses?.authTime ?? null, sessionCheck: ses?.check ?? null,
     relayed,
+    attestation: att?.check ?? null, attestationKid: att?.kid ?? null,
   }
 }

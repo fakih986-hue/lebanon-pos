@@ -25,6 +25,7 @@ import path from "node:path"
 import { randomUUID } from "node:crypto"
 import { dataDir } from "../lib/dataDir.js"
 import { settleCloseOfDate } from "../lib/dailyClose.js"
+import { createHubKey, markHubKeyEnrolled, readHubKey, restoreHubKey, signAttestation } from "../lib/hubAttestation.js"
 import prisma from "../lib/prisma.js"
 import { recordStockMovementOnce } from "../lib/ledger.js"
 import { broadcastToTenant } from "../ws/index.js"
@@ -140,6 +141,25 @@ let _failedPushCount = 0
 let _failedPullCount = 0
 let _lastSuccessfulPushAt: string | undefined
 let _lastSuccessfulPullAt: string | undefined
+
+/**
+ * SPRINT-2 D: enroll a NEW signing key for this hub at the cloud, authorized by the PIN of a staff member
+ * with settings.manage (checked by the cloud). The new key replaces the previous one on success only.
+ */
+export async function enrollHubKey(pin: string, staffId?: string): Promise<{ ok: true; kid: string } | { ok: false; status: number; error: string; code?: string; candidates?: unknown }> {
+  if (!CLOUD_API_URL || !CLOUD_API_KEY || !CLOUD_TENANT) return { ok: false, status: 409, error: "This hub is not connected to the cloud.", code: "NOT_CONFIGURED" }
+  const previous = readHubKey()
+  const key = createHubKey()
+  const res = await fetchCloud("/api/hub-keys/enroll", { method: "POST", body: JSON.stringify({ kid: key.kid, publicPem: key.publicPem, pin, ...(staffId ? { staffId } : {}) }) }).catch((err) => err as Error)
+  const body = res instanceof Error ? null : await res.json().catch(() => null) as any
+  if (res instanceof Error || !res.ok || !body?.ok) {
+    // not enrolled: keep the key that was in use (if any)
+    restoreHubKey(previous)
+    return { ok: false, status: res instanceof Error ? 502 : res.status, error: res instanceof Error ? "The cloud could not be reached." : body?.error ?? "Enrollment failed", code: body?.code, candidates: body?.candidates }
+  }
+  markHubKeyEnrolled(key.kid, CLOUD_TENANT)
+  return { ok: true, kid: key.kid }
+}
 
 export function getCloudStatus(): {
   configured: boolean
@@ -345,6 +365,8 @@ async function pushToCloud(): Promise<void> {
     ? await (prisma as any).operationEvidence.findMany({ where: { tenantId, opId: { in: pending.map((op) => op.id) } } }).catch(() => [])
     : []
   const relayedOf = new Map<string, Record<string, unknown> | null>((evidenceRows as Array<{ opId: string }>).map((r) => [r.opId, pickRelayed(r)]))
+  // SPRINT-2 D: with an enrolled key this hub signs each forwarded command and its own evidence.
+  const { commandDigest } = await import("../routes/sync.js")
 
   const res = await fetchCloud("/api/sync/push", {
     method: "POST",
@@ -354,12 +376,14 @@ async function pushToCloud(): Promise<void> {
         // valued: this hub applied the operation under server valuation (an operation queued
         // before an upgrade did not: the cloud values it itself).
         const valued = (op as { serverValued?: boolean }).serverValued === true
+        const signed = relayed ? { ...relayed, ...(valued ? { valued: "server" } : {}) } : valued ? { valued: "server" } : null
+        const att = signAttestation(tenantId, { id: op.id, entity: op.entity, action: op.action, digest: commandDigest(op.entity, op.action, op.payload) }, signed)
         return {
           id:      op.id,
           entity:  op.entity,
           action:  op.action,
           payload: op.payload,
-          ...(relayed || valued ? { ev: { v: 1, ...(relayed ? { relayed } : {}), ...(valued ? { valued: "server" } : {}) } } : {}),
+          ...(relayed || valued || att ? { ev: { v: 1, ...(relayed ? { relayed } : {}), ...(valued ? { valued: "server" } : {}), ...(att ? { fwd: { att } } : {}) } } : {}),
         }
       }),
     }),

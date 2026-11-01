@@ -902,11 +902,36 @@ model OperationEvidence {
   sessionStaffId      String?
   sessionAuthTime     DateTime?
   sessionCheck        String? // valid | absent | invalid | other-device | other-store | staff-inactive | staff-revoked | no-device
-  /// What the hub that relayed this operation recorded (claimed: not attested until Phase D).
+  /// What the hub that relayed this operation recorded: from its signed attestation when that verified,
+  /// otherwise as the hub sent it (unattested).
   relayed             Json?
+  /// SPRINT-2 D: the relaying hub's attestation as checked here: valid | absent | unknown-key | revoked |
+  /// rotated | other-store | invalid-signature | op-mismatch | digest-mismatch. "valid" means an enrolled
+  /// hub of this store signed this exact command and its own evidence: the hub vouched, not proof that a
+  /// person entered a PIN.
+  attestation         String?
+  attestationKid      String?
 
   @@index([tenantId, receivedAt])
   @@index([tenantId, evidence])
+}
+
+/// SPRINT-2 D: a hub's signing key (ES256), enrolled at the cloud by an owner-authorized request (the
+/// store's cloud key alone cannot enroll one). One ACTIVE key per store; enrolling a new one rotates the
+/// previous (still accepted for attestations it signed before rotation); a revoked key is never accepted.
+model HubKey {
+  kid          String    @id
+  tenantId     String
+  publicPem    String
+  status       String    @default("ACTIVE") // ACTIVE | ROTATED | REVOKED
+  enrolledById String
+  enrolledAt   DateTime  @default(now())
+  rotatedAt    DateTime?
+  revokedAt    DateTime?
+  revokedById  String?
+  revokeNote   String?
+
+  @@index([tenantId, status])
 }
 
 /// SPRINT-2 C: a staff session — the server verified this staff member's PIN for this enrolled device

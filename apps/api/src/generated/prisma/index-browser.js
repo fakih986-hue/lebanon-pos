@@ -705,7 +705,22 @@ exports.Prisma.OperationEvidenceScalarFieldEnum = {
   sessionStaffId: 'sessionStaffId',
   sessionAuthTime: 'sessionAuthTime',
   sessionCheck: 'sessionCheck',
-  relayed: 'relayed'
+  relayed: 'relayed',
+  attestation: 'attestation',
+  attestationKid: 'attestationKid'
+};
+
+exports.Prisma.HubKeyScalarFieldEnum = {
+  kid: 'kid',
+  tenantId: 'tenantId',
+  publicPem: 'publicPem',
+  status: 'status',
+  enrolledById: 'enrolledById',
+  enrolledAt: 'enrolledAt',
+  rotatedAt: 'rotatedAt',
+  revokedAt: 'revokedAt',
+  revokedById: 'revokedById',
+  revokeNote: 'revokeNote'
 };
 
 exports.Prisma.StaffSessionScalarFieldEnum = {
@@ -847,6 +862,7 @@ exports.Prisma.ModelName = {
   StockMovement: 'StockMovement',
   SyncClient: 'SyncClient',
   OperationEvidence: 'OperationEvidence',
+  HubKey: 'HubKey',
   StaffSession: 'StaffSession'
 };
 

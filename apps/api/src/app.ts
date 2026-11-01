@@ -27,6 +27,7 @@ import adminRoutes from "./routes/admin.js"
 import reportsRoutes from "./routes/reports.js"
 import inventoryRoutes from "./routes/inventory.js"
 import deviceRoutes from "./routes/device.js"
+import hubKeyRoutes from "./routes/hubKeys.js"
 import { errorHandler } from "./middleware/errorHandler.js"
 import {
   getCorsOptions,
@@ -77,6 +78,8 @@ app.use("/api/images", imageRoutes)
 app.use("/api/admin", adminRoutes)
 app.use("/api/reports", reportsRoutes)
 app.use("/api/inventory", inventoryRoutes)
+app.use("/api/hub-keys", rateLimit({ windowMs: 60_000, max: 10, bucket: "hub-keys" }))
+app.use("/api/hub-keys", hubKeyRoutes)
 app.use("/api", deviceRoutes)
 
 app.get("/api/health", async (_req: IncomingMessage, res: ServerResponse) => {

@@ -11,6 +11,8 @@ const IS_CLOUD = !["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")
 import { decrementProductStock } from "../lib/inventory.js"
 import { applyPolicyChange, resolveLinePolicy, StockPolicyMismatchError } from "../lib/stockPolicy.js"
 import { settleCloseOfDate } from "../lib/dailyClose.js"
+import { verifyAttestation, type AttestationResult } from "../lib/hubAttestation.js"
+import { createHash } from "node:crypto"
 import { localGateBlockers, recordSyncClient, RETIRED_CLIENT_MESSAGE, StockPolicyGateError, POLICY_GATE_WINDOW_DAYS, type GateBlocker } from "../lib/policyGate.js"
 import { LEGACY_REV } from "../lib/stockPolicy.js"
 import { observeEvidence, transportOf } from "../lib/evidence.js"
@@ -170,7 +172,8 @@ const syncOperationSchema = z.object({
   // is what a hub recorded when it accepted the operation (a hub's cloud link). Both observed only.
   // `valued: "server"` (a hub's cloud link only): the hub applied this operation under server
   // valuation (docs/LEGACY-TILL-COMPAT.md); without it the cloud values the operation itself.
-  ev: z.object({ v: z.number().int().optional(), offline: z.boolean().optional(), session: z.string().max(4096).optional(), relayed: z.record(z.unknown()).optional(), valued: z.literal("server").optional() }).passthrough().optional(),
+  // SPRINT-2 D: `fwd.att` (a hub's cloud link only) is the hub's signed attestation (lib/hubAttestation.ts).
+  ev: z.object({ v: z.number().int().optional(), offline: z.boolean().optional(), session: z.string().max(4096).optional(), relayed: z.record(z.unknown()).optional(), valued: z.literal("server").optional(), fwd: z.object({ att: z.string().max(16384).optional() }).optional() }).passthrough().optional(),
 })
 
 const syncPushSchema = z.object({
@@ -608,6 +611,11 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
       }
 
       const sessionSeen: SessionResult | null = deviceSeen ? await checkSession((op as any).ev?.session, tenantId, deviceSeen.deviceId) : null
+      // SPRINT-2 D: a hub's forwarded operation: its signature over this exact command and its own evidence.
+      const attested: AttestationResult | null = pushKind === "bridge"
+        ? await verifyAttestation(tenantId, (op as any).ev?.fwd?.att, { id: op.id, entity: op.entity, action: op.action, digest: commandDigest(op.entity, op.action, op.payload) })
+        : null
+      const hubIdentity = storeMode === "enforce-checkout" && op.entity === "sale" && op.action === "create" && attested?.check === "valid" ? attestedIdentity(attested.srv) : null
       // SPRINT-2 enforcement (ordinary checkout, stores that enabled it): a register's sale needs this
       // store's enrolled device and a staff session; the actor is the session's person and the rules
       // run against THEIR permissions, not the connecting account's. Missing or invalid evidence is
@@ -616,11 +624,14 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
       // the person it names may sell NOW; otherwise it is kept for review (see checkoutIdentity).
       const gate = storeMode === "enforce-checkout" && op.entity === "sale" && op.action === "create" && (pushKind === "staff" || pushKind === "hub-local")
         ? await checkoutIdentity(tenantId, deviceSeen, sessionSeen, (op as any).ev, op.payload)
+        // an enrolled hub's attested sale: the same rules, on what the hub recorded and signed (the hub
+        // vouches for its device and session checks; the person's standing is checked here, now)
+        : hubIdentity ? await checkoutIdentity(tenantId, hubIdentity.device, hubIdentity.session, hubIdentity.ev, op.payload)
         : null
-      // A hub's forwarded sale cannot be attributed to a verified person yet (Phase D): in an enforcing
-      // store it is kept for review rather than applied on the hub link's store-level authority.
-      const hubOutside = storeMode === "enforce-checkout" && op.entity === "sale" && op.action === "create" && pushKind === "bridge"
-        ? "HUB_UNSUPPORTED: this store enforces staff sessions, which do not cover sales forwarded by a hub yet. Kept for a manager's review."
+      // Without a valid attestation a hub's forwarded sale cannot be attributed to anyone: in an
+      // enforcing store it is kept for review rather than applied on the hub link's store-level authority.
+      const hubOutside = storeMode === "enforce-checkout" && op.entity === "sale" && op.action === "create" && pushKind === "bridge" && attested?.check !== "valid"
+        ? `HUB_UNSUPPORTED: this store enforces staff sessions; a sale forwarded by a hub needs the hub's valid attestation (${attested?.check ?? "absent"}). Kept for a manager's review.`
         : null
       const enforcedActor = gate && "actor" in gate ? gate.actor : null
 
@@ -674,7 +685,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
             deviceId: deviceId ?? null, transport: transportOf(req as any),
             acceptedBy: ["true", "1"].includes(process.env.IS_LOCAL_SERVER || "") ? "hub" : "cloud",
             envelope: (op as any).ev ?? null,
-            device: deviceSeen, session: sessionSeen, relayed: (op as any).ev?.relayed ?? null,
+            device: deviceSeen, session: sessionSeen, relayed: (op as any).ev?.relayed ?? null, attestation: attested,
             enforced: !!gate && "basis" in gate && gate.basis === "session",
           })] })
         }
@@ -1498,6 +1509,28 @@ async function dayCloseValuation(db: typeof prisma, tenantId: string, expenses: 
   const round = (n: number) => Math.round(n * 10000) / 10000
   const grossMargin = sales.reduce((sum, sale) => sum + Number(sale.profit), 0) - refundMargin
   return { costOfGoods: round(Math.max(0, soldCost - returnedCost)), returnedCost: round(returnedCost), grossMargin: round(grossMargin), netProfit: round(grossMargin - expenses) }
+}
+
+/**
+ * The digest of an operation's business command: the payload without valuation fields (server-computed:
+ * cost, profit, lot-slice cost, value impact, a close's cost figures) and without the stock-policy
+ * decision fields — the same normalization as the operation's identity (sameOperation). Server
+ * valuation and manager decisions therefore never change it; a changed quantity, price, recipient or
+ * action does.
+ */
+export function commandDigest(entity: string, action: string, payload: unknown): string {
+  return createHash("sha256").update(canonicalJson(withoutPolicyDecision(withoutClientCost(entity, action, JSON.parse(JSON.stringify(payload ?? {})))))).digest("hex")
+}
+
+/** The device and session checks an enrolled hub recorded and signed for a forwarded operation. */
+function attestedIdentity(srv: Record<string, unknown> | null) {
+  const lim = Array.isArray(srv?.limitations) ? (srv!.limitations as unknown[]).map(String) : []
+  const s = (k: string) => (typeof srv?.[k] === "string" ? (srv![k] as string) : null)
+  return {
+    device: s("deviceCheck") ? { check: s("deviceCheck")!, deviceId: s("enrolledDeviceId") } : null,
+    session: s("sessionCheck") ? { check: s("sessionCheck") as SessionResult["check"], sessionId: s("sessionId"), staffId: s("sessionStaffId"), authTime: s("sessionAuthTime") ? new Date(s("sessionAuthTime")!) : null, expired: lim.includes("session-expired-at-receipt"), ended: lim.includes("session-ended-before-receipt") } : null,
+    ev: { offline: s("evidence") === "offline-claimed", session: s("sessionCheck") && s("sessionCheck") !== "absent" ? "attested" : undefined },
+  }
 }
 
 /** Key-order-independent JSON (Postgres jsonb does not keep key order). */

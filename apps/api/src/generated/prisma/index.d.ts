@@ -187,6 +187,13 @@ export type SyncClient = $Result.DefaultSelection<Prisma.$SyncClientPayload>
  */
 export type OperationEvidence = $Result.DefaultSelection<Prisma.$OperationEvidencePayload>
 /**
+ * Model HubKey
+ * SPRINT-2 D: a hub's signing key (ES256), enrolled at the cloud by an owner-authorized request (the
+ * store's cloud key alone cannot enroll one). One ACTIVE key per store; enrolling a new one rotates the
+ * previous (still accepted for attestations it signed before rotation); a revoked key is never accepted.
+ */
+export type HubKey = $Result.DefaultSelection<Prisma.$HubKeyPayload>
+/**
  * Model StaffSession
  * SPRINT-2 C: a staff session — the server verified this staff member's PIN for this enrolled device
  * at authTime. It proves nothing about later presence. Ended when the device switches person,
@@ -792,6 +799,16 @@ export class PrismaClient<
   get operationEvidence(): Prisma.OperationEvidenceDelegate<ExtArgs, ClientOptions>;
 
   /**
+   * `prisma.hubKey`: Exposes CRUD operations for the **HubKey** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more HubKeys
+    * const hubKeys = await prisma.hubKey.findMany()
+    * ```
+    */
+  get hubKey(): Prisma.HubKeyDelegate<ExtArgs, ClientOptions>;
+
+  /**
    * `prisma.staffSession`: Exposes CRUD operations for the **StaffSession** model.
     * Example usage:
     * ```ts
@@ -1275,6 +1292,7 @@ export namespace Prisma {
     StockMovement: 'StockMovement',
     SyncClient: 'SyncClient',
     OperationEvidence: 'OperationEvidence',
+    HubKey: 'HubKey',
     StaffSession: 'StaffSession'
   };
 
@@ -1294,7 +1312,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "cashMovement" | "syncOperation" | "device" | "pairingCode" | "rateLimitEntry" | "stockMovement" | "syncClient" | "operationEvidence" | "staffSession"
+      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "cashMovement" | "syncOperation" | "device" | "pairingCode" | "rateLimitEntry" | "stockMovement" | "syncClient" | "operationEvidence" | "hubKey" | "staffSession"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -3814,6 +3832,80 @@ export namespace Prisma {
           }
         }
       }
+      HubKey: {
+        payload: Prisma.$HubKeyPayload<ExtArgs>
+        fields: Prisma.HubKeyFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.HubKeyFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HubKeyPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.HubKeyFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HubKeyPayload>
+          }
+          findFirst: {
+            args: Prisma.HubKeyFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HubKeyPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.HubKeyFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HubKeyPayload>
+          }
+          findMany: {
+            args: Prisma.HubKeyFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HubKeyPayload>[]
+          }
+          create: {
+            args: Prisma.HubKeyCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HubKeyPayload>
+          }
+          createMany: {
+            args: Prisma.HubKeyCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.HubKeyCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HubKeyPayload>[]
+          }
+          delete: {
+            args: Prisma.HubKeyDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HubKeyPayload>
+          }
+          update: {
+            args: Prisma.HubKeyUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HubKeyPayload>
+          }
+          deleteMany: {
+            args: Prisma.HubKeyDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.HubKeyUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.HubKeyUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HubKeyPayload>[]
+          }
+          upsert: {
+            args: Prisma.HubKeyUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HubKeyPayload>
+          }
+          aggregate: {
+            args: Prisma.HubKeyAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateHubKey>
+          }
+          groupBy: {
+            args: Prisma.HubKeyGroupByArgs<ExtArgs>
+            result: $Utils.Optional<HubKeyGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.HubKeyCountArgs<ExtArgs>
+            result: $Utils.Optional<HubKeyCountAggregateOutputType> | number
+          }
+        }
+      }
       StaffSession: {
         payload: Prisma.$StaffSessionPayload<ExtArgs>
         fields: Prisma.StaffSessionFieldRefs
@@ -4018,6 +4110,7 @@ export namespace Prisma {
     stockMovement?: StockMovementOmit
     syncClient?: SyncClientOmit
     operationEvidence?: OperationEvidenceOmit
+    hubKey?: HubKeyOmit
     staffSession?: StaffSessionOmit
   }
 
@@ -46372,6 +46465,8 @@ export namespace Prisma {
     sessionStaffId: string | null
     sessionAuthTime: Date | null
     sessionCheck: string | null
+    attestation: string | null
+    attestationKid: string | null
   }
 
   export type OperationEvidenceMaxAggregateOutputType = {
@@ -46397,6 +46492,8 @@ export namespace Prisma {
     sessionStaffId: string | null
     sessionAuthTime: Date | null
     sessionCheck: string | null
+    attestation: string | null
+    attestationKid: string | null
   }
 
   export type OperationEvidenceCountAggregateOutputType = {
@@ -46424,6 +46521,8 @@ export namespace Prisma {
     sessionAuthTime: number
     sessionCheck: number
     relayed: number
+    attestation: number
+    attestationKid: number
     _all: number
   }
 
@@ -46459,6 +46558,8 @@ export namespace Prisma {
     sessionStaffId?: true
     sessionAuthTime?: true
     sessionCheck?: true
+    attestation?: true
+    attestationKid?: true
   }
 
   export type OperationEvidenceMaxAggregateInputType = {
@@ -46484,6 +46585,8 @@ export namespace Prisma {
     sessionStaffId?: true
     sessionAuthTime?: true
     sessionCheck?: true
+    attestation?: true
+    attestationKid?: true
   }
 
   export type OperationEvidenceCountAggregateInputType = {
@@ -46511,6 +46614,8 @@ export namespace Prisma {
     sessionAuthTime?: true
     sessionCheck?: true
     relayed?: true
+    attestation?: true
+    attestationKid?: true
     _all?: true
   }
 
@@ -46625,6 +46730,8 @@ export namespace Prisma {
     sessionAuthTime: Date | null
     sessionCheck: string | null
     relayed: JsonValue | null
+    attestation: string | null
+    attestationKid: string | null
     _count: OperationEvidenceCountAggregateOutputType | null
     _avg: OperationEvidenceAvgAggregateOutputType | null
     _sum: OperationEvidenceSumAggregateOutputType | null
@@ -46671,6 +46778,8 @@ export namespace Prisma {
     sessionAuthTime?: boolean
     sessionCheck?: boolean
     relayed?: boolean
+    attestation?: boolean
+    attestationKid?: boolean
   }, ExtArgs["result"]["operationEvidence"]>
 
   export type OperationEvidenceSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -46698,6 +46807,8 @@ export namespace Prisma {
     sessionAuthTime?: boolean
     sessionCheck?: boolean
     relayed?: boolean
+    attestation?: boolean
+    attestationKid?: boolean
   }, ExtArgs["result"]["operationEvidence"]>
 
   export type OperationEvidenceSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -46725,6 +46836,8 @@ export namespace Prisma {
     sessionAuthTime?: boolean
     sessionCheck?: boolean
     relayed?: boolean
+    attestation?: boolean
+    attestationKid?: boolean
   }, ExtArgs["result"]["operationEvidence"]>
 
   export type OperationEvidenceSelectScalar = {
@@ -46752,9 +46865,11 @@ export namespace Prisma {
     sessionAuthTime?: boolean
     sessionCheck?: boolean
     relayed?: boolean
+    attestation?: boolean
+    attestationKid?: boolean
   }
 
-  export type OperationEvidenceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"opId" | "tenantId" | "entity" | "action" | "receivedAt" | "acceptedBy" | "transport" | "credentialKind" | "connectionAccountId" | "deviceIdClaimed" | "actorIdClaimed" | "actorNameClaimed" | "actorMatchesAccount" | "evidence" | "limitations" | "claimedAt" | "envelopeVersion" | "enrolledDeviceId" | "deviceCheck" | "sessionId" | "sessionStaffId" | "sessionAuthTime" | "sessionCheck" | "relayed", ExtArgs["result"]["operationEvidence"]>
+  export type OperationEvidenceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"opId" | "tenantId" | "entity" | "action" | "receivedAt" | "acceptedBy" | "transport" | "credentialKind" | "connectionAccountId" | "deviceIdClaimed" | "actorIdClaimed" | "actorNameClaimed" | "actorMatchesAccount" | "evidence" | "limitations" | "claimedAt" | "envelopeVersion" | "enrolledDeviceId" | "deviceCheck" | "sessionId" | "sessionStaffId" | "sessionAuthTime" | "sessionCheck" | "relayed" | "attestation" | "attestationKid", ExtArgs["result"]["operationEvidence"]>
 
   export type $OperationEvidencePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "OperationEvidence"
@@ -46784,9 +46899,18 @@ export namespace Prisma {
       sessionAuthTime: Date | null
       sessionCheck: string | null
       /**
-       * What the hub that relayed this operation recorded (claimed: not attested until Phase D).
+       * What the hub that relayed this operation recorded: from its signed attestation when that verified,
+       * otherwise as the hub sent it (unattested).
        */
       relayed: Prisma.JsonValue | null
+      /**
+       * SPRINT-2 D: the relaying hub's attestation as checked here: valid | absent | unknown-key | revoked |
+       * rotated | other-store | invalid-signature | op-mismatch | digest-mismatch. "valid" means an enrolled
+       * hub of this store signed this exact command and its own evidence: the hub vouched, not proof that a
+       * person entered a PIN.
+       */
+      attestation: string | null
+      attestationKid: string | null
     }, ExtArgs["result"]["operationEvidence"]>
     composites: {}
   }
@@ -47234,6 +47358,8 @@ export namespace Prisma {
     readonly sessionAuthTime: FieldRef<"OperationEvidence", 'DateTime'>
     readonly sessionCheck: FieldRef<"OperationEvidence", 'String'>
     readonly relayed: FieldRef<"OperationEvidence", 'Json'>
+    readonly attestation: FieldRef<"OperationEvidence", 'String'>
+    readonly attestationKid: FieldRef<"OperationEvidence", 'String'>
   }
     
 
@@ -47597,6 +47723,1066 @@ export namespace Prisma {
      * Omit specific fields from the OperationEvidence
      */
     omit?: OperationEvidenceOmit<ExtArgs> | null
+  }
+
+
+  /**
+   * Model HubKey
+   */
+
+  export type AggregateHubKey = {
+    _count: HubKeyCountAggregateOutputType | null
+    _min: HubKeyMinAggregateOutputType | null
+    _max: HubKeyMaxAggregateOutputType | null
+  }
+
+  export type HubKeyMinAggregateOutputType = {
+    kid: string | null
+    tenantId: string | null
+    publicPem: string | null
+    status: string | null
+    enrolledById: string | null
+    enrolledAt: Date | null
+    rotatedAt: Date | null
+    revokedAt: Date | null
+    revokedById: string | null
+    revokeNote: string | null
+  }
+
+  export type HubKeyMaxAggregateOutputType = {
+    kid: string | null
+    tenantId: string | null
+    publicPem: string | null
+    status: string | null
+    enrolledById: string | null
+    enrolledAt: Date | null
+    rotatedAt: Date | null
+    revokedAt: Date | null
+    revokedById: string | null
+    revokeNote: string | null
+  }
+
+  export type HubKeyCountAggregateOutputType = {
+    kid: number
+    tenantId: number
+    publicPem: number
+    status: number
+    enrolledById: number
+    enrolledAt: number
+    rotatedAt: number
+    revokedAt: number
+    revokedById: number
+    revokeNote: number
+    _all: number
+  }
+
+
+  export type HubKeyMinAggregateInputType = {
+    kid?: true
+    tenantId?: true
+    publicPem?: true
+    status?: true
+    enrolledById?: true
+    enrolledAt?: true
+    rotatedAt?: true
+    revokedAt?: true
+    revokedById?: true
+    revokeNote?: true
+  }
+
+  export type HubKeyMaxAggregateInputType = {
+    kid?: true
+    tenantId?: true
+    publicPem?: true
+    status?: true
+    enrolledById?: true
+    enrolledAt?: true
+    rotatedAt?: true
+    revokedAt?: true
+    revokedById?: true
+    revokeNote?: true
+  }
+
+  export type HubKeyCountAggregateInputType = {
+    kid?: true
+    tenantId?: true
+    publicPem?: true
+    status?: true
+    enrolledById?: true
+    enrolledAt?: true
+    rotatedAt?: true
+    revokedAt?: true
+    revokedById?: true
+    revokeNote?: true
+    _all?: true
+  }
+
+  export type HubKeyAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which HubKey to aggregate.
+     */
+    where?: HubKeyWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of HubKeys to fetch.
+     */
+    orderBy?: HubKeyOrderByWithRelationInput | HubKeyOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: HubKeyWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` HubKeys from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` HubKeys.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned HubKeys
+    **/
+    _count?: true | HubKeyCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: HubKeyMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: HubKeyMaxAggregateInputType
+  }
+
+  export type GetHubKeyAggregateType<T extends HubKeyAggregateArgs> = {
+        [P in keyof T & keyof AggregateHubKey]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateHubKey[P]>
+      : GetScalarType<T[P], AggregateHubKey[P]>
+  }
+
+
+
+
+  export type HubKeyGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: HubKeyWhereInput
+    orderBy?: HubKeyOrderByWithAggregationInput | HubKeyOrderByWithAggregationInput[]
+    by: HubKeyScalarFieldEnum[] | HubKeyScalarFieldEnum
+    having?: HubKeyScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: HubKeyCountAggregateInputType | true
+    _min?: HubKeyMinAggregateInputType
+    _max?: HubKeyMaxAggregateInputType
+  }
+
+  export type HubKeyGroupByOutputType = {
+    kid: string
+    tenantId: string
+    publicPem: string
+    status: string
+    enrolledById: string
+    enrolledAt: Date
+    rotatedAt: Date | null
+    revokedAt: Date | null
+    revokedById: string | null
+    revokeNote: string | null
+    _count: HubKeyCountAggregateOutputType | null
+    _min: HubKeyMinAggregateOutputType | null
+    _max: HubKeyMaxAggregateOutputType | null
+  }
+
+  type GetHubKeyGroupByPayload<T extends HubKeyGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<HubKeyGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof HubKeyGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], HubKeyGroupByOutputType[P]>
+            : GetScalarType<T[P], HubKeyGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type HubKeySelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    kid?: boolean
+    tenantId?: boolean
+    publicPem?: boolean
+    status?: boolean
+    enrolledById?: boolean
+    enrolledAt?: boolean
+    rotatedAt?: boolean
+    revokedAt?: boolean
+    revokedById?: boolean
+    revokeNote?: boolean
+  }, ExtArgs["result"]["hubKey"]>
+
+  export type HubKeySelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    kid?: boolean
+    tenantId?: boolean
+    publicPem?: boolean
+    status?: boolean
+    enrolledById?: boolean
+    enrolledAt?: boolean
+    rotatedAt?: boolean
+    revokedAt?: boolean
+    revokedById?: boolean
+    revokeNote?: boolean
+  }, ExtArgs["result"]["hubKey"]>
+
+  export type HubKeySelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    kid?: boolean
+    tenantId?: boolean
+    publicPem?: boolean
+    status?: boolean
+    enrolledById?: boolean
+    enrolledAt?: boolean
+    rotatedAt?: boolean
+    revokedAt?: boolean
+    revokedById?: boolean
+    revokeNote?: boolean
+  }, ExtArgs["result"]["hubKey"]>
+
+  export type HubKeySelectScalar = {
+    kid?: boolean
+    tenantId?: boolean
+    publicPem?: boolean
+    status?: boolean
+    enrolledById?: boolean
+    enrolledAt?: boolean
+    rotatedAt?: boolean
+    revokedAt?: boolean
+    revokedById?: boolean
+    revokeNote?: boolean
+  }
+
+  export type HubKeyOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"kid" | "tenantId" | "publicPem" | "status" | "enrolledById" | "enrolledAt" | "rotatedAt" | "revokedAt" | "revokedById" | "revokeNote", ExtArgs["result"]["hubKey"]>
+
+  export type $HubKeyPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "HubKey"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      kid: string
+      tenantId: string
+      publicPem: string
+      status: string
+      enrolledById: string
+      enrolledAt: Date
+      rotatedAt: Date | null
+      revokedAt: Date | null
+      revokedById: string | null
+      revokeNote: string | null
+    }, ExtArgs["result"]["hubKey"]>
+    composites: {}
+  }
+
+  type HubKeyGetPayload<S extends boolean | null | undefined | HubKeyDefaultArgs> = $Result.GetResult<Prisma.$HubKeyPayload, S>
+
+  type HubKeyCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<HubKeyFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: HubKeyCountAggregateInputType | true
+    }
+
+  export interface HubKeyDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['HubKey'], meta: { name: 'HubKey' } }
+    /**
+     * Find zero or one HubKey that matches the filter.
+     * @param {HubKeyFindUniqueArgs} args - Arguments to find a HubKey
+     * @example
+     * // Get one HubKey
+     * const hubKey = await prisma.hubKey.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends HubKeyFindUniqueArgs>(args: SelectSubset<T, HubKeyFindUniqueArgs<ExtArgs>>): Prisma__HubKeyClient<$Result.GetResult<Prisma.$HubKeyPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one HubKey that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {HubKeyFindUniqueOrThrowArgs} args - Arguments to find a HubKey
+     * @example
+     * // Get one HubKey
+     * const hubKey = await prisma.hubKey.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends HubKeyFindUniqueOrThrowArgs>(args: SelectSubset<T, HubKeyFindUniqueOrThrowArgs<ExtArgs>>): Prisma__HubKeyClient<$Result.GetResult<Prisma.$HubKeyPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first HubKey that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {HubKeyFindFirstArgs} args - Arguments to find a HubKey
+     * @example
+     * // Get one HubKey
+     * const hubKey = await prisma.hubKey.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends HubKeyFindFirstArgs>(args?: SelectSubset<T, HubKeyFindFirstArgs<ExtArgs>>): Prisma__HubKeyClient<$Result.GetResult<Prisma.$HubKeyPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first HubKey that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {HubKeyFindFirstOrThrowArgs} args - Arguments to find a HubKey
+     * @example
+     * // Get one HubKey
+     * const hubKey = await prisma.hubKey.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends HubKeyFindFirstOrThrowArgs>(args?: SelectSubset<T, HubKeyFindFirstOrThrowArgs<ExtArgs>>): Prisma__HubKeyClient<$Result.GetResult<Prisma.$HubKeyPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more HubKeys that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {HubKeyFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all HubKeys
+     * const hubKeys = await prisma.hubKey.findMany()
+     * 
+     * // Get first 10 HubKeys
+     * const hubKeys = await prisma.hubKey.findMany({ take: 10 })
+     * 
+     * // Only select the `kid`
+     * const hubKeyWithKidOnly = await prisma.hubKey.findMany({ select: { kid: true } })
+     * 
+     */
+    findMany<T extends HubKeyFindManyArgs>(args?: SelectSubset<T, HubKeyFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HubKeyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a HubKey.
+     * @param {HubKeyCreateArgs} args - Arguments to create a HubKey.
+     * @example
+     * // Create one HubKey
+     * const HubKey = await prisma.hubKey.create({
+     *   data: {
+     *     // ... data to create a HubKey
+     *   }
+     * })
+     * 
+     */
+    create<T extends HubKeyCreateArgs>(args: SelectSubset<T, HubKeyCreateArgs<ExtArgs>>): Prisma__HubKeyClient<$Result.GetResult<Prisma.$HubKeyPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many HubKeys.
+     * @param {HubKeyCreateManyArgs} args - Arguments to create many HubKeys.
+     * @example
+     * // Create many HubKeys
+     * const hubKey = await prisma.hubKey.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends HubKeyCreateManyArgs>(args?: SelectSubset<T, HubKeyCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many HubKeys and returns the data saved in the database.
+     * @param {HubKeyCreateManyAndReturnArgs} args - Arguments to create many HubKeys.
+     * @example
+     * // Create many HubKeys
+     * const hubKey = await prisma.hubKey.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many HubKeys and only return the `kid`
+     * const hubKeyWithKidOnly = await prisma.hubKey.createManyAndReturn({
+     *   select: { kid: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends HubKeyCreateManyAndReturnArgs>(args?: SelectSubset<T, HubKeyCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HubKeyPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a HubKey.
+     * @param {HubKeyDeleteArgs} args - Arguments to delete one HubKey.
+     * @example
+     * // Delete one HubKey
+     * const HubKey = await prisma.hubKey.delete({
+     *   where: {
+     *     // ... filter to delete one HubKey
+     *   }
+     * })
+     * 
+     */
+    delete<T extends HubKeyDeleteArgs>(args: SelectSubset<T, HubKeyDeleteArgs<ExtArgs>>): Prisma__HubKeyClient<$Result.GetResult<Prisma.$HubKeyPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one HubKey.
+     * @param {HubKeyUpdateArgs} args - Arguments to update one HubKey.
+     * @example
+     * // Update one HubKey
+     * const hubKey = await prisma.hubKey.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends HubKeyUpdateArgs>(args: SelectSubset<T, HubKeyUpdateArgs<ExtArgs>>): Prisma__HubKeyClient<$Result.GetResult<Prisma.$HubKeyPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more HubKeys.
+     * @param {HubKeyDeleteManyArgs} args - Arguments to filter HubKeys to delete.
+     * @example
+     * // Delete a few HubKeys
+     * const { count } = await prisma.hubKey.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends HubKeyDeleteManyArgs>(args?: SelectSubset<T, HubKeyDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more HubKeys.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {HubKeyUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many HubKeys
+     * const hubKey = await prisma.hubKey.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends HubKeyUpdateManyArgs>(args: SelectSubset<T, HubKeyUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more HubKeys and returns the data updated in the database.
+     * @param {HubKeyUpdateManyAndReturnArgs} args - Arguments to update many HubKeys.
+     * @example
+     * // Update many HubKeys
+     * const hubKey = await prisma.hubKey.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more HubKeys and only return the `kid`
+     * const hubKeyWithKidOnly = await prisma.hubKey.updateManyAndReturn({
+     *   select: { kid: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends HubKeyUpdateManyAndReturnArgs>(args: SelectSubset<T, HubKeyUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HubKeyPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one HubKey.
+     * @param {HubKeyUpsertArgs} args - Arguments to update or create a HubKey.
+     * @example
+     * // Update or create a HubKey
+     * const hubKey = await prisma.hubKey.upsert({
+     *   create: {
+     *     // ... data to create a HubKey
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the HubKey we want to update
+     *   }
+     * })
+     */
+    upsert<T extends HubKeyUpsertArgs>(args: SelectSubset<T, HubKeyUpsertArgs<ExtArgs>>): Prisma__HubKeyClient<$Result.GetResult<Prisma.$HubKeyPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of HubKeys.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {HubKeyCountArgs} args - Arguments to filter HubKeys to count.
+     * @example
+     * // Count the number of HubKeys
+     * const count = await prisma.hubKey.count({
+     *   where: {
+     *     // ... the filter for the HubKeys we want to count
+     *   }
+     * })
+    **/
+    count<T extends HubKeyCountArgs>(
+      args?: Subset<T, HubKeyCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], HubKeyCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a HubKey.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {HubKeyAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends HubKeyAggregateArgs>(args: Subset<T, HubKeyAggregateArgs>): Prisma.PrismaPromise<GetHubKeyAggregateType<T>>
+
+    /**
+     * Group by HubKey.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {HubKeyGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends HubKeyGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: HubKeyGroupByArgs['orderBy'] }
+        : { orderBy?: HubKeyGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, HubKeyGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetHubKeyGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the HubKey model
+   */
+  readonly fields: HubKeyFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for HubKey.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__HubKeyClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the HubKey model
+   */
+  interface HubKeyFieldRefs {
+    readonly kid: FieldRef<"HubKey", 'String'>
+    readonly tenantId: FieldRef<"HubKey", 'String'>
+    readonly publicPem: FieldRef<"HubKey", 'String'>
+    readonly status: FieldRef<"HubKey", 'String'>
+    readonly enrolledById: FieldRef<"HubKey", 'String'>
+    readonly enrolledAt: FieldRef<"HubKey", 'DateTime'>
+    readonly rotatedAt: FieldRef<"HubKey", 'DateTime'>
+    readonly revokedAt: FieldRef<"HubKey", 'DateTime'>
+    readonly revokedById: FieldRef<"HubKey", 'String'>
+    readonly revokeNote: FieldRef<"HubKey", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * HubKey findUnique
+   */
+  export type HubKeyFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HubKey
+     */
+    select?: HubKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HubKey
+     */
+    omit?: HubKeyOmit<ExtArgs> | null
+    /**
+     * Filter, which HubKey to fetch.
+     */
+    where: HubKeyWhereUniqueInput
+  }
+
+  /**
+   * HubKey findUniqueOrThrow
+   */
+  export type HubKeyFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HubKey
+     */
+    select?: HubKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HubKey
+     */
+    omit?: HubKeyOmit<ExtArgs> | null
+    /**
+     * Filter, which HubKey to fetch.
+     */
+    where: HubKeyWhereUniqueInput
+  }
+
+  /**
+   * HubKey findFirst
+   */
+  export type HubKeyFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HubKey
+     */
+    select?: HubKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HubKey
+     */
+    omit?: HubKeyOmit<ExtArgs> | null
+    /**
+     * Filter, which HubKey to fetch.
+     */
+    where?: HubKeyWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of HubKeys to fetch.
+     */
+    orderBy?: HubKeyOrderByWithRelationInput | HubKeyOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for HubKeys.
+     */
+    cursor?: HubKeyWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` HubKeys from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` HubKeys.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of HubKeys.
+     */
+    distinct?: HubKeyScalarFieldEnum | HubKeyScalarFieldEnum[]
+  }
+
+  /**
+   * HubKey findFirstOrThrow
+   */
+  export type HubKeyFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HubKey
+     */
+    select?: HubKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HubKey
+     */
+    omit?: HubKeyOmit<ExtArgs> | null
+    /**
+     * Filter, which HubKey to fetch.
+     */
+    where?: HubKeyWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of HubKeys to fetch.
+     */
+    orderBy?: HubKeyOrderByWithRelationInput | HubKeyOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for HubKeys.
+     */
+    cursor?: HubKeyWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` HubKeys from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` HubKeys.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of HubKeys.
+     */
+    distinct?: HubKeyScalarFieldEnum | HubKeyScalarFieldEnum[]
+  }
+
+  /**
+   * HubKey findMany
+   */
+  export type HubKeyFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HubKey
+     */
+    select?: HubKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HubKey
+     */
+    omit?: HubKeyOmit<ExtArgs> | null
+    /**
+     * Filter, which HubKeys to fetch.
+     */
+    where?: HubKeyWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of HubKeys to fetch.
+     */
+    orderBy?: HubKeyOrderByWithRelationInput | HubKeyOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing HubKeys.
+     */
+    cursor?: HubKeyWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` HubKeys from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` HubKeys.
+     */
+    skip?: number
+    distinct?: HubKeyScalarFieldEnum | HubKeyScalarFieldEnum[]
+  }
+
+  /**
+   * HubKey create
+   */
+  export type HubKeyCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HubKey
+     */
+    select?: HubKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HubKey
+     */
+    omit?: HubKeyOmit<ExtArgs> | null
+    /**
+     * The data needed to create a HubKey.
+     */
+    data: XOR<HubKeyCreateInput, HubKeyUncheckedCreateInput>
+  }
+
+  /**
+   * HubKey createMany
+   */
+  export type HubKeyCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many HubKeys.
+     */
+    data: HubKeyCreateManyInput | HubKeyCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * HubKey createManyAndReturn
+   */
+  export type HubKeyCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HubKey
+     */
+    select?: HubKeySelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the HubKey
+     */
+    omit?: HubKeyOmit<ExtArgs> | null
+    /**
+     * The data used to create many HubKeys.
+     */
+    data: HubKeyCreateManyInput | HubKeyCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * HubKey update
+   */
+  export type HubKeyUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HubKey
+     */
+    select?: HubKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HubKey
+     */
+    omit?: HubKeyOmit<ExtArgs> | null
+    /**
+     * The data needed to update a HubKey.
+     */
+    data: XOR<HubKeyUpdateInput, HubKeyUncheckedUpdateInput>
+    /**
+     * Choose, which HubKey to update.
+     */
+    where: HubKeyWhereUniqueInput
+  }
+
+  /**
+   * HubKey updateMany
+   */
+  export type HubKeyUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update HubKeys.
+     */
+    data: XOR<HubKeyUpdateManyMutationInput, HubKeyUncheckedUpdateManyInput>
+    /**
+     * Filter which HubKeys to update
+     */
+    where?: HubKeyWhereInput
+    /**
+     * Limit how many HubKeys to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * HubKey updateManyAndReturn
+   */
+  export type HubKeyUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HubKey
+     */
+    select?: HubKeySelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the HubKey
+     */
+    omit?: HubKeyOmit<ExtArgs> | null
+    /**
+     * The data used to update HubKeys.
+     */
+    data: XOR<HubKeyUpdateManyMutationInput, HubKeyUncheckedUpdateManyInput>
+    /**
+     * Filter which HubKeys to update
+     */
+    where?: HubKeyWhereInput
+    /**
+     * Limit how many HubKeys to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * HubKey upsert
+   */
+  export type HubKeyUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HubKey
+     */
+    select?: HubKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HubKey
+     */
+    omit?: HubKeyOmit<ExtArgs> | null
+    /**
+     * The filter to search for the HubKey to update in case it exists.
+     */
+    where: HubKeyWhereUniqueInput
+    /**
+     * In case the HubKey found by the `where` argument doesn't exist, create a new HubKey with this data.
+     */
+    create: XOR<HubKeyCreateInput, HubKeyUncheckedCreateInput>
+    /**
+     * In case the HubKey was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<HubKeyUpdateInput, HubKeyUncheckedUpdateInput>
+  }
+
+  /**
+   * HubKey delete
+   */
+  export type HubKeyDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HubKey
+     */
+    select?: HubKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HubKey
+     */
+    omit?: HubKeyOmit<ExtArgs> | null
+    /**
+     * Filter which HubKey to delete.
+     */
+    where: HubKeyWhereUniqueInput
+  }
+
+  /**
+   * HubKey deleteMany
+   */
+  export type HubKeyDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which HubKeys to delete
+     */
+    where?: HubKeyWhereInput
+    /**
+     * Limit how many HubKeys to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * HubKey without action
+   */
+  export type HubKeyDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HubKey
+     */
+    select?: HubKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HubKey
+     */
+    omit?: HubKeyOmit<ExtArgs> | null
   }
 
 
@@ -49331,10 +50517,28 @@ export namespace Prisma {
     sessionStaffId: 'sessionStaffId',
     sessionAuthTime: 'sessionAuthTime',
     sessionCheck: 'sessionCheck',
-    relayed: 'relayed'
+    relayed: 'relayed',
+    attestation: 'attestation',
+    attestationKid: 'attestationKid'
   };
 
   export type OperationEvidenceScalarFieldEnum = (typeof OperationEvidenceScalarFieldEnum)[keyof typeof OperationEvidenceScalarFieldEnum]
+
+
+  export const HubKeyScalarFieldEnum: {
+    kid: 'kid',
+    tenantId: 'tenantId',
+    publicPem: 'publicPem',
+    status: 'status',
+    enrolledById: 'enrolledById',
+    enrolledAt: 'enrolledAt',
+    rotatedAt: 'rotatedAt',
+    revokedAt: 'revokedAt',
+    revokedById: 'revokedById',
+    revokeNote: 'revokeNote'
+  };
+
+  export type HubKeyScalarFieldEnum = (typeof HubKeyScalarFieldEnum)[keyof typeof HubKeyScalarFieldEnum]
 
 
   export const StaffSessionScalarFieldEnum: {
@@ -53215,6 +54419,8 @@ export namespace Prisma {
     sessionAuthTime?: DateTimeNullableFilter<"OperationEvidence"> | Date | string | null
     sessionCheck?: StringNullableFilter<"OperationEvidence"> | string | null
     relayed?: JsonNullableFilter<"OperationEvidence">
+    attestation?: StringNullableFilter<"OperationEvidence"> | string | null
+    attestationKid?: StringNullableFilter<"OperationEvidence"> | string | null
   }
 
   export type OperationEvidenceOrderByWithRelationInput = {
@@ -53242,6 +54448,8 @@ export namespace Prisma {
     sessionAuthTime?: SortOrderInput | SortOrder
     sessionCheck?: SortOrderInput | SortOrder
     relayed?: SortOrderInput | SortOrder
+    attestation?: SortOrderInput | SortOrder
+    attestationKid?: SortOrderInput | SortOrder
   }
 
   export type OperationEvidenceWhereUniqueInput = Prisma.AtLeast<{
@@ -53272,6 +54480,8 @@ export namespace Prisma {
     sessionAuthTime?: DateTimeNullableFilter<"OperationEvidence"> | Date | string | null
     sessionCheck?: StringNullableFilter<"OperationEvidence"> | string | null
     relayed?: JsonNullableFilter<"OperationEvidence">
+    attestation?: StringNullableFilter<"OperationEvidence"> | string | null
+    attestationKid?: StringNullableFilter<"OperationEvidence"> | string | null
   }, "opId">
 
   export type OperationEvidenceOrderByWithAggregationInput = {
@@ -53299,6 +54509,8 @@ export namespace Prisma {
     sessionAuthTime?: SortOrderInput | SortOrder
     sessionCheck?: SortOrderInput | SortOrder
     relayed?: SortOrderInput | SortOrder
+    attestation?: SortOrderInput | SortOrder
+    attestationKid?: SortOrderInput | SortOrder
     _count?: OperationEvidenceCountOrderByAggregateInput
     _avg?: OperationEvidenceAvgOrderByAggregateInput
     _max?: OperationEvidenceMaxOrderByAggregateInput
@@ -53334,6 +54546,85 @@ export namespace Prisma {
     sessionAuthTime?: DateTimeNullableWithAggregatesFilter<"OperationEvidence"> | Date | string | null
     sessionCheck?: StringNullableWithAggregatesFilter<"OperationEvidence"> | string | null
     relayed?: JsonNullableWithAggregatesFilter<"OperationEvidence">
+    attestation?: StringNullableWithAggregatesFilter<"OperationEvidence"> | string | null
+    attestationKid?: StringNullableWithAggregatesFilter<"OperationEvidence"> | string | null
+  }
+
+  export type HubKeyWhereInput = {
+    AND?: HubKeyWhereInput | HubKeyWhereInput[]
+    OR?: HubKeyWhereInput[]
+    NOT?: HubKeyWhereInput | HubKeyWhereInput[]
+    kid?: StringFilter<"HubKey"> | string
+    tenantId?: StringFilter<"HubKey"> | string
+    publicPem?: StringFilter<"HubKey"> | string
+    status?: StringFilter<"HubKey"> | string
+    enrolledById?: StringFilter<"HubKey"> | string
+    enrolledAt?: DateTimeFilter<"HubKey"> | Date | string
+    rotatedAt?: DateTimeNullableFilter<"HubKey"> | Date | string | null
+    revokedAt?: DateTimeNullableFilter<"HubKey"> | Date | string | null
+    revokedById?: StringNullableFilter<"HubKey"> | string | null
+    revokeNote?: StringNullableFilter<"HubKey"> | string | null
+  }
+
+  export type HubKeyOrderByWithRelationInput = {
+    kid?: SortOrder
+    tenantId?: SortOrder
+    publicPem?: SortOrder
+    status?: SortOrder
+    enrolledById?: SortOrder
+    enrolledAt?: SortOrder
+    rotatedAt?: SortOrderInput | SortOrder
+    revokedAt?: SortOrderInput | SortOrder
+    revokedById?: SortOrderInput | SortOrder
+    revokeNote?: SortOrderInput | SortOrder
+  }
+
+  export type HubKeyWhereUniqueInput = Prisma.AtLeast<{
+    kid?: string
+    AND?: HubKeyWhereInput | HubKeyWhereInput[]
+    OR?: HubKeyWhereInput[]
+    NOT?: HubKeyWhereInput | HubKeyWhereInput[]
+    tenantId?: StringFilter<"HubKey"> | string
+    publicPem?: StringFilter<"HubKey"> | string
+    status?: StringFilter<"HubKey"> | string
+    enrolledById?: StringFilter<"HubKey"> | string
+    enrolledAt?: DateTimeFilter<"HubKey"> | Date | string
+    rotatedAt?: DateTimeNullableFilter<"HubKey"> | Date | string | null
+    revokedAt?: DateTimeNullableFilter<"HubKey"> | Date | string | null
+    revokedById?: StringNullableFilter<"HubKey"> | string | null
+    revokeNote?: StringNullableFilter<"HubKey"> | string | null
+  }, "kid">
+
+  export type HubKeyOrderByWithAggregationInput = {
+    kid?: SortOrder
+    tenantId?: SortOrder
+    publicPem?: SortOrder
+    status?: SortOrder
+    enrolledById?: SortOrder
+    enrolledAt?: SortOrder
+    rotatedAt?: SortOrderInput | SortOrder
+    revokedAt?: SortOrderInput | SortOrder
+    revokedById?: SortOrderInput | SortOrder
+    revokeNote?: SortOrderInput | SortOrder
+    _count?: HubKeyCountOrderByAggregateInput
+    _max?: HubKeyMaxOrderByAggregateInput
+    _min?: HubKeyMinOrderByAggregateInput
+  }
+
+  export type HubKeyScalarWhereWithAggregatesInput = {
+    AND?: HubKeyScalarWhereWithAggregatesInput | HubKeyScalarWhereWithAggregatesInput[]
+    OR?: HubKeyScalarWhereWithAggregatesInput[]
+    NOT?: HubKeyScalarWhereWithAggregatesInput | HubKeyScalarWhereWithAggregatesInput[]
+    kid?: StringWithAggregatesFilter<"HubKey"> | string
+    tenantId?: StringWithAggregatesFilter<"HubKey"> | string
+    publicPem?: StringWithAggregatesFilter<"HubKey"> | string
+    status?: StringWithAggregatesFilter<"HubKey"> | string
+    enrolledById?: StringWithAggregatesFilter<"HubKey"> | string
+    enrolledAt?: DateTimeWithAggregatesFilter<"HubKey"> | Date | string
+    rotatedAt?: DateTimeNullableWithAggregatesFilter<"HubKey"> | Date | string | null
+    revokedAt?: DateTimeNullableWithAggregatesFilter<"HubKey"> | Date | string | null
+    revokedById?: StringNullableWithAggregatesFilter<"HubKey"> | string | null
+    revokeNote?: StringNullableWithAggregatesFilter<"HubKey"> | string | null
   }
 
   export type StaffSessionWhereInput = {
@@ -57486,6 +58777,8 @@ export namespace Prisma {
     sessionAuthTime?: Date | string | null
     sessionCheck?: string | null
     relayed?: NullableJsonNullValueInput | InputJsonValue
+    attestation?: string | null
+    attestationKid?: string | null
   }
 
   export type OperationEvidenceUncheckedCreateInput = {
@@ -57513,6 +58806,8 @@ export namespace Prisma {
     sessionAuthTime?: Date | string | null
     sessionCheck?: string | null
     relayed?: NullableJsonNullValueInput | InputJsonValue
+    attestation?: string | null
+    attestationKid?: string | null
   }
 
   export type OperationEvidenceUpdateInput = {
@@ -57540,6 +58835,8 @@ export namespace Prisma {
     sessionAuthTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     sessionCheck?: NullableStringFieldUpdateOperationsInput | string | null
     relayed?: NullableJsonNullValueInput | InputJsonValue
+    attestation?: NullableStringFieldUpdateOperationsInput | string | null
+    attestationKid?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type OperationEvidenceUncheckedUpdateInput = {
@@ -57567,6 +58864,8 @@ export namespace Prisma {
     sessionAuthTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     sessionCheck?: NullableStringFieldUpdateOperationsInput | string | null
     relayed?: NullableJsonNullValueInput | InputJsonValue
+    attestation?: NullableStringFieldUpdateOperationsInput | string | null
+    attestationKid?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type OperationEvidenceCreateManyInput = {
@@ -57594,6 +58893,8 @@ export namespace Prisma {
     sessionAuthTime?: Date | string | null
     sessionCheck?: string | null
     relayed?: NullableJsonNullValueInput | InputJsonValue
+    attestation?: string | null
+    attestationKid?: string | null
   }
 
   export type OperationEvidenceUpdateManyMutationInput = {
@@ -57621,6 +58922,8 @@ export namespace Prisma {
     sessionAuthTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     sessionCheck?: NullableStringFieldUpdateOperationsInput | string | null
     relayed?: NullableJsonNullValueInput | InputJsonValue
+    attestation?: NullableStringFieldUpdateOperationsInput | string | null
+    attestationKid?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type OperationEvidenceUncheckedUpdateManyInput = {
@@ -57648,6 +58951,99 @@ export namespace Prisma {
     sessionAuthTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     sessionCheck?: NullableStringFieldUpdateOperationsInput | string | null
     relayed?: NullableJsonNullValueInput | InputJsonValue
+    attestation?: NullableStringFieldUpdateOperationsInput | string | null
+    attestationKid?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type HubKeyCreateInput = {
+    kid: string
+    tenantId: string
+    publicPem: string
+    status?: string
+    enrolledById: string
+    enrolledAt?: Date | string
+    rotatedAt?: Date | string | null
+    revokedAt?: Date | string | null
+    revokedById?: string | null
+    revokeNote?: string | null
+  }
+
+  export type HubKeyUncheckedCreateInput = {
+    kid: string
+    tenantId: string
+    publicPem: string
+    status?: string
+    enrolledById: string
+    enrolledAt?: Date | string
+    rotatedAt?: Date | string | null
+    revokedAt?: Date | string | null
+    revokedById?: string | null
+    revokeNote?: string | null
+  }
+
+  export type HubKeyUpdateInput = {
+    kid?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    publicPem?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    enrolledById?: StringFieldUpdateOperationsInput | string
+    enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    rotatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedById?: NullableStringFieldUpdateOperationsInput | string | null
+    revokeNote?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type HubKeyUncheckedUpdateInput = {
+    kid?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    publicPem?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    enrolledById?: StringFieldUpdateOperationsInput | string
+    enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    rotatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedById?: NullableStringFieldUpdateOperationsInput | string | null
+    revokeNote?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type HubKeyCreateManyInput = {
+    kid: string
+    tenantId: string
+    publicPem: string
+    status?: string
+    enrolledById: string
+    enrolledAt?: Date | string
+    rotatedAt?: Date | string | null
+    revokedAt?: Date | string | null
+    revokedById?: string | null
+    revokeNote?: string | null
+  }
+
+  export type HubKeyUpdateManyMutationInput = {
+    kid?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    publicPem?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    enrolledById?: StringFieldUpdateOperationsInput | string
+    enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    rotatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedById?: NullableStringFieldUpdateOperationsInput | string | null
+    revokeNote?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type HubKeyUncheckedUpdateManyInput = {
+    kid?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    publicPem?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    enrolledById?: StringFieldUpdateOperationsInput | string
+    enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    rotatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedById?: NullableStringFieldUpdateOperationsInput | string | null
+    revokeNote?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type StaffSessionCreateInput = {
@@ -60826,6 +62222,8 @@ export namespace Prisma {
     sessionAuthTime?: SortOrder
     sessionCheck?: SortOrder
     relayed?: SortOrder
+    attestation?: SortOrder
+    attestationKid?: SortOrder
   }
 
   export type OperationEvidenceAvgOrderByAggregateInput = {
@@ -60855,6 +62253,8 @@ export namespace Prisma {
     sessionStaffId?: SortOrder
     sessionAuthTime?: SortOrder
     sessionCheck?: SortOrder
+    attestation?: SortOrder
+    attestationKid?: SortOrder
   }
 
   export type OperationEvidenceMinOrderByAggregateInput = {
@@ -60880,6 +62280,8 @@ export namespace Prisma {
     sessionStaffId?: SortOrder
     sessionAuthTime?: SortOrder
     sessionCheck?: SortOrder
+    attestation?: SortOrder
+    attestationKid?: SortOrder
   }
 
   export type OperationEvidenceSumOrderByAggregateInput = {
@@ -60892,6 +62294,45 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedBoolNullableFilter<$PrismaModel>
     _max?: NestedBoolNullableFilter<$PrismaModel>
+  }
+
+  export type HubKeyCountOrderByAggregateInput = {
+    kid?: SortOrder
+    tenantId?: SortOrder
+    publicPem?: SortOrder
+    status?: SortOrder
+    enrolledById?: SortOrder
+    enrolledAt?: SortOrder
+    rotatedAt?: SortOrder
+    revokedAt?: SortOrder
+    revokedById?: SortOrder
+    revokeNote?: SortOrder
+  }
+
+  export type HubKeyMaxOrderByAggregateInput = {
+    kid?: SortOrder
+    tenantId?: SortOrder
+    publicPem?: SortOrder
+    status?: SortOrder
+    enrolledById?: SortOrder
+    enrolledAt?: SortOrder
+    rotatedAt?: SortOrder
+    revokedAt?: SortOrder
+    revokedById?: SortOrder
+    revokeNote?: SortOrder
+  }
+
+  export type HubKeyMinOrderByAggregateInput = {
+    kid?: SortOrder
+    tenantId?: SortOrder
+    publicPem?: SortOrder
+    status?: SortOrder
+    enrolledById?: SortOrder
+    enrolledAt?: SortOrder
+    rotatedAt?: SortOrder
+    revokedAt?: SortOrder
+    revokedById?: SortOrder
+    revokeNote?: SortOrder
   }
 
   export type StaffSessionCountOrderByAggregateInput = {

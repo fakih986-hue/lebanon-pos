@@ -20,7 +20,8 @@ import type { IncomingMessage } from "node:http"
 import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs"
 import prisma from "../lib/prisma.js"
-import { triggerFullPull, saveCloudConfig, getCloudStatus } from "../services/cloudSync.js"
+import { triggerFullPull, saveCloudConfig, getCloudStatus, enrollHubKey } from "../services/cloudSync.js"
+import { readHubKey } from "../lib/hubAttestation.js"
 import { generateCloudApiKey } from "../lib/cloudKey.js"
 import { tokenKind } from "../middleware/auth.js"
 
@@ -441,6 +442,25 @@ router.get("/cloud-config", (req: Req, res: Response) => {
 // Localhost-only + admin password. Persists the tenant ID + per-tenant API key,
 // restarts the sync bridge, and triggers an immediate full pull.
 // Body: { tenantId, apiKey, adminPassword }
+
+// ─── POST /api/setup/hub-key ─────────────────────────────────────────────────
+// Localhost-only (the hub's own screen). SPRINT-2 D: enroll a new signing key for this hub at the cloud,
+// authorized by the PIN of a staff member with the Settings permission (checked by the cloud). Body:
+// { pin, staffId? }. Never stores or logs the PIN.
+router.post("/hub-key", async (req: Req, res: Response) => {
+  if (!isLocalRequest(req)) { res.status(403).json({ error: "Only available on the hub machine" }); return }
+  const { pin, staffId } = (req.body as { pin?: unknown; staffId?: unknown }) || {}
+  if (typeof pin !== "string" || !pin) { res.status(400).json({ error: "PIN is required" }); return }
+  const r = await enrollHubKey(pin, typeof staffId === "string" && staffId ? staffId : undefined)
+  if (!r.ok) { res.status(r.status).json({ error: r.error, code: r.code, candidates: r.candidates }); return }
+  res.json({ ok: true, kid: r.kid })
+})
+
+router.get("/hub-key", (req: Req, res: Response) => {
+  if (!isLocalRequest(req)) { res.status(403).json({ error: "Only available on the hub machine" }); return }
+  const key = readHubKey()
+  res.json({ kid: key?.kid ?? null, enrolled: !!key?.enrolledAt, enrolledAt: key?.enrolledAt ?? null })
+})
 
 router.post("/cloud-config", async (req: Req, res: Response) => {
   if (!isLocalRequest(req)) {
