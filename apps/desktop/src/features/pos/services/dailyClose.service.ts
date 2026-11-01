@@ -97,11 +97,12 @@ export function getDailyCloses() {
   return readDailyCloses()
 }
 
-/** The scope a close of this register is recorded under (the server derives the same). */
+/** The scope a close of this register is recorded under (the server derives the same): this device (every
+ *  register defaults to the label REG-001), else the register label; and the open shift. */
 export function closeScopeOf(c: Pick<DailyClose, "registerId" | "deviceId" | "shiftId" | "scope">): string {
   if (c.scope) return c.scope
-  const register = c.registerId || c.deviceId
-  return register ? `register:${register}${c.shiftId ? `|shift:${c.shiftId}` : ""}` : "store"
+  const who = c.deviceId ? `device:${c.deviceId}` : c.registerId ? `register:${c.registerId}` : null
+  return who ? `${who}${c.shiftId ? `|shift:${c.shiftId}` : ""}` : "store"
 }
 
 /** The closes reports use: the current revision of each register and shift (corrected closes are kept). */

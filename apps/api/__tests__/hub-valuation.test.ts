@@ -368,6 +368,17 @@ describe("daily close: the server's figures, or unknown — never a made-up zero
     expect(shape(await rowsOf(cloudPrisma, day))).toEqual(expected)
   })
 
+  it("two registers both labelled REG-001 (the default) on different devices close the same date: two closes, neither corrects the other", async () => {
+    const day = "2026-10-10"
+    const a = closeOp(day, { registerId: "REG-001", deviceId: "till-front", costOfGoods: 1, returnedCost: 0, grossMargin: 1, netProfit: 1 })
+    const b = closeOp(day, { registerId: "REG-001", deviceId: "till-bar", costOfGoods: 1, returnedCost: 0, grossMargin: 2, netProfit: 2 })
+    for (const op of [a, b]) expect((await asManager(op)).status).toBe("ok")
+    expect(shape(await rowsOf(prisma, day))).toEqual([
+      [b.payload.id, "device:till-bar", 1, null, null, null, 2],
+      [a.payload.id, "device:till-front", 1, null, null, null, 1],
+    ])
+  })
+
   it("a correction based on a close someone has since corrected is refused and kept for review; nothing is replaced", async () => {
     const day = "2026-10-07"
     const before = shape(await rowsOf(prisma, day))

@@ -774,7 +774,7 @@ describe("POST /api/sync/push — sale stock integrity", () => {
     expect(res.status).toBe(200)
     expect(res.body.results[0].status).toBe("ok")
     const createArgs = vi.mocked(prisma.dailyClose.create).mock.calls.at(-1)?.[0] as any
-    expect(createArgs.data).toMatchObject({ unsyncedCountAtClose: 3, scope: "register:REG-001", registerId: "REG-001", shiftId: null, revision: 1 })
+    expect(createArgs.data).toMatchObject({ unsyncedCountAtClose: 3, scope: "device:DEV-ABC", registerId: "REG-001", shiftId: null, revision: 1 })
     expect(createArgs.data).not.toHaveProperty("deviceId")
     expect(createArgs.data).not.toHaveProperty("supersededById")
   })

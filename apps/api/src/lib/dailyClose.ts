@@ -2,8 +2,9 @@
  * Which daily close a close is (DailyClose: scope, revision, revisionOf, supersededById).
  *
  * A date is not one close: a café may close several registers and shifts on one date. A close belongs to
- * its SCOPE — the register that made it and the shift it was made in ("store" when the register sends
- * neither: older registers, and closes recorded before scopes). For one scope:
+ * its SCOPE — the register that made it (its device id: every register defaults to the register label
+ * REG-001, so the label alone cannot tell two registers apart) and the shift it was made in ("store" when
+ * the register sends neither: closes recorded before scopes). For one scope:
  *   - the same close again (same id: a retry, a hub's re-forward) is the same record: nothing changes;
  *   - another close of the same scope and date is a CORRECTION: a new revision linked to the close it
  *     corrects, which is kept unchanged and marked superseded. A register that names the close it corrects
@@ -25,11 +26,13 @@ export class CloseConflictError extends Error {
 
 const text = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null)
 
-/** The scope of a close as the register sent it (registerId, else deviceId; and its shift). */
+/** The scope of a close as the register sent it (its device, else its register label; and its shift). */
 export function closeScope(submitted: Record<string, unknown> | null | undefined): { scope: string; registerId: string | null; shiftId: string | null } {
-  const registerId = text(submitted?.registerId) ?? text(submitted?.deviceId)
+  const deviceId = text(submitted?.deviceId)
+  const registerId = text(submitted?.registerId)
   const shiftId = text(submitted?.shiftId)
-  return { scope: registerId ? `register:${registerId}${shiftId ? `|shift:${shiftId}` : ""}` : "store", registerId, shiftId }
+  const who = deviceId ? `device:${deviceId}` : registerId ? `register:${registerId}` : null
+  return { scope: who ? `${who}${shiftId ? `|shift:${shiftId}` : ""}` : "store", registerId, shiftId }
 }
 
 /**
