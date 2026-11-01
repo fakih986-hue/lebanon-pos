@@ -9,7 +9,9 @@ import type { ApprovalGrant } from "../features/pos/lib/approvalGrants"
  * SPRINT-2 E: a manager approves one action on this register with their PIN, checked by the server
  * (approval.service). The person signed in stays signed in; cancelling changes nothing. Keyboard: the
  * PIN field has focus, Enter approves, Escape cancels; focus goes back where it was (the scanner field)
- * when the dialog closes. Touch: an on-screen keypad. One request at a time: repeated taps on Approve
+ * when the dialog closes. Focus stays inside while it is open: whatever moves it out (a dialog closing
+ * underneath that returns focus to its trigger, the scanner field reclaiming it) brings it back to the PIN,
+ * so a manager's PIN is never typed into the page behind. Touch: an on-screen keypad. One request at a time: repeated taps on Approve
  * while the server answers do nothing.
  */
 type Props = {
@@ -34,6 +36,7 @@ export default function ManagerApprovalDialog({ open, summary, request, onApprov
   const [error, setError] = useState<ApprovalFailure | null>(null)
   const [candidates, setCandidates] = useState<Array<{ id: string; name: string }> | null>(null)
   const pinRef = useRef<HTMLInputElement>(null)
+  const boxRef = useRef<HTMLDivElement>(null)
   const returnFocus = useRef<Element | null>(null)
   const inFlight = useRef<AbortController | null>(null)
 
@@ -45,9 +48,18 @@ export default function ManagerApprovalDialog({ open, summary, request, onApprov
     // finished, since it returns focus to its trigger when it unmounts
     const id = window.setTimeout(() => pinRef.current?.focus(), 0)
     const again = window.setTimeout(() => { if (document.activeElement !== pinRef.current) pinRef.current?.focus() }, 120)
+    // focus trap: focus moved outside the dialog comes back (to the PIN, or the dialog when choosing who)
+    const trap = (e: FocusEvent) => {
+      const box = boxRef.current
+      if (!box || box.contains(e.target as Node)) return
+      if (pinRef.current && !pinRef.current.disabled) pinRef.current.focus()
+      else box.focus()
+    }
+    document.addEventListener("focusin", trap)
     return () => {
       window.clearTimeout(id)
       window.clearTimeout(again)
+      document.removeEventListener("focusin", trap)
       inFlight.current?.abort()
       inFlight.current = null
       const back = returnFocus.current as HTMLElement | null
@@ -108,6 +120,7 @@ export default function ManagerApprovalDialog({ open, summary, request, onApprov
         <div
           className="relative w-full max-w-sm rounded-2xl border animate-scale-in"
           style={{ background: "var(--surface)", borderColor: "var(--border)", boxShadow: "var(--shadow-xl)" }}
+          ref={boxRef} tabIndex={-1}
           onClick={(e) => e.stopPropagation()}
           role="dialog" aria-modal="true" aria-labelledby={titleId} aria-busy={busy || undefined}
         >

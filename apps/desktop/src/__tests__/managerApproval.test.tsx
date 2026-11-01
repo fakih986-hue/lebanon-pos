@@ -111,6 +111,17 @@ describe("manager approval dialog", () => {
     expect(document.activeElement).toBe(pinInput())
   })
 
+  it("focus stays inside: the review dialog underneath returning focus to the scanner field late (after the PIN took it) brings it back to the PIN", async () => {
+    await render()
+    expect(document.activeElement).toBe(pinInput())
+    // a confirmation closing underneath hands focus back to its trigger after its own exit animation
+    await act(async () => { scanner.focus() })
+    expect(document.activeElement).toBe(pinInput())
+    // digits from a keyboard or a scanner go to the PIN, never into the page behind
+    await act(async () => { type("6602") })
+    expect([pinInput().value, scanner.value]).toEqual(["6602", ""])
+  })
+
   it("Arabic: the dialog and its errors are translated", async () => {
     await render({}, "ar")
     expect(text()).toContain("موافقة المدير")
