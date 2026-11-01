@@ -112,6 +112,23 @@ Known limit: a modified register can still name another active seller on a routi
 
 Not done in this package: checkout discount / price override approval on the register UI (server supports `sale:create` approvals; POS integration pending); offline manager approval (policy D2 open); hubs enforcing locally (a hub link remains an activation blocker).
 
+## Batch: completing staff authentication (2026-11-01; final dev candidate `dev-83321d5`, never published)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Checkout approval, Full and Simple POS (discount, price below list, sale at cost): cashier stays the actor, cart, tender and focus kept, change invalidates, cancel, expiry, wrong PIN, repeated confirm, lost response, staff switch, forwarding | `checkoutApproval.test.ts` (5), `approval-till.test.ts` checkout (4, real API), `managerApproval.test.tsx` (8, incl. focus trap); packaged hub `close-batch`/`-resume`; browser on the final build (EN desktop, AR phone Simple POS, touch keypad) | pass |
+| Approval binding over every business field (one builder: `materialOf`); substitutions with the same id and total; tenant, register, person, action | `approval-binding.test.ts` (6) | pass |
+| A consumed approval stays valid when forwarded after its lifetime; an unused expired approval stays unusable; restart, key rotation, duplicate delivery | `hub-attestation.test.ts` (10); packaged final build: approvals forwarded 178–180 s after use, cloud check valid, hub check valid, attestation valid, after a hub restart and a cloud outage | pass |
+| Daily close: exact retry, another register or shift, linked correction, stale correction held, concurrent corrections, legacy re-close, hub/cloud reconciliation, older clients | `hub-valuation.test.ts` (18), `sync.test.ts`; packaged final build: three closes of one date (two registers both labelled REG-001, told apart by device), correction revision 2, same chain in the cloud | pass |
+| Review UI: apply, decline with money outcome, stale preview, insufficient permission, restart, repeated resolution; actor, approver and reviewer apart | admin app on the packaged build (AR and EN): stale preview reloads, double click applies once, decline states the outcome, a cashier is refused, decisions survive a hub restart; `review-queue.test.ts` (5); hub API run | pass |
+| Watchdog | strict line reads (`it-hub.mjs selftest` exit 0; a hostile command line read intact); the old JSON read garbles non-ASCII command lines (5/5); every launch in the final runs ended with no watchdog error and 0 outbound violations | repaired |
+| Final packaged build, isolated data, loopback cloud | `installed-hub.test.ts` 7/7 with the current till and 7/7 with the released 1.0.51 till; `installed-hub-close.test.ts`: close 6/6, close-approve 1/1, close-batch 1/1 (cloud down), close-batch-resume 2/2 (after hub restart and cloud return) | pass |
+| Negative controls | 13, each failing on its business assertion: `D:\TitanPOS-it\sprint53\negctl-final.out` | pass |
+
+Defects found and fixed during validation (each in a later build, then the final build revalidated): a close's scope used the register label every register shares (REG-001); the approval dialog let a closing review dialog return focus to the scanner field (the manager's PIN went there); the shipped admin bundle had never included the review of held work (stale since 41bf311); Simple POS on a phone clipped the discount controls (twice: once before, once by the first stacking fix); the close history did not name the device; the admin page told a viewer without access that nothing was waiting.
+
+Observe-mode scope (S4): see the threat model §3a — observed in the packaged run: a cashier's held close was applied when the register re-sent it under the owner's connection.
+
 ## Plan by phase (to be filled with evidence as implemented)
 - **B — observe mode:** token kinds (`typ/iss/aud`) on new tokens with old tokens still accepted; `requireCloudKeyOrJwt` refuses non-staff tokens; envelope parsing; derived `actorId`; claimed-vs-derived mismatch audited; evidence labels; no behaviour change for legacy clients (mixed-version tests).
 - **C — devices and sessions:** enrollment with single-use manager-created code; cross-tenant enrollment refused; device credential can't enroll/approve another device; staff session bound to device (use on another device refused); actor substitution refused; staff switch issues a new session and clears approvals; revocation of staff and device; storage deletion and credential recovery on the till.
