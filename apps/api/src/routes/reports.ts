@@ -2,7 +2,7 @@ import { Router } from "express"
 import type { IncomingMessage, ServerResponse } from "node:http"
 import prisma from "../lib/prisma.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
-import { requirePermission, hideCostUnlessAllowed, can } from "../middleware/permission.js"
+import { requirePermission, hideCostUnlessAllowed, can, actingPerson } from "../middleware/permission.js"
 import { effectivePermissions, shiftOpAllowed } from "../lib/permissions.js"
 
 const router = Router()
@@ -188,8 +188,9 @@ router.post("/z-report", requireAuth, hideCostUnlessAllowed, async (req: AuthReq
     }
 
     // Closing a shift: its opener or a manager (shifts.manage), the same rule as the desktop and the sync push.
-    const closer = await prisma.staffUser.findFirst({ where: { id: req.auth!.userId, tenantId }, select: { role: true, permissions: true } })
-    if (!closer || !shiftOpAllowed("close", effectivePermissions(closer.permissions, closer.role), req.auth!.userId, shift.openedById)) {
+    // the acting person: in a store that enforces staff identity, the register's verified session's person
+    const closer = await actingPerson(req)
+    if (!closer.staffId || closer.permissions === "store" || !shiftOpAllowed("close", [...closer.permissions], closer.staffId, shift.openedById)) {
       json(res, { error: "Only the person who opened this shift or a manager can close it" }, 403)
       return
     }

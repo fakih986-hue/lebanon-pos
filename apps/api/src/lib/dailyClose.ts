@@ -16,6 +16,7 @@
  * Corrections of one scope are serialized (a transaction-scoped advisory lock) and the revision number
  * is unique per scope, so two concurrent corrections cannot both become the current one.
  */
+import { createHash } from "node:crypto"
 import type prisma from "./prisma.js"
 
 type Db = Pick<typeof prisma, "dailyClose" | "auditEvent" | "$executeRaw">
@@ -92,3 +93,44 @@ export async function mirrorClose(db: Pick<typeof prisma, "dailyClose">, tenantI
 
 /** Only the closes reports use: the current revision of each scope. */
 export const CURRENT_CLOSE = { supersededById: null } as const
+
+const DAY_FIGURES = ["grossSales", "refunds", "netSales", "expenses", "cashIn", "cashOut"] as const
+const NULLABLE_FIGURES = ["costOfGoods", "returnedCost", "grossMargin", "supplierPayments", "netProfit"] as const
+
+/**
+ * What a client that keeps ONE close per date (an older register or hub) is sent for a date. A date with a
+ * single current close: that close, as it is. A date several registers or shifts closed: one COMBINED close —
+ * the sum of the current revision of each (corrections included, the closes they corrected left out) under a
+ * stable id, saying so in its note and in closedBy — so no register's close is silently dropped. A figure
+ * any of them does not know (a null cost) is unknown in the sum; costStatus is "server" only when every one
+ * is. Returns the rows to send, in place of the current revisions of those dates.
+ */
+export async function legacyClosesFor(db: Pick<typeof prisma, "dailyClose">, tenantId: string, dateKeys: string[]): Promise<Record<string, any>[]> {
+  if (!dateKeys.length) return []
+  const rows = await db.dailyClose.findMany({ where: { tenantId, dateKey: { in: [...new Set(dateKeys)] }, supersededById: null }, orderBy: { createdAt: "asc" } })
+  const byDate = new Map<string, typeof rows>()
+  for (const r of rows) byDate.set(r.dateKey, [...(byDate.get(r.dateKey) ?? []), r])
+  const out: Record<string, any>[] = []
+  for (const [dateKey, closes] of byDate) {
+    if (closes.length === 1) { out.push(closes[0] as any); continue }
+    const n = (v: unknown) => Number(v ?? 0)
+    const combined: Record<string, any> = {
+      id: combinedCloseId(tenantId, dateKey), tenantId, dateKey,
+      closedBy: `${closes.length} closes combined`,
+      note: `Combined total of ${closes.length} closes of this date (${closes.map((c) => `${c.closedBy}${c.revision > 1 ? ` rev ${c.revision}` : ""}`).join(", ")}). This version shows one close per date; upgrade to see each register's and shift's close.`,
+      createdAt: closes[closes.length - 1].createdAt,
+      unsyncedCountAtClose: closes.reduce((sum, c) => sum + (c.unsyncedCountAtClose ?? 0), 0),
+      costStatus: closes.every((c) => c.costStatus === "server") ? "server" : closes.some((c) => !c.costStatus || c.costStatus === "incomplete") ? "incomplete" : "complete",
+    }
+    for (const k of DAY_FIGURES) combined[k] = closes.reduce((sum, c) => sum + n((c as any)[k]), 0)
+    for (const k of NULLABLE_FIGURES) combined[k] = closes.some((c) => (c as any)[k] === null || (c as any)[k] === undefined) ? null : closes.reduce((sum, c) => sum + n((c as any)[k]), 0)
+    out.push(combined)
+  }
+  return out
+}
+
+/** A stable id for a date's combined close (a uuid-shaped hash: an older hub stores it as a close id). */
+export function combinedCloseId(tenantId: string, dateKey: string): string {
+  const h = createHash("sha256").update(`combined-close:${tenantId}:${dateKey}`).digest("hex")
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`
+}

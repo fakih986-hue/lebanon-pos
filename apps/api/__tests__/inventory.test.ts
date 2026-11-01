@@ -12,7 +12,9 @@ vi.mock("../src/lib/prisma", () => {
   const mock: any = {
     product: model(), inventoryBatch: model(), stockMovement: model(),
     stockAdjustment: model(), auditEvent: model(),
-    tenant: { findUnique: vi.fn().mockResolvedValue({ licenseStatus: "active", suspendedAt: null }) },
+    tenant: { findUnique: vi.fn().mockResolvedValue({ licenseStatus: "active", suspendedAt: null, staffSessionMode: "observe" }) },
+    // the acting person's permissions decide (not the token's role claim): u1 Admin, u2 Cashier, u3 Manager
+    staffUser: { findFirst: vi.fn((args: any) => Promise.resolve(({ u1: { id: "u1", name: "Admin", role: "Admin", permissions: [] }, u2: { id: "u2", name: "Cashier", role: "Cashier", permissions: [] }, u3: { id: "u3", name: "Manager", role: "Manager", permissions: [] } } as any)[args?.where?.id] ?? null)) },
     $connect: vi.fn(), $disconnect: vi.fn(),
     $transaction: vi.fn((fn: any) => fn(mock)),
   }

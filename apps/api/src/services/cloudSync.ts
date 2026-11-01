@@ -25,6 +25,7 @@ import path from "node:path"
 import { randomUUID } from "node:crypto"
 import { dataDir } from "../lib/dataDir.js"
 import { mirrorClose } from "../lib/dailyClose.js"
+import { adoptPolicy } from "../lib/staffPolicy.js"
 import { createHubKey, markHubKeyEnrolled, readHubKey, restoreHubKey, signAttestation } from "../lib/hubAttestation.js"
 import prisma from "../lib/prisma.js"
 import { recordStockMovementOnce } from "../lib/ledger.js"
@@ -532,6 +533,9 @@ export async function pullFromCloud(opts: { isRestore?: boolean } = {}): Promise
 
   const data = (await res.json()) as PullResponse
   fixDecimalObjects(data)
+  // SPRINT-2 hub batch: the store's staff policy, adopted only when newer (lib/staffPolicy.ts): a hub that
+  // cannot reach the cloud, or receives no policy, keeps the one it holds
+  if ((data as any).staffPolicy) await adoptPolicy(CLOUD_TENANT!, (data as any).staffPolicy).catch((e) => console.error("[cloud-sync] staff policy not adopted:", e))
 
   // Strip Railway's updatedAt from all upserted entities so Prisma auto-sets
   // updatedAt to the hub's local time. This ensures the hub browser's incremental
@@ -1202,7 +1206,7 @@ function fetchCloud(urlPath: string, init: RequestInit = {}): Promise<Response> 
       "x-tenant-id":   CLOUD_TENANT!,
       // REFUND-INTEGRITY-1: this hub understands sale line ids, sale lot
       // allocations and refund rates (schema 2), so the cloud may send them.
-      "x-titan-sync-schema": "3", // SPRINT-1: receives stockPolicy (product + sale line)
+      "x-titan-sync-schema": "5", // SPRINT-1: receives stockPolicy (product + sale line); SPRINT-2: 4 identity evidence, 5 staff enforcement (signs forwards, adopts the staff policy)
       "x-titan-unknown-cost": "1", // a daily close's unknown cost stays null (not 0)
       "x-titan-close-revisions": "1", // several closes per date, with their revisions (lib/dailyClose.ts)
       ...(init.headers as Record<string, string> | undefined),

@@ -71,17 +71,22 @@ model Tenant {
   cloudApiKey String  @default("") // per-tenant sync key, generated at create
 
   // ── License / suspension system (v2) ────────────────────────────────
-  licenseStatus    String    @default("active") // active | grace | suspended | read_only | recovery
-  licenseReason    String    @default("") // admin-facing: why suspended/grace
-  licenseMessage   String    @default("") // user-facing: shown in POS overlay
-  suspendedAt      DateTime? // when suspension started
-  offlineGraceDays Int       @default(7) // days POS can work offline before locking
-  leaseExpiresAt   DateTime? // when the offline lease expires
-  policyVersion    Int       @default(1) // increments on every license change — triggers desktop re-check
+  licenseStatus       String    @default("active") // active | grace | suspended | read_only | recovery
+  licenseReason       String    @default("") // admin-facing: why suspended/grace
+  licenseMessage      String    @default("") // user-facing: shown in POS overlay
+  suspendedAt         DateTime? // when suspension started
+  offlineGraceDays    Int       @default(7) // days POS can work offline before locking
+  leaseExpiresAt      DateTime? // when the offline lease expires
+  policyVersion       Int       @default(1) // increments on every license change — triggers desktop re-check
   /// SPRINT-2: staff identity enforcement for this store. "observe" (default: record evidence only) |
-  /// "enforce-checkout" (ordinary sales need an enrolled device + a server-checked staff session).
+  /// "enforce-checkout" (ordinary sales need an enrolled device + a server-checked staff session) |
+  /// "enforce" (every register operation and permission check is the session person's; lib/staffPolicy.ts).
   /// Changed only by an explicit, audited decision; never switched on automatically.
-  staffSessionMode String    @default("observe")
+  staffSessionMode    String    @default("observe")
+  /// The staff policy's version (lib/staffPolicy.ts): issued at the cloud, adopted by a hub only when higher.
+  staffPolicyVersion  Int       @default(0)
+  staffPolicyIssuedAt DateTime?
+  staffPolicyIssuedBy String?
 
   // ── Subscription metadata (v2) ─────────────────────────────────────
   planName          String    @default("") // free | basic | pro | enterprise

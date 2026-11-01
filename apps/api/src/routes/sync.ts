@@ -10,7 +10,10 @@ const IS_CLOUD = !["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")
 
 import { decrementProductStock } from "../lib/inventory.js"
 import { applyPolicyChange, resolveLinePolicy, StockPolicyMismatchError } from "../lib/stockPolicy.js"
-import { CloseConflictError, closeScope, recordClose } from "../lib/dailyClose.js"
+import { CloseConflictError, closeScope, legacyClosesFor, recordClose } from "../lib/dailyClose.js"
+import { isTechnicalError, publicError } from "../lib/publicError.js"
+import { enforcesAll, enforcesCheckout, issuePolicy, storePolicy } from "../lib/staffPolicy.js"
+import { actingPerson } from "../middleware/permission.js"
 import { verifyAttestation, type AttestationResult } from "../lib/hubAttestation.js"
 import { checkApproval, relayedApprovalHolds, useApproval, type ApprovalSeen } from "../lib/approvals.js"
 import { DISMISS_OUTCOMES, moneyEffect, previewTokenOf, reviewCategory } from "../lib/reviewQueue.js"
@@ -20,7 +23,7 @@ import { LEGACY_REV } from "../lib/stockPolicy.js"
 import { claimedActor, observeEvidence, transportOf } from "../lib/evidence.js"
 import { claimedActorOf, describeEffects, actorLimitations, redactSecrets } from "../lib/refusedReview.js"
 import { checkDevice, checkSession, type SessionResult } from "../lib/credentials.js"
-import { identityGateBlockers, isHubServer } from "../lib/identityGate.js"
+import { identityGateBlockers, isHubServer, enforceGateBlockers } from "../lib/identityGate.js"
 import { tokenKind } from "../middleware/auth.js"
 import { recordStockMovement, recordStockMovementOnce, UNALLOCATED_RETURN_NOTE } from "../lib/ledger.js"
 import { effectivePermissions, recordedActorRule, requiredPermissionForOp, shiftOpAllowed } from "../lib/permissions.js"
@@ -68,17 +71,12 @@ export const UNKNOWN_COST_HEADER = "x-titan-unknown-cost"
 /** Clients that keep several closes per date (scope, revision, corrections) send this header. */
 export const CLOSE_REVISIONS_HEADER = "x-titan-close-revisions"
 const CLOSE_REVISION_FIELDS = ["scope", "registerId", "shiftId", "revision", "revisionOf", "correction", "supersededById", "supersededAt"]
-export function shapeDailyClosesForClient(rows: any[], req: { headers?: Record<string, unknown> }): any[] {
-  // An older till or hub keeps one close per date (an older hub's database allows only one): it gets
-  // the close its reports would use — the latest current revision of that date — without the new fields.
+export async function shapeDailyClosesForClient(rows: any[], req: { headers?: Record<string, unknown> }, tenantId: string): Promise<any[]> {
+  // An older till or hub keeps one close per date (an older hub's database allows only one): for each date
+  // these rows touch it gets that date's single close, or one COMBINED close of every register's and shift's
+  // current close (lib/dailyClose.ts legacyClosesFor) — never just one of them — without the new fields.
   if (req.headers?.[CLOSE_REVISIONS_HEADER] !== "1") {
-    const latest = new Map<string, any>()
-    for (const row of rows) {
-      if (row.supersededById) continue
-      const seen = latest.get(row.dateKey)
-      if (!seen || new Date(row.createdAt) > new Date(seen.createdAt)) latest.set(row.dateKey, row)
-    }
-    rows = rows.filter((row) => latest.get(row.dateKey) === row).map((row) => { const out = { ...row }; for (const k of CLOSE_REVISION_FIELDS) delete out[k]; return out })
+    rows = (await legacyClosesFor(prisma, tenantId, rows.map((r) => r.dateKey))).map((row) => { const out = { ...row }; for (const k of CLOSE_REVISION_FIELDS) delete out[k]; return out })
   }
   if (req.headers?.[UNKNOWN_COST_HEADER] === "1") return rows
   return rows.map((row) => {
@@ -200,35 +198,45 @@ const syncPushSchema = z.object({
 
 type SyncOperationInput = z.infer<typeof syncOperationSchema>
 
-// SPRINT-2: what stands between this store and enforce-checkout (settings.manage).
-router.get("/identity-gate", requireAuth, requireTokenKinds("staff"), async (req: AuthRequest, res: ServerResponse) => {
+// SPRINT-2: what stands between this store and enforcement (settings.manage). On a hub: the store's policy
+// as this hub holds it, and this hub's own registers that would be refused under enforcement (the policy
+// itself is issued at the cloud).
+router.get("/identity-gate", requireAuth, requireTokenKinds("staff", "hub-local"), async (req: AuthRequest, res: ServerResponse) => {
   if (!(await can(req, "settings.manage"))) { json(res, { error: "Needs the Settings permission." }, 403); return }
-  const blockers = isHubServer() ? [] : await identityGateBlockers(req.auth!.tenantId)
-  json(res, { allowed: !isHubServer() && blockers.length === 0, hubServer: isHubServer(), blockers })
+  const tenantId = req.auth!.tenantId
+  const policy = await storePolicy(tenantId)
+  if (isHubServer()) { json(res, { allowed: false, hubServer: true, policy, blockers: await enforceGateBlockers(tenantId) }); return }
+  const blockers = await identityGateBlockers(tenantId)
+  const enforceBlockers = await enforceGateBlockers(tenantId)
+  json(res, { allowed: blockers.length === 0, allowedEnforce: enforceBlockers.length === 0, hubServer: false, policy, blockers, enforceBlockers })
 })
 
-// SPRINT-2: switch this store between observe and enforce-checkout. Only an explicit decision by a
-// signed-in staff member with settings.manage, with a note; audited. Never switched automatically.
-router.post("/identity-mode", requireAuth, requireTokenKinds("staff"), async (req: AuthRequest, res: ServerResponse) => {
-  const body = z.object({ mode: z.enum(["observe", "enforce-checkout"]), note: z.string().trim().min(3).max(500) }).safeParse(req.body)
-  if (!body.success) { json(res, { error: "Choose observe or enforce-checkout and write a note.", code: "INVALID" }, 400); return }
+// SPRINT-2: the store's staff policy (lib/staffPolicy.ts): observe | enforce-checkout | enforce. Issued only
+// at the cloud, by an explicit decision of a person holding settings.manage (their own sign-in, or their
+// verified session on an enrolled register in a store that already enforces), with a note; each change is the
+// next version and is audited. A hub adopts it from its pull; it never issues one. Never switched automatically.
+router.post("/identity-mode", requireAuth, requireTokenKinds("staff", "hub-local"), async (req: AuthRequest, res: ServerResponse) => {
+  const body = z.object({ mode: z.enum(["observe", "enforce-checkout", "enforce"]), note: z.string().trim().min(3).max(500) }).safeParse(req.body)
+  if (!body.success) { json(res, { error: "Choose observe, enforce-checkout or enforce and write a note.", code: "INVALID" }, 400); return }
   const tenantId = req.auth!.tenantId
-  const who = await prisma.staffUser.findFirst({ where: { id: req.auth!.userId, tenantId, active: true }, select: { name: true, role: true, permissions: true } })
-  if (!who || !effectivePermissions(who.permissions as any, who.role).includes("settings.manage")) { json(res, { error: "Needs the Settings permission.", code: "FORBIDDEN" }, 403); return }
-  const before = (await prisma.tenant.findUnique({ where: { id: tenantId }, select: { staffSessionMode: true } }))?.staffSessionMode ?? "observe"
-  if (body.data.mode === "enforce-checkout") {
+  if (isHubServer()) { json(res, { error: "The store's staff policy is issued at the cloud; this hub adopts it from its next sync and keeps it.", code: "HUB_SERVER" }, 409); return }
+  const who = await actingPerson(req)
+  if (who.basis === "none" || who.basis === "store" || who.permissions === "store" || !who.permissions.has("settings.manage")) { json(res, { error: "Needs the Settings permission (signed in as yourself).", code: "FORBIDDEN" }, 403); return }
+  const before = await storePolicy(tenantId)
+  if (body.data.mode !== "observe") {
     // The activation gate: refused (not warned) until every trading client is inside the boundary.
-    if (isHubServer()) { json(res, { error: "Staff identity enforcement can only be switched on at the cloud, for stores whose registers connect directly to it. Hub forwarding is not covered yet.", code: "HUB_SERVER" }, 409); return }
-    const blockers = await identityGateBlockers(tenantId)
+    const blockers = body.data.mode === "enforce" ? await enforceGateBlockers(tenantId) : await identityGateBlockers(tenantId)
     if (blockers.length > 0) {
-      await prisma.auditEvent.create({ data: { tenantId, action: "security.identity_mode.refused", entity: "settings", summary: `Enforcement not switched on: ${blockers.length} till(s) or hub(s) are outside the enforcement boundary`, metadata: { blockers } as any, userId: req.auth!.userId, userName: who.name, userRole: who.role as any } }).catch(() => undefined)
-      json(res, { error: "Enforcement cannot be switched on yet: every till that still trades must be upgraded and enrolled, and the store must not use a hub. Upgrade and enroll them, or retire the ones no longer in use.", code: "IDENTITY_GATE", blockers }, 409)
+      await prisma.auditEvent.create({ data: { tenantId, action: "security.identity_mode.refused", entity: "settings", summary: `Enforcement (${body.data.mode}) not switched on: ${blockers.length} register(s) or hub(s) are outside the enforcement boundary`, metadata: { mode: body.data.mode, blockers } as any, userId: who.staffId ?? "system", userName: who.name ?? "", userRole: "Admin" as any } }).catch(() => undefined)
+      json(res, { error: body.data.mode === "enforce"
+        ? "Enforcement cannot be switched on yet: every register and hub this store has seen must be upgraded, enrolled and observed signing in, or retired. Every approved device must be enrolled."
+        : "Enforcement cannot be switched on yet: every till that still trades must be upgraded and enrolled, and the store must not use a hub. Upgrade and enroll them, or retire the ones no longer in use.", code: "IDENTITY_GATE", blockers }, 409)
       return
     }
   }
-  await prisma.tenant.update({ where: { id: tenantId }, data: { staffSessionMode: body.data.mode } })
-  await prisma.auditEvent.create({ data: { tenantId, action: "security.identity_mode.changed", entity: "settings", summary: `${who.name} changed staff identity mode from ${before} to ${body.data.mode}: ${body.data.note}`, metadata: { before, after: body.data.mode, note: body.data.note } as any, userId: req.auth!.userId, userName: who.name, userRole: who.role as any } }).catch(() => undefined)
-  json(res, { ok: true, mode: body.data.mode, before })
+  const after = await issuePolicy(tenantId, body.data.mode, who.staffId ?? "unknown")
+  await prisma.auditEvent.create({ data: { tenantId, action: "security.identity_mode.changed", entity: "settings", summary: `${who.name} changed the staff policy from ${before.mode} (version ${before.version}) to ${after.mode} (version ${after.version}): ${body.data.note}`, metadata: { before, after, note: body.data.note } as any, userId: who.staffId ?? "system", userName: who.name ?? "", userRole: "Admin" as any } }).catch(() => undefined)
+  json(res, { ok: true, mode: after.mode, version: after.version, before: before.mode })
 })
 
 router.get("/status", requireAuth, requireTokenKinds("staff", "hub-local"), async (req: AuthRequest, res: ServerResponse) => {
@@ -239,7 +247,7 @@ router.get("/status", requireAuth, requireTokenKinds("staff", "hub-local"), asyn
         name: true, subdomain: true, suspended: true,
         licenseStatus: true, licenseReason: true, licenseMessage: true,
         suspendedAt: true, offlineGraceDays: true, leaseExpiresAt: true,
-        policyVersion: true, staffSessionMode: true,
+        policyVersion: true, staffSessionMode: true, staffPolicyVersion: true,
       },
     })
     if (!tenant) { json(res, { error: "Tenant not found" }, 404); return }
@@ -302,6 +310,37 @@ type SaleActor = { id: string; name: string; permissions: string[] }
 async function saleElevation(tenantId: string, payload: unknown): Promise<string | null> {
   if (requiredPermissionForOp("sale", "create", payload)) return "a discount"
   return (await priceOverrideViolationFor(tenantId, payload)) ? "a price below the catalogue or a sale at cost" : null
+}
+
+/**
+ * SPRINT-2 hub batch: the enforcement gate for ANY operation a register sends in a store that enforces
+ * staff identity. A sale follows checkoutIdentity (routine offline checkout stays available). Anything else
+ * needs this store's enrolled device and a current staff session; the person of that session is the actor,
+ * and the operation may not name someone else as acting. An operation claimed as done offline, or arriving
+ * on a session that has since expired or ended, is completed work whose author this server cannot verify:
+ * it is kept for a manager's review — never applied on the connection account, never discarded.
+ */
+async function staffIdentity(tenantId: string, device: { check: string; deviceId: string | null } | null, session: SessionResult | null, ev: { offline?: unknown; session?: unknown } | undefined, op: { entity: string; action: string; payload?: unknown }):
+  Promise<{ refuse: string } | { actor: SaleActor; basis: "session" | "stale-session" | "offline-claimed" }> {
+  if (op.entity === "sale" && op.action === "create") return checkoutIdentity(tenantId, device, session, ev, op.payload)
+  const what = `${op.action} ${op.entity}`
+  if (ev?.offline === true && !ev?.session) return { refuse: `OFFLINE_REVIEW: a ${what} the register says it made offline; in a store that enforces staff identity only a routine sale is accepted on an offline claim. Kept for a manager's review.` }
+  if (!device || device.check !== "valid") return { refuse: `IDENTITY_REQUIRED: this store requires an enrolled register (device credential ${device?.check ?? "absent"})` }
+  if (!session || session.check === "absent") return { refuse: "IDENTITY_REQUIRED: this store requires the person to sign in with a server PIN check (no staff session)" }
+  if (session.check !== "valid" || !session.staffId) return { refuse: `IDENTITY_REQUIRED: the staff session is not valid (${session.check})` }
+  const staff = await prisma.staffUser.findFirst({ where: { id: session.staffId, tenantId }, select: { id: true, name: true, role: true, permissions: true, active: true } })
+  if (!staff || !staff.active) return { refuse: `IDENTITY_REQUIRED: ${staff ? `${staff.name} is not an active staff member now` : "the signed-in person is not a staff member of this store"}` }
+  if (session.expired || session.ended) return { refuse: `SESSION_REVIEW: a ${what} arrived on ${staff.name}'s session after it ${session.ended ? "was signed out" : "expired"}; a past session cannot authorize it. Kept for a manager's review.` }
+  const named = claimedActor(op.entity, op.action, op.payload).id
+  if (named && named !== staff.id) return { refuse: `IDENTITY_MISMATCH: the ${what} names another staff member than the person signed in (${staff.name}). Kept for a manager's review.` }
+  return { actor: { id: staff.id, name: staff.name, permissions: effectivePermissions(staff.permissions as any, staff.role) }, basis: "session" }
+}
+
+/** Work a manager applied on review at an enrolled hub: authorized as that reviewer, as they stand now. */
+async function reviewedAtHub(tenantId: string, reviewerId: string, op: { entity: string; action: string }): Promise<{ refuse: string } | { actor: SaleActor; basis: "session" }> {
+  const r = await prisma.staffUser.findFirst({ where: { id: reviewerId, tenantId, active: true }, select: { id: true, name: true, role: true, permissions: true } })
+  if (!r) return { refuse: `HUB_UNSUPPORTED: a ${op.action} ${op.entity} the hub applied on review names a reviewer who is not an active staff member here. Kept for a manager's review.` }
+  return { actor: { id: r.id, name: r.name, permissions: effectivePermissions(r.permissions as any, r.role) }, basis: "session" }
 }
 
 /**
@@ -588,7 +627,9 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
   const deviceHeader = typeof req.headers["x-device-credential"] === "string" ? String(req.headers["x-device-credential"]) : undefined
   const deviceSeen = pushKind === "bridge" ? null : await checkDevice(deviceHeader, tenantId)
   // SPRINT-2: this store's identity mode (observe unless an authorized person explicitly enabled it).
-  const storeMode = (await prisma.tenant.findUnique({ where: { id: tenantId }, select: { staffSessionMode: true } }))?.staffSessionMode ?? "observe"
+  const storeMode = (await storePolicy(tenantId)).mode
+  // SPRINT-2 hub batch: which operations need the session's person here (lib/staffPolicy.ts)
+  const enforcedFor = (op: { entity: string; action: string }) => enforcesAll(storeMode) || (storeMode === "enforce-checkout" && op.entity === "sale" && op.action === "create")
   for (const op of operations) {
     try {
       validateSyncOperation(op)
@@ -634,7 +675,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
       const attested: AttestationResult | null = pushKind === "bridge"
         ? await verifyAttestation(tenantId, (op as any).ev?.fwd?.att, { id: op.id, entity: op.entity, action: op.action, digest: commandDigest(op.entity, op.action, op.payload) })
         : null
-      const hubIdentity = storeMode === "enforce-checkout" && op.entity === "sale" && op.action === "create" && attested?.check === "valid" ? attestedIdentity(attested.srv) : null
+      const hubIdentity = enforcedFor(op) && attested?.check === "valid" ? attestedIdentity(attested.srv) : null
       // SPRINT-2 E: a manager's online approval, checked against the register that sent the operation. A
       // hub's forwarded operation carries the approval as the hub checked it (inside its attestation).
       // The approval is for the person signed in when it was given: the verified session's person, else
@@ -652,16 +693,20 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
       // refused and kept for review — never downgraded to legacy. A sale claimed as completed offline,
       // or arriving on a session that has since expired or ended, applies only if it is routine and
       // the person it names may sell NOW; otherwise it is kept for review (see checkoutIdentity).
-      const gate = storeMode === "enforce-checkout" && op.entity === "sale" && op.action === "create" && (pushKind === "staff" || pushKind === "hub-local")
-        ? await checkoutIdentity(tenantId, deviceSeen, sessionSeen, (op as any).ev, op.payload)
-        // an enrolled hub's attested sale: the same rules, on what the hub recorded and signed (the hub
+      // SPRINT-2 hub batch: in a store that enforces staff identity, every operation a register sends is
+      // authorized as the person of its server-checked staff session (staffIdentity); a hub's forwarded
+      // operation as the person the hub checked and signed for (or, for work a manager applied on review
+      // at the hub, as that reviewer). Never as the connection account, never downgraded.
+      const gate = enforcedFor(op) && (pushKind === "staff" || pushKind === "hub-local")
+        ? await staffIdentity(tenantId, deviceSeen, sessionSeen, (op as any).ev, op)
+        // an enrolled hub's attested operation: the same rules, on what the hub recorded and signed (the hub
         // vouches for its device and session checks; the person's standing is checked here, now)
-        : hubIdentity ? await checkoutIdentity(tenantId, hubIdentity.device, hubIdentity.session, hubIdentity.ev, op.payload)
+        : hubIdentity ? (hubIdentity.reviewer ? await reviewedAtHub(tenantId, hubIdentity.reviewer, op) : await staffIdentity(tenantId, hubIdentity.device, hubIdentity.session, hubIdentity.ev, op))
         : null
-      // Without a valid attestation a hub's forwarded sale cannot be attributed to anyone: in an
+      // Without a valid attestation a hub's forwarded operation cannot be attributed to anyone: in an
       // enforcing store it is kept for review rather than applied on the hub link's store-level authority.
-      const hubOutside = storeMode === "enforce-checkout" && op.entity === "sale" && op.action === "create" && pushKind === "bridge" && attested?.check !== "valid"
-        ? `HUB_UNSUPPORTED: this store enforces staff sessions; a sale forwarded by a hub needs the hub's valid attestation (${attested?.check ?? "absent"}). Kept for a manager's review.`
+      const hubOutside = enforcedFor(op) && pushKind === "bridge" && attested?.check !== "valid"
+        ? `HUB_UNSUPPORTED: this store enforces staff identity; an operation forwarded by a hub needs the hub's valid attestation (${attested?.check ?? "absent"}). Kept for a manager's review.`
         : null
       const enforcedActor = gate && "actor" in gate ? gate.actor : null
 
@@ -717,7 +762,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         continue
       }
 
-      const outcome = await applyOnce(tenantId, op, { deviceId: deviceId ?? null, userId: req.auth!.userId, syncSchema: pushSchema, costTrusted: opCostTrusted, resolutionAuthority: storeMode === "enforce-checkout" ? { staffId: enforcedActor?.id ?? null, approved } : undefined }, async (tx) => {
+      const outcome = await applyOnce(tenantId, op, { deviceId: deviceId ?? null, userId: req.auth!.userId, syncSchema: pushSchema, costTrusted: opCostTrusted, resolutionAuthority: enforcesCheckout(storeMode) ? { staffId: enforcedActor?.id ?? null, approved } : undefined }, async (tx) => {
         // SPRINT-2 Phase B (observe): what this server knows about the operation, in the same
         // transaction (never an applied operation without its evidence row, or the reverse).
         if ((tx as any).operationEvidence) {
@@ -735,7 +780,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         if (approvalSeen?.check === "valid" && !(await useApproval(tx as any, approvalSeen.id, op.id))) throw new Error("APPROVAL_INVALID: the manager approval was used by another operation")
         // Enforced: the sale is recorded as made by the session's person (the payload's cashier
         // fields were written by the register). The stored operation itself is not changed.
-        if (enforcedActor) {
+        if (enforcedActor && op.entity === "sale" && op.action === "create") {
           const saleId = (op.payload as { id?: unknown } | undefined)?.id
           if (typeof saleId === "string") await (tx as any).sale.updateMany({ where: { tenantId, id: saleId }, data: { cashierId: enforcedActor.id, cashier: enforcedActor.name } })
         }
@@ -748,7 +793,9 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         if (summary) activities.push({ entity: op.entity, action: op.action, summary })
       }
     } catch (err) {
-      const errorMessage = (err as Error).message
+      // a database or internal error is not shown to the register or stored in the review queue: an
+      // actionable message and a support reference (the detail is in the server log under it)
+      const errorMessage = publicError(err, `sync push ${op.entity} ${op.action} ${op.id}`).message
 
       // Classify rejection errors — these are non-retryable business conflicts
       const isRejected =
@@ -900,10 +947,14 @@ function reviewPermissionsFor(entity: string, action: string, payload: unknown, 
   return anyOf.length > 0 ? anyOf.map(String) : ["settings.manage"]
 }
 
+/** The person deciding (lib actingPerson): their own sign-in, or — in a store that enforces staff identity —
+ *  their verified session on an enrolled register; never a register's connection account. */
 async function staffReviewer(req: AuthRequest): Promise<{ id: string; name: string; permissions: string[] } | null> {
-  if (tokenKind(req.auth) !== "staff") return null
-  const u = await prisma.staffUser.findFirst({ where: { id: req.auth!.userId, tenantId: req.auth!.tenantId, active: true }, select: { id: true, name: true, role: true, permissions: true } })
-  return u ? { id: u.id, name: u.name, permissions: effectivePermissions(u.permissions as any, u.role) } : null
+  const kind = tokenKind(req.auth)
+  if (kind !== "staff" && kind !== "hub-local") return null
+  const who = await actingPerson(req)
+  if ((who.basis !== "person" && who.basis !== "session") || !who.staffId || who.permissions === "store") return null
+  return { id: who.staffId, name: who.name ?? "", permissions: [...who.permissions] }
 }
 
 /** The reason as refused (without the account/device suffix the row's error carries). */
@@ -944,7 +995,8 @@ router.get("/refused", staffSync, async (req: AuthRequest, res: ServerResponse) 
     const effects = await describeEffects(tenantId, r.entity, r.action, r.payload)
     const held = (r.heldEvidence ?? null) as Record<string, any> | null
     operations.push({
-      id: r.id, entity: r.entity, action: r.action, status: r.status, reason, attempts: r.attempts,
+      // a reason stored before technical errors were kept out of it is not shown as it is
+      id: r.id, entity: r.entity, action: r.action, status: r.status, reason: reason && isTechnicalError({ message: reason }) ? "An earlier attempt to record this failed on the server (details are in the server log). Nothing was applied." : reason, attempts: r.attempts,
       // SPRINT-2 F
       category: reviewCategory(reason),
       evidence: held ? {
@@ -1050,9 +1102,9 @@ router.post("/refused/:id/resolve", staffSync, async (req: AuthRequest, res: Ser
     try { broadcastToTenant(tenantId, "sync:data-changed", {}) } catch { /* no-op */ }
     json(res, { ok: true, decision: "apply", outcome })
   } catch (err) {
-    const message = (err as Error).message
+    const { message, reference } = publicError(err, `review apply ${row.entity} ${row.action} ${id}`)
     await back(`${row.error ?? ""} | apply on review failed: ${message}`)
-    json(res, { error: message, code: "APPLY_FAILED" }, 409)
+    json(res, { error: message, code: "APPLY_FAILED", ...(reference ? { reference } : {}) }, 409)
   }
 })
 
@@ -1382,7 +1434,9 @@ router.get("/pull", staffSync, async (req: AuthRequest, res: ServerResponse) => 
     products: shapeProductsForSchema(products, clientSyncSchema(req as any)), sales: shapeSalesForSchema(sales, clientSyncSchema(req as any)), refunds: shapeRefundsForSchema(refunds, clientSyncSchema(req as any)), customers: redactVerifiers(customers, req), debtSales: shapeDebtSalesForSchema(debtSales, clientSyncSchema(req as any)), debtPayments,
     suppliers, purchaseOrders, supplierPayments, users: redactVerifiers(users, req, true), shifts,
     auditEvents, settings: settings ? [settings] : [], expenses, batches,
-    adjustments, stockCounts: counts, dailyCloses: shapeDailyClosesForClient(dailyCloses, req as any), deliveryOrders,
+    adjustments, stockCounts: counts, dailyCloses: await shapeDailyClosesForClient(dailyCloses, req as any, tenantId), deliveryOrders,
+    // SPRINT-2 hub batch: the store's staff policy (a hub adopts a newer version; registers cache it)
+    staffPolicy: await storePolicy(tenantId),
     deletions: deletions.map((op) => ({
       entity: op.entity,
       id: (op.payload as any)?.id,
@@ -1524,7 +1578,7 @@ router.get("/pull/full/:entity", staffSync, async (req: AuthRequest, res: Server
         : entity === "products" ? shapeProductsForSchema(items, clientSyncSchema(req as any))
         : entity === "refunds" ? shapeRefundsForSchema(items, clientSyncSchema(req as any))
         : entity === "debt-sales" ? shapeDebtSalesForSchema(items, clientSyncSchema(req as any))
-        : entity === "daily-closes" ? shapeDailyClosesForClient(items, req as any)
+        : entity === "daily-closes" ? await shapeDailyClosesForClient(items, req as any, tenantId)
         : entity === "users" || entity === "customers" ? redactVerifiers(items, req, entity === "users")
         : items),
       hasMore,
@@ -1637,6 +1691,8 @@ function attestedIdentity(srv: Record<string, unknown> | null) {
   const lim = Array.isArray(srv?.limitations) ? (srv!.limitations as unknown[]).map(String) : []
   const s = (k: string) => (typeof srv?.[k] === "string" ? (srv![k] as string) : null)
   return {
+    // work a manager applied on review at the hub: the reviewer's account applied it (routes/sync.ts reviewApplyHook)
+    reviewer: lim.includes("applied-on-manager-review") ? s("connectionAccountId") : null,
     device: s("deviceCheck") ? { check: s("deviceCheck")!, deviceId: s("enrolledDeviceId") } : null,
     session: s("sessionCheck") ? { check: s("sessionCheck") as SessionResult["check"], sessionId: s("sessionId"), staffId: s("sessionStaffId"), authTime: s("sessionAuthTime") ? new Date(s("sessionAuthTime")!) : null, expired: lim.includes("session-expired-at-receipt"), ended: lim.includes("session-ended-before-receipt") } : null,
     ev: { offline: s("evidence") === "offline-claimed", session: s("sessionCheck") && s("sessionCheck") !== "absent" ? "attested" : undefined },

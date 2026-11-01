@@ -5019,11 +5019,13 @@ export namespace Prisma {
   export type TenantAvgAggregateOutputType = {
     offlineGraceDays: number | null
     policyVersion: number | null
+    staffPolicyVersion: number | null
   }
 
   export type TenantSumAggregateOutputType = {
     offlineGraceDays: number | null
     policyVersion: number | null
+    staffPolicyVersion: number | null
   }
 
   export type TenantMinAggregateOutputType = {
@@ -5040,6 +5042,9 @@ export namespace Prisma {
     leaseExpiresAt: Date | null
     policyVersion: number | null
     staffSessionMode: string | null
+    staffPolicyVersion: number | null
+    staffPolicyIssuedAt: Date | null
+    staffPolicyIssuedBy: string | null
     planName: string | null
     trialStartDate: Date | null
     trialEndDate: Date | null
@@ -5066,6 +5071,9 @@ export namespace Prisma {
     leaseExpiresAt: Date | null
     policyVersion: number | null
     staffSessionMode: string | null
+    staffPolicyVersion: number | null
+    staffPolicyIssuedAt: Date | null
+    staffPolicyIssuedBy: string | null
     planName: string | null
     trialStartDate: Date | null
     trialEndDate: Date | null
@@ -5092,6 +5100,9 @@ export namespace Prisma {
     leaseExpiresAt: number
     policyVersion: number
     staffSessionMode: number
+    staffPolicyVersion: number
+    staffPolicyIssuedAt: number
+    staffPolicyIssuedBy: number
     planName: number
     trialStartDate: number
     trialEndDate: number
@@ -5109,11 +5120,13 @@ export namespace Prisma {
   export type TenantAvgAggregateInputType = {
     offlineGraceDays?: true
     policyVersion?: true
+    staffPolicyVersion?: true
   }
 
   export type TenantSumAggregateInputType = {
     offlineGraceDays?: true
     policyVersion?: true
+    staffPolicyVersion?: true
   }
 
   export type TenantMinAggregateInputType = {
@@ -5130,6 +5143,9 @@ export namespace Prisma {
     leaseExpiresAt?: true
     policyVersion?: true
     staffSessionMode?: true
+    staffPolicyVersion?: true
+    staffPolicyIssuedAt?: true
+    staffPolicyIssuedBy?: true
     planName?: true
     trialStartDate?: true
     trialEndDate?: true
@@ -5156,6 +5172,9 @@ export namespace Prisma {
     leaseExpiresAt?: true
     policyVersion?: true
     staffSessionMode?: true
+    staffPolicyVersion?: true
+    staffPolicyIssuedAt?: true
+    staffPolicyIssuedBy?: true
     planName?: true
     trialStartDate?: true
     trialEndDate?: true
@@ -5182,6 +5201,9 @@ export namespace Prisma {
     leaseExpiresAt?: true
     policyVersion?: true
     staffSessionMode?: true
+    staffPolicyVersion?: true
+    staffPolicyIssuedAt?: true
+    staffPolicyIssuedBy?: true
     planName?: true
     trialStartDate?: true
     trialEndDate?: true
@@ -5295,6 +5317,9 @@ export namespace Prisma {
     leaseExpiresAt: Date | null
     policyVersion: number
     staffSessionMode: string
+    staffPolicyVersion: number
+    staffPolicyIssuedAt: Date | null
+    staffPolicyIssuedBy: string | null
     planName: string
     trialStartDate: Date | null
     trialEndDate: Date | null
@@ -5340,6 +5365,9 @@ export namespace Prisma {
     leaseExpiresAt?: boolean
     policyVersion?: boolean
     staffSessionMode?: boolean
+    staffPolicyVersion?: boolean
+    staffPolicyIssuedAt?: boolean
+    staffPolicyIssuedBy?: boolean
     planName?: boolean
     trialStartDate?: boolean
     trialEndDate?: boolean
@@ -5392,6 +5420,9 @@ export namespace Prisma {
     leaseExpiresAt?: boolean
     policyVersion?: boolean
     staffSessionMode?: boolean
+    staffPolicyVersion?: boolean
+    staffPolicyIssuedAt?: boolean
+    staffPolicyIssuedBy?: boolean
     planName?: boolean
     trialStartDate?: boolean
     trialEndDate?: boolean
@@ -5418,6 +5449,9 @@ export namespace Prisma {
     leaseExpiresAt?: boolean
     policyVersion?: boolean
     staffSessionMode?: boolean
+    staffPolicyVersion?: boolean
+    staffPolicyIssuedAt?: boolean
+    staffPolicyIssuedBy?: boolean
     planName?: boolean
     trialStartDate?: boolean
     trialEndDate?: boolean
@@ -5444,6 +5478,9 @@ export namespace Prisma {
     leaseExpiresAt?: boolean
     policyVersion?: boolean
     staffSessionMode?: boolean
+    staffPolicyVersion?: boolean
+    staffPolicyIssuedAt?: boolean
+    staffPolicyIssuedBy?: boolean
     planName?: boolean
     trialStartDate?: boolean
     trialEndDate?: boolean
@@ -5456,7 +5493,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type TenantOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "subdomain" | "suspended" | "cloudApiKey" | "licenseStatus" | "licenseReason" | "licenseMessage" | "suspendedAt" | "offlineGraceDays" | "leaseExpiresAt" | "policyVersion" | "staffSessionMode" | "planName" | "trialStartDate" | "trialEndDate" | "subscriptionStart" | "subscriptionEnd" | "renewalDate" | "billingContact" | "internalNotes" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
+  export type TenantOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "subdomain" | "suspended" | "cloudApiKey" | "licenseStatus" | "licenseReason" | "licenseMessage" | "suspendedAt" | "offlineGraceDays" | "leaseExpiresAt" | "policyVersion" | "staffSessionMode" | "staffPolicyVersion" | "staffPolicyIssuedAt" | "staffPolicyIssuedBy" | "planName" | "trialStartDate" | "trialEndDate" | "subscriptionStart" | "subscriptionEnd" | "renewalDate" | "billingContact" | "internalNotes" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
   export type TenantInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     users?: boolean | Tenant$usersArgs<ExtArgs>
     products?: boolean | Tenant$productsArgs<ExtArgs>
@@ -5532,10 +5569,17 @@ export namespace Prisma {
       policyVersion: number
       /**
        * SPRINT-2: staff identity enforcement for this store. "observe" (default: record evidence only) |
-       * "enforce-checkout" (ordinary sales need an enrolled device + a server-checked staff session).
+       * "enforce-checkout" (ordinary sales need an enrolled device + a server-checked staff session) |
+       * "enforce" (every register operation and permission check is the session person's; lib/staffPolicy.ts).
        * Changed only by an explicit, audited decision; never switched on automatically.
        */
       staffSessionMode: string
+      /**
+       * The staff policy's version (lib/staffPolicy.ts): issued at the cloud, adopted by a hub only when higher.
+       */
+      staffPolicyVersion: number
+      staffPolicyIssuedAt: Date | null
+      staffPolicyIssuedBy: string | null
       planName: string
       trialStartDate: Date | null
       trialEndDate: Date | null
@@ -6007,6 +6051,9 @@ export namespace Prisma {
     readonly leaseExpiresAt: FieldRef<"Tenant", 'DateTime'>
     readonly policyVersion: FieldRef<"Tenant", 'Int'>
     readonly staffSessionMode: FieldRef<"Tenant", 'String'>
+    readonly staffPolicyVersion: FieldRef<"Tenant", 'Int'>
+    readonly staffPolicyIssuedAt: FieldRef<"Tenant", 'DateTime'>
+    readonly staffPolicyIssuedBy: FieldRef<"Tenant", 'String'>
     readonly planName: FieldRef<"Tenant", 'String'>
     readonly trialStartDate: FieldRef<"Tenant", 'DateTime'>
     readonly trialEndDate: FieldRef<"Tenant", 'DateTime'>
@@ -52496,6 +52543,9 @@ export namespace Prisma {
     leaseExpiresAt: 'leaseExpiresAt',
     policyVersion: 'policyVersion',
     staffSessionMode: 'staffSessionMode',
+    staffPolicyVersion: 'staffPolicyVersion',
+    staffPolicyIssuedAt: 'staffPolicyIssuedAt',
+    staffPolicyIssuedBy: 'staffPolicyIssuedBy',
     planName: 'planName',
     trialStartDate: 'trialStartDate',
     trialEndDate: 'trialEndDate',
@@ -53565,6 +53615,9 @@ export namespace Prisma {
     leaseExpiresAt?: DateTimeNullableFilter<"Tenant"> | Date | string | null
     policyVersion?: IntFilter<"Tenant"> | number
     staffSessionMode?: StringFilter<"Tenant"> | string
+    staffPolicyVersion?: IntFilter<"Tenant"> | number
+    staffPolicyIssuedAt?: DateTimeNullableFilter<"Tenant"> | Date | string | null
+    staffPolicyIssuedBy?: StringNullableFilter<"Tenant"> | string | null
     planName?: StringFilter<"Tenant"> | string
     trialStartDate?: DateTimeNullableFilter<"Tenant"> | Date | string | null
     trialEndDate?: DateTimeNullableFilter<"Tenant"> | Date | string | null
@@ -53616,6 +53669,9 @@ export namespace Prisma {
     leaseExpiresAt?: SortOrderInput | SortOrder
     policyVersion?: SortOrder
     staffSessionMode?: SortOrder
+    staffPolicyVersion?: SortOrder
+    staffPolicyIssuedAt?: SortOrderInput | SortOrder
+    staffPolicyIssuedBy?: SortOrderInput | SortOrder
     planName?: SortOrder
     trialStartDate?: SortOrderInput | SortOrder
     trialEndDate?: SortOrderInput | SortOrder
@@ -53670,6 +53726,9 @@ export namespace Prisma {
     leaseExpiresAt?: DateTimeNullableFilter<"Tenant"> | Date | string | null
     policyVersion?: IntFilter<"Tenant"> | number
     staffSessionMode?: StringFilter<"Tenant"> | string
+    staffPolicyVersion?: IntFilter<"Tenant"> | number
+    staffPolicyIssuedAt?: DateTimeNullableFilter<"Tenant"> | Date | string | null
+    staffPolicyIssuedBy?: StringNullableFilter<"Tenant"> | string | null
     planName?: StringFilter<"Tenant"> | string
     trialStartDate?: DateTimeNullableFilter<"Tenant"> | Date | string | null
     trialEndDate?: DateTimeNullableFilter<"Tenant"> | Date | string | null
@@ -53721,6 +53780,9 @@ export namespace Prisma {
     leaseExpiresAt?: SortOrderInput | SortOrder
     policyVersion?: SortOrder
     staffSessionMode?: SortOrder
+    staffPolicyVersion?: SortOrder
+    staffPolicyIssuedAt?: SortOrderInput | SortOrder
+    staffPolicyIssuedBy?: SortOrderInput | SortOrder
     planName?: SortOrder
     trialStartDate?: SortOrderInput | SortOrder
     trialEndDate?: SortOrderInput | SortOrder
@@ -53755,6 +53817,9 @@ export namespace Prisma {
     leaseExpiresAt?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
     policyVersion?: IntWithAggregatesFilter<"Tenant"> | number
     staffSessionMode?: StringWithAggregatesFilter<"Tenant"> | string
+    staffPolicyVersion?: IntWithAggregatesFilter<"Tenant"> | number
+    staffPolicyIssuedAt?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
+    staffPolicyIssuedBy?: StringNullableWithAggregatesFilter<"Tenant"> | string | null
     planName?: StringWithAggregatesFilter<"Tenant"> | string
     trialStartDate?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
     trialEndDate?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
@@ -57698,6 +57763,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -57749,6 +57817,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -57800,6 +57871,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -57851,6 +57925,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -57902,6 +57979,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -57928,6 +58008,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -57954,6 +58037,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -62519,6 +62605,21 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
+  export type StringNullableFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
   export type DateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -62794,6 +62895,9 @@ export namespace Prisma {
     leaseExpiresAt?: SortOrder
     policyVersion?: SortOrder
     staffSessionMode?: SortOrder
+    staffPolicyVersion?: SortOrder
+    staffPolicyIssuedAt?: SortOrder
+    staffPolicyIssuedBy?: SortOrder
     planName?: SortOrder
     trialStartDate?: SortOrder
     trialEndDate?: SortOrder
@@ -62809,6 +62913,7 @@ export namespace Prisma {
   export type TenantAvgOrderByAggregateInput = {
     offlineGraceDays?: SortOrder
     policyVersion?: SortOrder
+    staffPolicyVersion?: SortOrder
   }
 
   export type TenantMaxOrderByAggregateInput = {
@@ -62825,6 +62930,9 @@ export namespace Prisma {
     leaseExpiresAt?: SortOrder
     policyVersion?: SortOrder
     staffSessionMode?: SortOrder
+    staffPolicyVersion?: SortOrder
+    staffPolicyIssuedAt?: SortOrder
+    staffPolicyIssuedBy?: SortOrder
     planName?: SortOrder
     trialStartDate?: SortOrder
     trialEndDate?: SortOrder
@@ -62851,6 +62959,9 @@ export namespace Prisma {
     leaseExpiresAt?: SortOrder
     policyVersion?: SortOrder
     staffSessionMode?: SortOrder
+    staffPolicyVersion?: SortOrder
+    staffPolicyIssuedAt?: SortOrder
+    staffPolicyIssuedBy?: SortOrder
     planName?: SortOrder
     trialStartDate?: SortOrder
     trialEndDate?: SortOrder
@@ -62866,6 +62977,7 @@ export namespace Prisma {
   export type TenantSumOrderByAggregateInput = {
     offlineGraceDays?: SortOrder
     policyVersion?: SortOrder
+    staffPolicyVersion?: SortOrder
   }
 
   export type StringWithAggregatesFilter<$PrismaModel = never> = {
@@ -62922,6 +63034,24 @@ export namespace Prisma {
     _sum?: NestedIntFilter<$PrismaModel>
     _min?: NestedIntFilter<$PrismaModel>
     _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedStringNullableFilter<$PrismaModel>
+    _max?: NestedStringNullableFilter<$PrismaModel>
   }
 
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -63147,21 +63277,6 @@ export namespace Prisma {
     _max?: NestedDecimalFilter<$PrismaModel>
   }
 
-  export type StringNullableFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    mode?: QueryMode
-    not?: NestedStringNullableFilter<$PrismaModel> | string | null
-  }
-
   export type IntNullableFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel> | null
     in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
@@ -63360,24 +63475,6 @@ export namespace Prisma {
     stockPolicyVersion?: SortOrder
     reorderPoint?: SortOrder
     reorderQuantity?: SortOrder
-  }
-
-  export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    mode?: QueryMode
-    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedStringNullableFilter<$PrismaModel>
-    _max?: NestedStringNullableFilter<$PrismaModel>
   }
 
   export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -66238,6 +66335,10 @@ export namespace Prisma {
     divide?: number
   }
 
+  export type NullableStringFieldUpdateOperationsInput = {
+    set?: string | null
+  }
+
   export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string
   }
@@ -67235,10 +67336,6 @@ export namespace Prisma {
     connectOrCreate?: StockMovementCreateOrConnectWithoutProductInput | StockMovementCreateOrConnectWithoutProductInput[]
     createMany?: StockMovementCreateManyProductInputEnvelope
     connect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
-  }
-
-  export type NullableStringFieldUpdateOperationsInput = {
-    set?: string | null
   }
 
   export type NullableDecimalFieldUpdateOperationsInput = {
@@ -68683,6 +68780,20 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
+  export type NestedStringNullableFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
   export type NestedDateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -68771,6 +68882,23 @@ export namespace Prisma {
     not?: NestedFloatFilter<$PrismaModel> | number
   }
 
+  export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedStringNullableFilter<$PrismaModel>
+    _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -68829,20 +68957,6 @@ export namespace Prisma {
     _max?: NestedDecimalFilter<$PrismaModel>
   }
 
-  export type NestedStringNullableFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    not?: NestedStringNullableFilter<$PrismaModel> | string | null
-  }
-
   export type NestedDecimalNullableFilter<$PrismaModel = never> = {
     equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
     in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
@@ -68852,23 +68966,6 @@ export namespace Prisma {
     gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
     gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
     not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
-  }
-
-  export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedStringNullableFilter<$PrismaModel>
-    _max?: NestedStringNullableFilter<$PrismaModel>
   }
 
   export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -71255,6 +71352,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -71305,6 +71405,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -71587,6 +71690,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71637,6 +71743,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71751,6 +71860,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -71801,6 +71913,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -71867,6 +71982,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71917,6 +72035,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71967,6 +72088,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -72017,6 +72141,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -72410,6 +72537,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -72460,6 +72590,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -72690,6 +72823,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -72740,6 +72876,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -72931,6 +73070,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -72981,6 +73123,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -73361,6 +73506,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -73411,6 +73559,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -73570,6 +73721,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -73620,6 +73774,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -73862,6 +74019,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -73912,6 +74072,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74110,6 +74273,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74160,6 +74326,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74258,6 +74427,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74308,6 +74480,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74413,6 +74588,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74463,6 +74641,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74558,6 +74739,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74608,6 +74792,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74713,6 +74900,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74763,6 +74953,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74858,6 +75051,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74908,6 +75104,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -75110,6 +75309,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75160,6 +75362,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75258,6 +75463,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -75308,6 +75516,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -75441,6 +75652,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75491,6 +75705,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75598,6 +75815,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -75648,6 +75868,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -75757,6 +75980,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75807,6 +76033,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75906,6 +76135,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -75956,6 +76188,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -76057,6 +76292,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -76107,6 +76345,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -76198,6 +76439,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -76248,6 +76492,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -76408,6 +76655,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -76458,6 +76708,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -76614,6 +76867,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -76664,6 +76920,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -76730,6 +76989,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -76780,6 +77042,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -76830,6 +77095,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -76880,6 +77148,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -76993,6 +77264,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -77043,6 +77317,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -77146,6 +77423,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -77196,6 +77476,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -77375,6 +77658,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -77425,6 +77711,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -77600,6 +77889,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -77650,6 +77942,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -77794,6 +78089,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -77844,6 +78142,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -77978,6 +78279,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -78028,6 +78332,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -78128,6 +78435,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -78178,6 +78488,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -78466,6 +78779,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -78516,6 +78832,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -78698,6 +79017,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -78748,6 +79070,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -79062,6 +79387,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -79112,6 +79440,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -79178,6 +79509,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -79228,6 +79562,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -79278,6 +79615,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -79328,6 +79668,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -79394,6 +79737,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -79444,6 +79790,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -79494,6 +79843,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -79544,6 +79896,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -79610,6 +79965,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -79660,6 +80018,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -79710,6 +80071,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -79760,6 +80124,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -79826,6 +80193,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -79876,6 +80246,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -79926,6 +80299,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -79976,6 +80352,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -80042,6 +80421,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -80092,6 +80474,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -80142,6 +80527,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -80192,6 +80580,9 @@ export namespace Prisma {
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
     staffSessionMode?: string
+    staffPolicyVersion?: number
+    staffPolicyIssuedAt?: Date | string | null
+    staffPolicyIssuedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -80336,6 +80727,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -80386,6 +80780,9 @@ export namespace Prisma {
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
     staffSessionMode?: StringFieldUpdateOperationsInput | string
+    staffPolicyVersion?: IntFieldUpdateOperationsInput | number
+    staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null

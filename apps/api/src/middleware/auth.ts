@@ -41,6 +41,10 @@ export interface AuthPayload {
   tokenVersion?: number
   /** SPRINT-2: credential kind, set on every newly issued token (older tokens have none). */
   typ?: string
+  /** SPRINT-2 hub batch: what a staff sign-in was for. "transport": a register's connection to the store
+   *  (in a store that enforces staff identity it carries no personal authority; the register's staff
+   *  session does); "person": that person signing in for themselves (the admin app). Older tokens: none. */
+  use?: "transport" | "person"
 }
 
 export interface AuthRequest extends IncomingMessage {

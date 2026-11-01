@@ -8,28 +8,77 @@
 // serves the platform owner across stores must say so explicitly (allowPlatformOwner).
 // Any other token without an active staff row in the token's store (customers, deleted or
 // deactivated staff, another store's staff) has NO permissions — fail closed.
+//
+// SPRINT-2 hub batch — a store that ENFORCES staff identity (lib/staffPolicy.ts, mode "enforce"): a
+// register's connection token (use "transport", or an older token without "use") and the hub's own
+// screen ("__admin__" with a store) carry no personal authority. The acting person is the person of the
+// server-checked staff session the register presents (x-staff-session) on its enrolled device
+// (x-device-credential); without one, nobody. A person's own sign-in (use "person", the admin app) acts
+// as that person. The hub's link to the cloud ("cloud-bridge") stays store-level: what it forwards is
+// authorized per operation from the hub's signed evidence (routes/sync.ts).
 import type { ServerResponse } from "node:http"
 import prisma from "../lib/prisma.js"
 import { effectivePermissions } from "../lib/permissions.js"
-import { json, type AuthRequest } from "./auth.js"
+import { json, tokenKind, type AuthRequest } from "./auth.js"
+import { checkDevice, checkSession } from "../lib/credentials.js"
+import { asMode, enforcesAll, type StaffMode } from "../lib/staffPolicy.js"
 
 const STORE_LEVEL = new Set(["__admin__", "cloud-bridge"])
-const cache = new WeakMap<object, Promise<Set<string> | "store">>()
+const cache = new WeakMap<object, Promise<Acting>>()
 
-/** The caller's permissions in their own store, or "store" for a store-level token. */
-export function accessOf(req: AuthRequest): Promise<Set<string> | "store"> {
+/** Who is acting on this request, and with which permissions. */
+export type Acting = {
+  /** "person": a person's own token (or any staff token in a store that does not enforce); "session": the
+   *  person of a verified staff session on an enrolled register; "store": a store-level token; "none". */
+  basis: "person" | "session" | "store" | "none"
+  staffId: string | null
+  name: string | null
+  permissions: Set<string> | "store"
+  mode: StaffMode
+  /** Why nobody is acting (enforcing store, no verified session). */
+  reason?: string
+}
+
+const header = (req: AuthRequest, name: string) => { const h = req.headers?.[name]; return typeof h === "string" && h ? h : undefined }
+
+async function staffOf(tenantId: string, id: string) {
+  const u = await prisma.staffUser.findFirst({ where: { id, tenantId, active: true }, select: { id: true, name: true, role: true, permissions: true } })
+  return u ? { id: u.id, name: u.name, permissions: new Set<string>(effectivePermissions(u.permissions, u.role)) } : null
+}
+
+/** The acting person (see the header): cached per request. */
+export function actingPerson(req: AuthRequest): Promise<Acting> {
   let p = cache.get(req)
   if (!p) {
-    p = (async () => {
+    p = (async (): Promise<Acting> => {
       const auth = req.auth
-      if (!auth?.tenantId) return new Set<string>()
-      if (STORE_LEVEL.has(auth.userId)) return "store" as const
-      const u = await prisma.staffUser.findFirst({ where: { id: auth.userId, tenantId: auth.tenantId, active: true }, select: { role: true, permissions: true } })
-      return new Set(u ? effectivePermissions(u.permissions, u.role) : [])
+      if (!auth?.tenantId) return { basis: "none", staffId: null, name: null, permissions: new Set(), mode: "observe" }
+      const mode = asMode((await prisma.tenant.findUnique({ where: { id: auth.tenantId }, select: { staffSessionMode: true } }))?.staffSessionMode)
+      const kind = tokenKind(auth)
+      if (auth.userId === "cloud-bridge") return { basis: "store", staffId: null, name: null, permissions: "store", mode }
+      const enforced = enforcesAll(mode)
+      if (!enforced || (kind === "staff" && auth.use === "person")) {
+        if (STORE_LEVEL.has(auth.userId)) return { basis: "store", staffId: null, name: null, permissions: "store", mode }
+        const u = await staffOf(auth.tenantId, auth.userId)
+        return u ? { basis: "person", staffId: u.id, name: u.name, permissions: u.permissions, mode } : { basis: "none", staffId: null, name: null, permissions: new Set(), mode }
+      }
+      // enforcing: a register (or the hub's own screen) acts only as its verified session's person
+      if (kind !== "staff" && kind !== "hub-local") return { basis: "none", staffId: null, name: null, permissions: new Set(), mode, reason: "not a staff credential" }
+      const device = await checkDevice(header(req, "x-device-credential"), auth.tenantId)
+      if (device.check !== "valid" || !device.deviceId) return { basis: "none", staffId: null, name: null, permissions: new Set(), mode, reason: `this store requires an enrolled register (device credential ${device.check})` }
+      const session = await checkSession(header(req, "x-staff-session"), auth.tenantId, device.deviceId)
+      if (session.check !== "valid" || !session.staffId || session.expired || session.ended) return { basis: "none", staffId: null, name: null, permissions: new Set(), mode, reason: `this store requires the person to sign in with a server PIN check (staff session ${session.check}${session.expired ? ", expired" : ""}${session.ended ? ", ended" : ""})` }
+      const u = await staffOf(auth.tenantId, session.staffId)
+      return u ? { basis: "session", staffId: u.id, name: u.name, permissions: u.permissions, mode } : { basis: "none", staffId: null, name: null, permissions: new Set(), mode, reason: "the signed-in person is not an active staff member" }
     })()
     cache.set(req, p)
   }
   return p
+}
+
+/** The caller's permissions in their own store, or "store" for a store-level token. */
+export async function accessOf(req: AuthRequest): Promise<Set<string> | "store"> {
+  return (await actingPerson(req)).permissions
 }
 
 /** True when the caller holds `perm` in its own store (store-level tokens always do). */

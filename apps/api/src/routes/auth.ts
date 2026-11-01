@@ -23,6 +23,8 @@ const loginSchema = z.object({
   role: z.enum(["Driver"]).optional(),
   // CONTAINMENT: when several staff members share a PIN, the caller must say who is signing in.
   staffId: z.string().trim().min(1).optional(),
+  // SPRINT-2 hub batch: a register connecting to the store, or a person signing in for themselves
+  client: z.enum(["register", "person"]).optional(),
 })
 
 const router = Router()
@@ -114,7 +116,8 @@ router.post("/login", async (req: any, res: any) => {
       res.status(400).json({ error: parsed.error.errors[0].message })
       return
     }
-    const { pin, code, tenantSubdomain, role, staffId } = parsed.data
+    const { pin, code, tenantSubdomain, role, staffId, client } = parsed.data
+    const use = client === "register" ? { use: "transport" as const } : client === "person" ? { use: "person" as const } : {}
 
     if (role === "Driver") {
       if (!code) {
@@ -201,7 +204,7 @@ router.post("/login", async (req: any, res: any) => {
           ? await bcrypt.compare(pin, candidate.pin)
           : candidate.pin === hashSha256Pin(pin)
         if (pinMatches) {
-          const token = signToken({ userId: candidate.id, tenantId: candidate.tenantId, role: candidate.role, tokenVersion: candidate.tokenVersion ?? 1 })
+          const token = signToken({ userId: candidate.id, tenantId: candidate.tenantId, role: candidate.role, tokenVersion: candidate.tokenVersion ?? 1, ...use })
           res.json({
             token, user: { id: candidate.id, name: candidate.name, role: candidate.role, tenantId: candidate.tenantId, tenantName: candidate.tenant.name, pinVersion: candidate.pinVersion },
           })
@@ -253,6 +256,7 @@ router.post("/login", async (req: any, res: any) => {
       tenantId: user.tenantId,
       role: user.role,
       tokenVersion: user.tokenVersion ?? 1,
+      ...use,
     })
 
     res.json({

@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto"
 import prisma from "../lib/prisma.js"
 import { recordStockMovement, recordStockMovementOnce, UNALLOCATED_RETURN_NOTE } from "../lib/ledger.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
+import { can } from "../middleware/permission.js"
 
 /**
  * POS-SYNC-AUTHORITY-2C-1 — Inventory Reconciliation (READ-ONLY report) + the
@@ -20,7 +21,6 @@ import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 
 const router = Router()
 const EPS = 0.001
-const isManager = (role?: string) => role === "Admin" || role === "Manager" || role === "Owner"
 
 // ── GET /api/inventory/reconciliation ────────────────────────────────────────
 // Read-only. Returns per-product A/B/L, diffs, severity, classification.
@@ -28,7 +28,7 @@ const isManager = (role?: string) => role === "Admin" || role === "Manager" || r
 router.get("/reconciliation", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
-    if (!isManager(req.auth!.role)) { json(res, { error: "Managers only" }, 403); return }
+    if (!(await can(req, "inventory.adjust"))) { json(res, { error: "Needs the Adjust stock permission (a manager).", code: "FORBIDDEN" }, 403); return }
     const includeOk = req.query.includeOk === "1" || req.query.includeOk === "true"
 
     const [products, openBatchSums, batchProductIds, ledgerSums, movementCounts, unallocatedSums] = await Promise.all([
@@ -116,7 +116,9 @@ router.get("/reconciliation", requireAuth, async (req: AuthRequest, res: ServerR
 router.post("/ledger/initialize", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
-    if (req.auth!.role !== "Admin") { json(res, { error: "Admins only" }, 403); return }
+    // the acting person (in a store that enforces staff identity: the register's verified session's person,
+    // never the connection account's role)
+    if (!(await can(req, "settings.manage"))) { json(res, { error: "Needs the Settings permission (owner).", code: "FORBIDDEN" }, 403); return }
 
     const [products, ledgerSums] = await Promise.all([
       prisma.product.findMany({ where: { tenantId, archived: false, isParent: false }, select: { id: true, syncId: true, stock: true } }),
@@ -157,7 +159,7 @@ router.post("/ledger/initialize", requireAuth, async (req: AuthRequest, res: Ser
 router.post("/reconciliation/repair", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
-    if (!isManager(req.auth!.role)) { json(res, { error: "Managers only" }, 403); return }
+    if (!(await can(req, "inventory.adjust"))) { json(res, { error: "Needs the Adjust stock permission (a manager).", code: "FORBIDDEN" }, 403); return }
     const productId = Number((req.body as any)?.productId)
     const reason = String((req.body as any)?.reason ?? "").trim()
     if (!productId || productId <= 0) { json(res, { error: "productId is required" }, 400); return }

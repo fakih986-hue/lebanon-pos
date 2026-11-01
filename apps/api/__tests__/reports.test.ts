@@ -28,6 +28,7 @@ vi.mock("../src/lib/prisma", () => {
     cashMovement: aggregateModel(),
     product: model(),
     staffUser: model(),
+    tenant: { findUnique: vi.fn().mockResolvedValue({ licenseStatus: "active", suspendedAt: null, staffSessionMode: "observe" }) },
     $connect: vi.fn(),
     $disconnect: vi.fn(),
     $transaction: vi.fn((fn: (tx: unknown) => unknown) => fn(client)),
@@ -46,7 +47,7 @@ describe("POST /api/reports/z-report", () => {
     vi.clearAllMocks()
     vi.mocked((prisma as any).cashMovement.aggregate).mockResolvedValue({ _sum: { amountUsd: 0 } })
     // The caller is an Admin staff user of the tenant (closing needs the opener or shifts.manage).
-    vi.mocked(prisma.staffUser.findFirst).mockResolvedValue({ role: "Admin", permissions: [] } as any)
+    vi.mocked(prisma.staffUser.findFirst).mockResolvedValue({ id: "u1", name: "Admin", role: "Admin", permissions: [] } as any)
   })
 
   it("returns 401 without auth", async () => {
