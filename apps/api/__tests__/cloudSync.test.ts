@@ -507,6 +507,26 @@ describe("cloudSync", () => {
       vi.unstubAllGlobals()
     })
 
+    it("a pulled sale keeps the ingredient consumption this server recorded; one it lacks is mapped to its own product ids", async () => {
+      vi.mocked(prisma.syncOperation.count).mockResolvedValue(0)
+      const ids: Record<string, number> = { "DRINK-1": 2, OAT: 9 }
+      vi.mocked(prisma.product.findFirst).mockImplementation((async (q: any) => (q?.where?.syncId in ids ? { id: ids[q.where.syncId] } : null)) as any)
+      const hubOat = [{ ingredientSyncId: "OAT", productId: 9, quantity: 100, allocations: [{ batchId: "lot-hub", quantity: 100 }] }]
+      vi.mocked(prisma.saleItem.findMany).mockResolvedValue([{ lineId: "L1", batchAllocations: null, consumption: hubOat }] as any)
+      vi.mocked(prisma.saleItem.createMany).mockClear()
+      const cloudOat = [{ ingredientSyncId: "OAT", productId: 12, quantity: 100, allocations: [{ batchId: "lot-cloud", quantity: 100 }] }]
+      stubPull({ sales: [{ id: "sale-1", saleNumber: "S-1", total: 6, items: [
+        { lineId: "L1", productSyncId: "DRINK-1", productId: 88, quantity: 1, consumption: cloudOat },
+        { lineId: "L2", productSyncId: "DRINK-1", productId: 88, quantity: 1, consumption: cloudOat },
+      ] }] })
+      await cloudSync.triggerFullPull()
+      const rows = vi.mocked(prisma.saleItem.createMany).mock.calls[0][0].data as any[]
+      expect(rows.map((r) => r.productId)).toEqual([2, 2])
+      expect(rows[0].consumption).toEqual(hubOat)
+      expect(rows[1].consumption.map((c: any) => [c.ingredientSyncId, c.productId])).toEqual([["OAT", 9]])
+      vi.unstubAllGlobals()
+    })
+
     it("a drink's recipe pointer is never cleared by a pull from a cloud that has no revision yet; a newer one follows", async () => {
       vi.mocked(prisma.syncOperation.count).mockResolvedValue(0)
       vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 5, stockPolicy: "recipe", stockPolicyRev: "initial", stockPolicyHistory: [], recipeRev: "rcp-hub" } as any)

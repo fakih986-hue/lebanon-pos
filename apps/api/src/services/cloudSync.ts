@@ -971,7 +971,14 @@ async function upsertPulledData(
     }
     return localIdBySync.get(sid) ?? Number(row?.productId)
   }
-  const localizeLine = async (row: any) => { const { productSyncId: _s, ...rest } = row ?? {}; return { ...rest, productId: await localProductId(row) } }
+  // a recipe line's consumption names its ingredients by sync id; the ids beside them become this server's own
+  const localizeConsumption = async (c: unknown) => Array.isArray(c)
+    ? Promise.all(c.map(async (x: any) => (x && typeof x.ingredientSyncId === "string" ? { ...x, productId: await localProductId({ productSyncId: x.ingredientSyncId, productId: x.productId }) } : x)))
+    : c
+  const localizeLine = async (row: any) => {
+    const { productSyncId: _s, ...rest } = row ?? {}
+    return { ...rest, productId: await localProductId(row), ...(Array.isArray(rest.consumption) ? { consumption: await localizeConsumption(rest.consumption) } : {}) }
+  }
 
   // Sales — upsert header, recreate items + tender
   // NOTE: stock is NOT decremented here — stock levels come from the products upsert above
@@ -987,12 +994,15 @@ async function upsertPulledData(
         // REFUND-INTEGRITY-1: inventory is hub-authoritative, so the lots this
         // hub recorded for a line win over the cloud's own computation when the
         // items are re-created from the pull.
+        // The same for a recipe line's ingredient consumption (which lots of which ingredients it took).
         const localLots = new Map<string, unknown>()
+        const localConsumption = new Map<string, unknown>()
         for (const local of await prisma.saleItem.findMany({
           where: { saleId: saleData.id },
-          select: { lineId: true, batchAllocations: true },
+          select: { lineId: true, batchAllocations: true, consumption: true },
         })) {
           if (local.lineId && local.batchAllocations != null) localLots.set(local.lineId, local.batchAllocations)
+          if (local.lineId && Array.isArray(local.consumption)) localConsumption.set(local.lineId, local.consumption)
         }
         await prisma.saleItem.deleteMany({ where: { saleId: saleData.id } })
         const localItems = await Promise.all(items.map(localizeLine))
@@ -1001,6 +1011,7 @@ async function upsertPulledData(
             ...it,
             saleId: saleData.id,
             ...(it.lineId && localLots.has(it.lineId) ? { batchAllocations: localLots.get(it.lineId) } : {}),
+            ...(it.lineId && localConsumption.has(it.lineId) ? { consumption: localConsumption.get(it.lineId) } : {}),
           })),
         })
       }
