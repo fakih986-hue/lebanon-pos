@@ -61,7 +61,7 @@ export type EnforceBlocker = { id: string; label: string; reason: "upgrade-neede
 export async function enforceGateBlockers(tenantId: string): Promise<EnforceBlocker[]> {
   const { ENFORCE_SCHEMA } = await import("./staffPolicy.js")
   const out: EnforceBlocker[] = []
-  const clients = await prisma.syncClient.findMany({ where: { tenantId, retiredAt: null }, orderBy: { lastSeenAt: "desc" } })
+  const clients = await prisma.syncClient.findMany({ where: { tenantId, retiredAt: null, NOT: { clientKey: { startsWith: "hub-device:" } } }, orderBy: { lastSeenAt: "desc" } })
   const newestCapableHub = clients.find((c) => c.clientKey.startsWith("hub-bridge@") && c.syncSchema >= ENFORCE_SCHEMA)
   const seenDevices = new Set<string>()
   for (const c of clients) {
@@ -100,6 +100,7 @@ export async function enforceGateBlockers(tenantId: string): Promise<EnforceBloc
     const id = typeof r.enrolledDeviceId === "string" ? r.enrolledDeviceId : typeof r.deviceIdClaimed === "string" ? r.deviceIdClaimed : null
     if (id && !latestByDevice.has(id)) latestByDevice.set(id, r)
   }
-  for (const [id, r] of latestByDevice) if (r.deviceCheck !== "valid" || r.sessionCheck !== "valid") out.push({ id, label: `register ${id} (through the hub)`, reason: "hub-register-unverified", syncSchema: null, lastSeenAt: typeof r.receivedAt === "string" ? r.receivedAt : null })
+  const retiredHubRegisters = new Set((await prisma.syncClient.findMany({ where: { tenantId, clientKey: { startsWith: "hub-device:" }, retiredAt: { not: null } }, select: { clientKey: true } })).map((c) => c.clientKey.slice("hub-device:".length)))
+  for (const [id, r] of latestByDevice) if (!retiredHubRegisters.has(id) && (r.deviceCheck !== "valid" || r.sessionCheck !== "valid")) out.push({ id, label: `register ${id} (through the hub)`, reason: "hub-register-unverified", syncSchema: null, lastSeenAt: typeof r.receivedAt === "string" ? r.receivedAt : null })
   return out
 }

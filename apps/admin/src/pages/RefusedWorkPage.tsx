@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { api } from "../app/api"
 import { useI18n } from "@lebanonpos/shared"
 
@@ -38,6 +38,15 @@ export function RefusedWorkPage() {
   const [errorMsg, setErrorMsg] = useState("")
   const [notice, setNotice] = useState("")
   const [deciding, setDeciding] = useState<{ op: RefusedOp; decision: "apply" | "dismiss" } | null>(null)
+  // the decision dialog keeps focus while open (keyboard and scanner input stay in it); focus returns after
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!deciding) return
+    const back = document.activeElement as HTMLElement | null
+    const trap = (e: FocusEvent) => { const box = dialogRef.current; if (box && !box.contains(e.target as Node)) box.querySelector<HTMLElement>("textarea")?.focus() }
+    document.addEventListener("focusin", trap)
+    return () => { document.removeEventListener("focusin", trap); if (back && back.isConnected) back.focus() }
+  }, [deciding])
   const [note, setNote] = useState("")
   const [outcome, setOutcome] = useState<(typeof OUTCOMES)[number] | "">("")
   const [busy, setBusy] = useState(false)
@@ -176,7 +185,7 @@ export function RefusedWorkPage() {
 
       {deciding && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.6)" }} onClick={() => !busy && setDeciding(null)}>
-          <div className="data-card w-full" role="dialog" aria-modal="true" aria-labelledby="rw-decide" style={{ maxWidth: "520px" }} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => { if (e.key === "Escape" && !busy) setDeciding(null) }}>
+          <div ref={dialogRef} className="data-card w-full" role="dialog" aria-modal="true" aria-labelledby="rw-decide" style={{ maxWidth: "520px" }} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => { if (e.key === "Escape" && !busy) setDeciding(null) }}>
             <h2 id="rw-decide" className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
               {deciding.decision === "apply" ? t("refused.confirm_apply_title") : t("refused.confirm_dismiss_title")}
             </h2>

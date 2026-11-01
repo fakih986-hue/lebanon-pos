@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest"
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import path from "node:path"
+import { pathToFileURL } from "node:url"
 
 // The admin app is served from a bundle committed in apps/api/public/admin (by the cloud and by every
 // hub, which ships apps/api/public). It is built from apps/admin; nothing rebuilds it automatically.
@@ -29,5 +30,11 @@ describe("the served admin bundle is built from the current admin source", () =>
     expect(missing).toEqual([])
     // the review of held work in particular
     expect(scripts).toContain("/api/sync/refused/decisions")
+  })
+
+  it("the served bundle was built from exactly the current admin source (rebuild: node scripts/bundle-to-api.mjs in apps/admin)", async () => {
+    const { adminSourceHash } = await import(pathToFileURL(path.resolve(root, "../admin/scripts/source-hash.mjs")).href)
+    const stamp = readFileSync(path.join(served, "source.sha256"), "utf8").trim()
+    expect(stamp).toBe(adminSourceHash(path.resolve(root, "../admin")))
   })
 })

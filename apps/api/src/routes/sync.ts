@@ -906,6 +906,24 @@ router.post("/clients/:id/retire", staffSync, async (req: AuthRequest, res: Serv
   json(res, { ok: true })
 })
 
+/**
+ * SPRINT-2 hub batch: a register this server sees only through a hub (its id in the hub's signed evidence),
+ * retired from the enforcement check by a person holding settings.manage, with a note (audited). It does not
+ * let that register in: at the hub, under enforcement, it is refused like any register without a session.
+ */
+router.post("/hub-registers/:deviceId/retire", staffSync, async (req: AuthRequest, res: ServerResponse) => {
+  const tenantId = req.auth!.tenantId
+  if (!(await can(req, "settings.manage"))) { json(res, { error: "Needs the Settings permission.", code: "FORBIDDEN" }, 403); return }
+  const note = typeof (req.body as any)?.note === "string" ? (req.body as any).note.trim() : ""
+  if (note.length < 3) { json(res, { error: "A note is required (why this register no longer trades)." }, 400); return }
+  const deviceId = String((req.params as any).deviceId)
+  const who = await actingPerson(req)
+  const clientKey = `hub-device:${deviceId}`
+  await prisma.syncClient.upsert({ where: { tenantId_clientKey: { tenantId, clientKey } }, create: { tenantId, clientKey, label: `register ${deviceId} (through the hub)`, syncSchema: 0, retiredAt: new Date(), retiredBy: who.staffId ?? req.auth!.userId, retiredNote: note }, update: { retiredAt: new Date(), retiredBy: who.staffId ?? req.auth!.userId, retiredNote: note } })
+  await prisma.auditEvent.create({ data: { tenantId, action: "sync.client_retired", entity: "device", summary: `Register ${deviceId} (seen through the hub) was retired from the enforcement check. Note: ${note}`, metadata: { clientKey, note } as any, userId: who.staffId ?? req.auth!.userId, userName: who.name ?? "", userRole: req.auth!.role as any } })
+  json(res, { ok: true })
+})
+
 /** The owner re-admits a retired till that is still on an older version (audited): it may check out again, and closes the gate again. */
 router.post("/clients/:id/readmit", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   const tenantId = req.auth!.tenantId
