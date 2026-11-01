@@ -79,6 +79,11 @@ export function recordedActorRule(entity: string, action: string, payload: unkno
  *  StockControlPanel/StockPage (inventory.adjust), receiving (inventory.receive), Customers page
  *  (customers.manage), checkout (sales.checkout), refund to store credit (sales.refund), void
  *  reversing a debt sale (sales.void), delivery pages (delivery.manage). */
+/** A register's lot update has an effect only when it marks a lot Expired (routes/sync.ts ignores the rest). */
+export function marksLotExpired(payload: unknown): boolean {
+  return (Array.isArray(payload) ? payload : [payload]).some((b) => !!b && typeof b === "object" && (b as Record<string, unknown>).status === "Expired")
+}
+
 export function requiredPermissionForOp(entity: string, action: string, payload: unknown): Permission | Permission[] | null {
   switch (entity) {
     case "sale":
@@ -107,6 +112,8 @@ export function requiredPermissionForOp(entity: string, action: string, payload:
     case "inventory":
       if (action === "adjust" || action === "count") return "inventory.adjust"
       if (action === "receive") return "inventory.receive"
+      // a lot update changes nothing but an expiry (lot quantities move only through the server's own handlers)
+      if (action === "update") return marksLotExpired(payload) ? "inventory.adjust" : null
       return "inventory.adjust"
     case "debt":
       if (action === "create") return "sales.checkout" // a credit sale at checkout

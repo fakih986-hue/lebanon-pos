@@ -28,7 +28,7 @@ import { identityGateBlockers, isHubServer, enforceGateBlockers } from "../lib/i
 import { acceptHubReport, appliesOnlyAtStoresHub, changeTopology, connectionVerdict, hubIdentity, isStoresHub, isTopologyHold, recordQueueReport, storeHubs, storeTopology, topologyDenial, topologyReadiness, TopologyStaleError, TOPOLOGY_GUIDANCE, REPORT_FRESH_MS, type HubReport } from "../lib/topology.js"
 import { tokenKind } from "../middleware/auth.js"
 import { recordStockMovement, recordStockMovementOnce, UNALLOCATED_RETURN_NOTE } from "../lib/ledger.js"
-import { effectivePermissions, recordedActorRule, requiredPermissionForOp, shiftOpAllowed } from "../lib/permissions.js"
+import { effectivePermissions, marksLotExpired, recordedActorRule, requiredPermissionForOp, shiftOpAllowed } from "../lib/permissions.js"
 import { json, requireAuth, type AuthRequest, serializeDecimals } from "../middleware/auth.js"
 import { can } from "../middleware/permission.js"
 import { requireCloudOrJwtAuth } from "../middleware/cloudAuth.js"
@@ -774,7 +774,10 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
       // authorized as the person of its server-checked staff session (staffIdentity); a hub's forwarded
       // operation as the person the hub checked and signed for (or, for work a manager applied on review
       // at the hub, as that reviewer). Never as the connection account, never downgraded.
-      const gate = enforcedFor(op) && (pushKind === "staff" || pushKind === "hub-local")
+      // A register's lot update without an expiry changes nothing here (lot quantities move only through the
+      // server's handlers): it is acknowledged for the register's queue, never held as if it were someone's action.
+      const effectFree = op.entity === "inventory" && op.action === "update" && !marksLotExpired(op.payload)
+      const gate = effectFree ? null : enforcedFor(op) && (pushKind === "staff" || pushKind === "hub-local")
         ? await staffIdentity(tenantId, deviceSeen, sessionSeen, (op as any).ev, op)
         // an enrolled hub's attested operation: the same rules, on what the hub recorded and signed (the hub
         // vouches for its device and session checks; the person's standing is checked here, now)
@@ -782,7 +785,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         : null
       // Without a valid attestation a hub's forwarded operation cannot be attributed to anyone: in an
       // enforcing store it is kept for review rather than applied on the hub link's store-level authority.
-      const hubOutside = enforcedFor(op) && pushKind === "bridge" && attested?.check !== "valid"
+      const hubOutside = !effectFree && enforcedFor(op) && pushKind === "bridge" && attested?.check !== "valid"
         ? `HUB_UNSUPPORTED: this store enforces staff identity; an operation forwarded by a hub needs the hub's valid attestation (${attested?.check ?? "absent"}). Kept for a manager's review.`
         : null
       const enforcedActor = gate && "actor" in gate ? gate.actor : null

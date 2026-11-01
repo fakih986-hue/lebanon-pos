@@ -186,6 +186,19 @@ describe("enforce: the session's person is the record's actor", () => {
     expect([cm?.recordedById, cm?.recordedByName, basisOf(cm?.attribution), (cm?.attribution as any)?.reviewer]).toEqual([NOOR, "Noor", "reviewed", { id: MAYA, name: "Maya" }])
   })
 
+  it("a register's lot update changes nothing but an expiry: acknowledged for anyone (online or offline); an expiry needs the permission", async () => {
+    const lot = randomUUID()
+    await prisma.inventoryBatch.create({ data: { id: lot, tenantId: T, batchNumber: "LOT-RA-U", productId, productName: "Attribution tea", barcode: SKU, initialQuantity: 5, quantityRemaining: 5, unitCost: 2, unitPrice: 5 } })
+    const noor = await sessionFor(PIN.noor)
+    const stale = [{ id: lot, quantityRemaining: 0, status: "Consumed" }]
+    expect((await push("inventory", "update", stale, { session: noor })).status).toBe("ok")
+    expect((await push("inventory", "update", stale, { offline: true })).status).toBe("ok")
+    expect(await prisma.inventoryBatch.findUnique({ where: { id: lot }, select: { quantityRemaining: true, status: true } })).toEqual({ quantityRemaining: 5, status: "Open" })
+    const expire = await push("inventory", "update", [{ id: lot, status: "Expired" }], { session: noor })
+    expect([expire.status, expire.error]).toEqual(["error", expect.stringMatching(/permission/i)])
+    expect((await prisma.inventoryBatch.findUnique({ where: { id: lot }, select: { status: true } }))?.status).toBe("Open")
+  })
+
   it("a routine sale the register says was made offline: recorded as an offline claim, never as verified", async () => {
     const s = sale({ cashier: "Rana", cashierId: RANA })
     expect((await push("sale", "create", s, { offline: true })).status).toBe("ok")

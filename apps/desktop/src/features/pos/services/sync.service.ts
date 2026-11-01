@@ -2398,6 +2398,8 @@ async function _pullFromServer(full = false) {
       }
       writeLastSyncedAt(now)
       dispatchSyncChanged()
+      // the store's mode and where this register should connect come with the status answer
+      await checkTenantStatus().catch(() => undefined)
     } else {
       await _incrementalPull(apiUrl, token)
     }

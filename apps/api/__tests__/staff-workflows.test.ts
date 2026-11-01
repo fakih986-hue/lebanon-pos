@@ -155,6 +155,8 @@ describe("a cashier on a register connected with the OWNER's account", { timeout
     expect(checkout(routine).status).toBe("completed")
     await flush()
     for (const s of [order, routine]) expect(opFor("sale", s.id)?.status).toBe("Synced")
+    // the register names the seller by id (an offline sale is accepted only for a named, active seller)
+    expect(opFor("sale", routine.id)?.payload?.cashierId).toBe(RANA)
     const sold = await prisma.sale.findFirst({ where: { tenantId: T, id: order.id }, select: { cashierId: true, cashier: true, total: true, discountTotal: true, items: { select: { productName: true, quantity: true } } } })
     expect([sold?.cashierId, sold?.cashier, Number(sold?.total), Number(sold?.discountTotal), sold?.items.length]).toEqual([RANA, "Rana", 13, 1, 2])
     expect(await serverStock()).toBe(tea0 - 4) // two orders of 2 Tea; the latte is made to order

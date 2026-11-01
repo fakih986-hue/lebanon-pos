@@ -104,7 +104,8 @@ export function StoreSecurityPage() {
   const blockerText = (b: Blocker) => tr(`security.blk.${b.code}`, b.message)
   const policy = gate?.policy
   const hubs = topo?.hubs ?? []
-  const storeHub = hubs.find((h) => h.isStoresHub) ?? null
+  // the store's hub; before a setup is chosen, the hub that is enrolled (its version still matters)
+  const storeHub = hubs.find((h) => h.isStoresHub) ?? (topo?.topology.mode === "unset" ? hubs.find((h) => h.status === "ACTIVE") ?? null : null)
   const hubPolicy = storeHub?.report?.policyVersion ?? null
 
   const section = "data-card space-y-3"

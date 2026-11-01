@@ -111,6 +111,7 @@ export type Sale = {
   payableLbp?: number
   items: SaleItem[]
   cashier: string
+  cashierId?: string
   shiftId?: string
   shiftNumber?: string
   registerId?: string
@@ -131,6 +132,7 @@ export type SaleRefund = {
   total: number
   items: RefundItem[]
   cashier: string
+  cashierId?: string
   shiftId?: string
   shiftNumber?: string
   registerId?: string
@@ -436,6 +438,8 @@ export function buildSale(input: RecordSaleInput, id: string): Sale {
     // each line (not just each product) on this device and on the server.
     items: input.items.map((item) => (item.lineId ? item : { ...item, lineId: createId("line") })),
     cashier: currentUser.name,
+    // the person by id too: an offline sale is accepted only for a named, active seller (the server checks it)
+    cashierId: currentUser.id,
     shiftId: activeShift.id,
     shiftNumber: activeShift.shiftNumber,
     registerId: getRegisterId(),
@@ -768,6 +772,8 @@ export function buildRefund(input: ProcessRefundInput) {
       }
     }),
     cashier: currentUser.name,
+    // the person by id too: an offline sale is accepted only for a named, active seller (the server checks it)
+    cashierId: currentUser.id,
     shiftId: activeShift.id,
     shiftNumber: activeShift.shiftNumber,
     registerId: getRegisterId(),
