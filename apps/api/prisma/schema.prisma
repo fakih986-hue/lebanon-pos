@@ -87,6 +87,15 @@ model Tenant {
   staffPolicyVersion  Int       @default(0)
   staffPolicyIssuedAt DateTime?
   staffPolicyIssuedBy String?
+  /// Store topology (lib/topology.ts): "unset" (every store before it existed: no topology rule applies),
+  /// "direct" (registers connect straight to the cloud; the cloud is the stock authority) or "hub" (registers
+  /// connect through the hub `topologyHubId`, the stock authority; the cloud records what it forwards).
+  /// Changed only by an explicit, audited owner decision after readiness checks; never by a connecting device.
+  storeTopology     String    @default("unset")
+  topologyHubId     String?
+  topologyVersion   Int       @default(0)
+  topologyChangedAt DateTime?
+  topologyChangedBy String?
 
   // ── Subscription metadata (v2) ─────────────────────────────────────
   planName          String   @default("")        // free | basic | pro | enterprise
@@ -255,6 +264,15 @@ model Sale {
   soldAtCost    Boolean          @default(false)
   cashier       String
   cashierId     String?
+  /// Who voided it (the seller above is never changed by a void), when, and how it is known.
+  voidedById      String?
+  voidedByName    String?
+  voidedAt        DateTime?
+  voidAttribution Json?
+  /// Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+  /// offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+  /// server when it applies the operation (never taken from the client); null for records made before it existed.
+  attribution   Json?
   shiftId       String?
   shiftNumber   String?
   payableLbp    Decimal?         @db.Decimal(18, 4)
@@ -332,6 +350,10 @@ model SaleRefund {
   total        Decimal      @db.Decimal(18, 4)
   cashier      String
   cashierId    String?
+  /// Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+  /// offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+  /// server when it applies the operation (never taken from the client); null for records made before it existed.
+  attribution   Json?
   shiftId      String?
   shiftNumber  String?
   /// REFUND-INTEGRITY-1: original sale rate (null when the sale recorded none — never invented).
@@ -398,6 +420,12 @@ model DebtSale {
   discountTotal Decimal? @db.Decimal(18, 4)
   tax           Decimal  @db.Decimal(18, 4)
   total         Decimal  @db.Decimal(18, 4)
+  recordedById   String?
+  recordedByName String?
+  /// Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+  /// offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+  /// server when it applies the operation (never taken from the client); null for records made before it existed.
+  attribution   Json?
   createdAt     DateTime @default(now())
 
   @@index([tenantId, customerId])
@@ -414,6 +442,12 @@ model DebtPayment {
   amount      Decimal  @db.Decimal(18, 4)
   method      String
   reference   String   @default("")
+  recordedById   String?
+  recordedByName String?
+  /// Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+  /// offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+  /// server when it applies the operation (never taken from the client); null for records made before it existed.
+  attribution   Json?
   createdAt   DateTime @default(now())
 
   @@index([tenantId, customerId])
@@ -455,6 +489,11 @@ model PurchaseOrder {
   total         Decimal             @db.Decimal(18, 4)
   paidTotal     Decimal             @default(0) @db.Decimal(18, 4)
   createdBy     String
+  createdById   String?
+  /// Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+  /// offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+  /// server when it applies the operation (never taken from the client); null for records made before it existed.
+  attribution   Json?
   shiftId       String?
   shiftNumber   String?
   createdAt     DateTime            @default(now())
@@ -495,6 +534,11 @@ model SupplierPayment {
   method              String
   reference           String   @default("")
   recordedBy          String
+  recordedById        String?
+  /// Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+  /// offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+  /// server when it applies the operation (never taken from the client); null for records made before it existed.
+  attribution   Json?
   shiftId             String?
   shiftNumber         String?
   createdAt           DateTime @default(now())
@@ -525,6 +569,9 @@ model Shift {
   closedByName      String?
   closedBy          StaffUser?  @relation("ShiftCloser", fields: [closedById], references: [id])
   notes             String?
+  /// how the opener and the closer are known (lib/attribution.ts); null before it existed
+  openAttribution   Json?
+  closeAttribution  Json?
 
   @@index([tenantId, shiftNumber])
   @@index([tenantId, status])
@@ -560,6 +607,10 @@ model Expense {
   note          String   @default("")
   recordedBy    String
   recordedById  String?
+  /// Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+  /// offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+  /// server when it applies the operation (never taken from the client); null for records made before it existed.
+  attribution   Json?
   recordedByUser StaffUser? @relation(fields: [recordedById], references: [id])
   shiftId       String?
   shiftNumber   String?
@@ -593,6 +644,12 @@ model InventoryBatch {
   // set once and never changes, so it alone can't drive incremental pull.
   updatedAt           DateTime             @updatedAt
   status              InventoryBatchStatus @default(Open)
+  receivedById        String?
+  receivedByName      String?
+  /// Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+  /// offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+  /// server when it applies the operation (never taken from the client); null for records made before it existed.
+  attribution   Json?
 
   @@index([tenantId, productId])
   @@index([tenantId, status])
@@ -616,6 +673,12 @@ model StockAdjustment {
   batchId           String?
   batchAllocations  Json?
   valueImpact       Decimal  @db.Decimal(18, 4)
+  createdById       String?
+  createdByName     String?
+  /// Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+  /// offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+  /// server when it applies the operation (never taken from the client); null for records made before it existed.
+  attribution   Json?
   createdAt         DateTime @default(now())
 
   @@index([tenantId, adjustmentNumber])
@@ -632,6 +695,12 @@ model StockCountSession {
   completedAt     DateTime?
   totalVariance    Decimal @default(0) @db.Decimal(18, 4)
   totalValueImpact Decimal @default(0) @db.Decimal(18, 4)
+  completedById    String?
+  completedByName  String?
+  /// Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+  /// offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+  /// server when it applies the operation (never taken from the client); null for records made before it existed.
+  attribution   Json?
 
   lines StockCountLine[]
 
@@ -735,6 +804,11 @@ model DailyClose {
   cashOut         Decimal   @default(0) @db.Decimal(18, 4)
   note            String   @default("")
   closedBy        String
+  closedById      String?
+  /// Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+  /// offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+  /// server when it applies the operation (never taken from the client); null for records made before it existed.
+  attribution   Json?
   unsyncedCountAtClose Int?
   createdAt       DateTime @default(now())
   /// Which close this is (lib/dailyClose.ts): a date may have several — one per register and shift
@@ -771,6 +845,10 @@ model CashMovement {
   referenceId   String?
   recordedById  String?
   recordedByName String
+  /// Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+  /// offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+  /// server when it applies the operation (never taken from the client); null for records made before it existed.
+  attribution   Json?
   createdAt     DateTime @default(now())
 
   @@index([tenantId, createdAt])
@@ -891,6 +969,9 @@ model SyncClient {
   retiredAt   DateTime?
   retiredBy   String?
   retiredNote String?
+  /// What the register last reported about its own queue (pending, held, failed, staged, journal) and when
+  queueReport     Json?
+  queueReportedAt DateTime?
 
   @@unique([tenantId, clientKey])
   @@index([tenantId, syncSchema, lastSeenAt])
@@ -938,6 +1019,9 @@ model OperationEvidence {
   /// received it from the register: { id, check, approverId, approverName, permission }. The actor stays
   /// the person who did it; the approver is recorded separately.
   approval            Json?
+  /// Operational readiness: the attribution this server wrote on the business record (lib/attribution.ts);
+  /// a hub forwards it signed, so the cloud records the same people.
+  attribution         Json?
 
   @@index([tenantId, receivedAt])
   @@index([tenantId, evidence])
@@ -957,6 +1041,12 @@ model HubKey {
   revokedAt    DateTime?
   revokedById  String?
   revokeNote   String?
+  /// The hub installation this key belongs to (stable across key rotation; lib/topology.ts)
+  hubId        String?
+  hubLabel     String    @default("")
+  /// The hub's latest signed status report (queue, held work, stock, policy and topology versions)
+  lastReport   Json?
+  lastReportAt DateTime?
 
   @@index([tenantId, status])
 }

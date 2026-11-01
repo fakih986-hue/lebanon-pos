@@ -138,6 +138,11 @@ exports.Prisma.TenantScalarFieldEnum = {
   staffPolicyVersion: 'staffPolicyVersion',
   staffPolicyIssuedAt: 'staffPolicyIssuedAt',
   staffPolicyIssuedBy: 'staffPolicyIssuedBy',
+  storeTopology: 'storeTopology',
+  topologyHubId: 'topologyHubId',
+  topologyVersion: 'topologyVersion',
+  topologyChangedAt: 'topologyChangedAt',
+  topologyChangedBy: 'topologyChangedBy',
   planName: 'planName',
   trialStartDate: 'trialStartDate',
   trialEndDate: 'trialEndDate',
@@ -238,6 +243,11 @@ exports.Prisma.SaleScalarFieldEnum = {
   soldAtCost: 'soldAtCost',
   cashier: 'cashier',
   cashierId: 'cashierId',
+  voidedById: 'voidedById',
+  voidedByName: 'voidedByName',
+  voidedAt: 'voidedAt',
+  voidAttribution: 'voidAttribution',
+  attribution: 'attribution',
   shiftId: 'shiftId',
   shiftNumber: 'shiftNumber',
   payableLbp: 'payableLbp',
@@ -291,6 +301,7 @@ exports.Prisma.SaleRefundScalarFieldEnum = {
   total: 'total',
   cashier: 'cashier',
   cashierId: 'cashierId',
+  attribution: 'attribution',
   shiftId: 'shiftId',
   shiftNumber: 'shiftNumber',
   exchangeRate: 'exchangeRate',
@@ -337,6 +348,9 @@ exports.Prisma.DebtSaleScalarFieldEnum = {
   discountTotal: 'discountTotal',
   tax: 'tax',
   total: 'total',
+  recordedById: 'recordedById',
+  recordedByName: 'recordedByName',
+  attribution: 'attribution',
   createdAt: 'createdAt'
 };
 
@@ -347,6 +361,9 @@ exports.Prisma.DebtPaymentScalarFieldEnum = {
   amount: 'amount',
   method: 'method',
   reference: 'reference',
+  recordedById: 'recordedById',
+  recordedByName: 'recordedByName',
+  attribution: 'attribution',
   createdAt: 'createdAt'
 };
 
@@ -376,6 +393,8 @@ exports.Prisma.PurchaseOrderScalarFieldEnum = {
   total: 'total',
   paidTotal: 'paidTotal',
   createdBy: 'createdBy',
+  createdById: 'createdById',
+  attribution: 'attribution',
   shiftId: 'shiftId',
   shiftNumber: 'shiftNumber',
   createdAt: 'createdAt',
@@ -405,6 +424,8 @@ exports.Prisma.SupplierPaymentScalarFieldEnum = {
   method: 'method',
   reference: 'reference',
   recordedBy: 'recordedBy',
+  recordedById: 'recordedById',
+  attribution: 'attribution',
   shiftId: 'shiftId',
   shiftNumber: 'shiftNumber',
   createdAt: 'createdAt'
@@ -429,7 +450,9 @@ exports.Prisma.ShiftScalarFieldEnum = {
   openedByName: 'openedByName',
   closedById: 'closedById',
   closedByName: 'closedByName',
-  notes: 'notes'
+  notes: 'notes',
+  openAttribution: 'openAttribution',
+  closeAttribution: 'closeAttribution'
 };
 
 exports.Prisma.AuditEventScalarFieldEnum = {
@@ -457,6 +480,7 @@ exports.Prisma.ExpenseScalarFieldEnum = {
   note: 'note',
   recordedBy: 'recordedBy',
   recordedById: 'recordedById',
+  attribution: 'attribution',
   shiftId: 'shiftId',
   shiftNumber: 'shiftNumber',
   createdAt: 'createdAt'
@@ -479,7 +503,10 @@ exports.Prisma.InventoryBatchScalarFieldEnum = {
   purchaseOrderNumber: 'purchaseOrderNumber',
   receivedAt: 'receivedAt',
   updatedAt: 'updatedAt',
-  status: 'status'
+  status: 'status',
+  receivedById: 'receivedById',
+  receivedByName: 'receivedByName',
+  attribution: 'attribution'
 };
 
 exports.Prisma.StockAdjustmentScalarFieldEnum = {
@@ -497,6 +524,9 @@ exports.Prisma.StockAdjustmentScalarFieldEnum = {
   batchId: 'batchId',
   batchAllocations: 'batchAllocations',
   valueImpact: 'valueImpact',
+  createdById: 'createdById',
+  createdByName: 'createdByName',
+  attribution: 'attribution',
   createdAt: 'createdAt'
 };
 
@@ -508,7 +538,10 @@ exports.Prisma.StockCountSessionScalarFieldEnum = {
   createdAt: 'createdAt',
   completedAt: 'completedAt',
   totalVariance: 'totalVariance',
-  totalValueImpact: 'totalValueImpact'
+  totalValueImpact: 'totalValueImpact',
+  completedById: 'completedById',
+  completedByName: 'completedByName',
+  attribution: 'attribution'
 };
 
 exports.Prisma.StockCountLineScalarFieldEnum = {
@@ -583,6 +616,8 @@ exports.Prisma.DailyCloseScalarFieldEnum = {
   cashOut: 'cashOut',
   note: 'note',
   closedBy: 'closedBy',
+  closedById: 'closedById',
+  attribution: 'attribution',
   unsyncedCountAtClose: 'unsyncedCountAtClose',
   createdAt: 'createdAt',
   scope: 'scope',
@@ -609,6 +644,7 @@ exports.Prisma.CashMovementScalarFieldEnum = {
   referenceId: 'referenceId',
   recordedById: 'recordedById',
   recordedByName: 'recordedByName',
+  attribution: 'attribution',
   createdAt: 'createdAt'
 };
 
@@ -690,7 +726,9 @@ exports.Prisma.SyncClientScalarFieldEnum = {
   lastSeenAt: 'lastSeenAt',
   retiredAt: 'retiredAt',
   retiredBy: 'retiredBy',
-  retiredNote: 'retiredNote'
+  retiredNote: 'retiredNote',
+  queueReport: 'queueReport',
+  queueReportedAt: 'queueReportedAt'
 };
 
 exports.Prisma.OperationEvidenceScalarFieldEnum = {
@@ -720,7 +758,8 @@ exports.Prisma.OperationEvidenceScalarFieldEnum = {
   relayed: 'relayed',
   attestation: 'attestation',
   attestationKid: 'attestationKid',
-  approval: 'approval'
+  approval: 'approval',
+  attribution: 'attribution'
 };
 
 exports.Prisma.HubKeyScalarFieldEnum = {
@@ -733,7 +772,11 @@ exports.Prisma.HubKeyScalarFieldEnum = {
   rotatedAt: 'rotatedAt',
   revokedAt: 'revokedAt',
   revokedById: 'revokedById',
-  revokeNote: 'revokeNote'
+  revokeNote: 'revokeNote',
+  hubId: 'hubId',
+  hubLabel: 'hubLabel',
+  lastReport: 'lastReport',
+  lastReportAt: 'lastReportAt'
 };
 
 exports.Prisma.ManagerApprovalScalarFieldEnum = {

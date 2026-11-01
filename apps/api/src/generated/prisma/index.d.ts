@@ -5020,12 +5020,14 @@ export namespace Prisma {
     offlineGraceDays: number | null
     policyVersion: number | null
     staffPolicyVersion: number | null
+    topologyVersion: number | null
   }
 
   export type TenantSumAggregateOutputType = {
     offlineGraceDays: number | null
     policyVersion: number | null
     staffPolicyVersion: number | null
+    topologyVersion: number | null
   }
 
   export type TenantMinAggregateOutputType = {
@@ -5045,6 +5047,11 @@ export namespace Prisma {
     staffPolicyVersion: number | null
     staffPolicyIssuedAt: Date | null
     staffPolicyIssuedBy: string | null
+    storeTopology: string | null
+    topologyHubId: string | null
+    topologyVersion: number | null
+    topologyChangedAt: Date | null
+    topologyChangedBy: string | null
     planName: string | null
     trialStartDate: Date | null
     trialEndDate: Date | null
@@ -5074,6 +5081,11 @@ export namespace Prisma {
     staffPolicyVersion: number | null
     staffPolicyIssuedAt: Date | null
     staffPolicyIssuedBy: string | null
+    storeTopology: string | null
+    topologyHubId: string | null
+    topologyVersion: number | null
+    topologyChangedAt: Date | null
+    topologyChangedBy: string | null
     planName: string | null
     trialStartDate: Date | null
     trialEndDate: Date | null
@@ -5103,6 +5115,11 @@ export namespace Prisma {
     staffPolicyVersion: number
     staffPolicyIssuedAt: number
     staffPolicyIssuedBy: number
+    storeTopology: number
+    topologyHubId: number
+    topologyVersion: number
+    topologyChangedAt: number
+    topologyChangedBy: number
     planName: number
     trialStartDate: number
     trialEndDate: number
@@ -5121,12 +5138,14 @@ export namespace Prisma {
     offlineGraceDays?: true
     policyVersion?: true
     staffPolicyVersion?: true
+    topologyVersion?: true
   }
 
   export type TenantSumAggregateInputType = {
     offlineGraceDays?: true
     policyVersion?: true
     staffPolicyVersion?: true
+    topologyVersion?: true
   }
 
   export type TenantMinAggregateInputType = {
@@ -5146,6 +5165,11 @@ export namespace Prisma {
     staffPolicyVersion?: true
     staffPolicyIssuedAt?: true
     staffPolicyIssuedBy?: true
+    storeTopology?: true
+    topologyHubId?: true
+    topologyVersion?: true
+    topologyChangedAt?: true
+    topologyChangedBy?: true
     planName?: true
     trialStartDate?: true
     trialEndDate?: true
@@ -5175,6 +5199,11 @@ export namespace Prisma {
     staffPolicyVersion?: true
     staffPolicyIssuedAt?: true
     staffPolicyIssuedBy?: true
+    storeTopology?: true
+    topologyHubId?: true
+    topologyVersion?: true
+    topologyChangedAt?: true
+    topologyChangedBy?: true
     planName?: true
     trialStartDate?: true
     trialEndDate?: true
@@ -5204,6 +5233,11 @@ export namespace Prisma {
     staffPolicyVersion?: true
     staffPolicyIssuedAt?: true
     staffPolicyIssuedBy?: true
+    storeTopology?: true
+    topologyHubId?: true
+    topologyVersion?: true
+    topologyChangedAt?: true
+    topologyChangedBy?: true
     planName?: true
     trialStartDate?: true
     trialEndDate?: true
@@ -5320,6 +5354,11 @@ export namespace Prisma {
     staffPolicyVersion: number
     staffPolicyIssuedAt: Date | null
     staffPolicyIssuedBy: string | null
+    storeTopology: string
+    topologyHubId: string | null
+    topologyVersion: number
+    topologyChangedAt: Date | null
+    topologyChangedBy: string | null
     planName: string
     trialStartDate: Date | null
     trialEndDate: Date | null
@@ -5368,6 +5407,11 @@ export namespace Prisma {
     staffPolicyVersion?: boolean
     staffPolicyIssuedAt?: boolean
     staffPolicyIssuedBy?: boolean
+    storeTopology?: boolean
+    topologyHubId?: boolean
+    topologyVersion?: boolean
+    topologyChangedAt?: boolean
+    topologyChangedBy?: boolean
     planName?: boolean
     trialStartDate?: boolean
     trialEndDate?: boolean
@@ -5423,6 +5467,11 @@ export namespace Prisma {
     staffPolicyVersion?: boolean
     staffPolicyIssuedAt?: boolean
     staffPolicyIssuedBy?: boolean
+    storeTopology?: boolean
+    topologyHubId?: boolean
+    topologyVersion?: boolean
+    topologyChangedAt?: boolean
+    topologyChangedBy?: boolean
     planName?: boolean
     trialStartDate?: boolean
     trialEndDate?: boolean
@@ -5452,6 +5501,11 @@ export namespace Prisma {
     staffPolicyVersion?: boolean
     staffPolicyIssuedAt?: boolean
     staffPolicyIssuedBy?: boolean
+    storeTopology?: boolean
+    topologyHubId?: boolean
+    topologyVersion?: boolean
+    topologyChangedAt?: boolean
+    topologyChangedBy?: boolean
     planName?: boolean
     trialStartDate?: boolean
     trialEndDate?: boolean
@@ -5481,6 +5535,11 @@ export namespace Prisma {
     staffPolicyVersion?: boolean
     staffPolicyIssuedAt?: boolean
     staffPolicyIssuedBy?: boolean
+    storeTopology?: boolean
+    topologyHubId?: boolean
+    topologyVersion?: boolean
+    topologyChangedAt?: boolean
+    topologyChangedBy?: boolean
     planName?: boolean
     trialStartDate?: boolean
     trialEndDate?: boolean
@@ -5493,7 +5552,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type TenantOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "subdomain" | "suspended" | "cloudApiKey" | "licenseStatus" | "licenseReason" | "licenseMessage" | "suspendedAt" | "offlineGraceDays" | "leaseExpiresAt" | "policyVersion" | "staffSessionMode" | "staffPolicyVersion" | "staffPolicyIssuedAt" | "staffPolicyIssuedBy" | "planName" | "trialStartDate" | "trialEndDate" | "subscriptionStart" | "subscriptionEnd" | "renewalDate" | "billingContact" | "internalNotes" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
+  export type TenantOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "subdomain" | "suspended" | "cloudApiKey" | "licenseStatus" | "licenseReason" | "licenseMessage" | "suspendedAt" | "offlineGraceDays" | "leaseExpiresAt" | "policyVersion" | "staffSessionMode" | "staffPolicyVersion" | "staffPolicyIssuedAt" | "staffPolicyIssuedBy" | "storeTopology" | "topologyHubId" | "topologyVersion" | "topologyChangedAt" | "topologyChangedBy" | "planName" | "trialStartDate" | "trialEndDate" | "subscriptionStart" | "subscriptionEnd" | "renewalDate" | "billingContact" | "internalNotes" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
   export type TenantInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     users?: boolean | Tenant$usersArgs<ExtArgs>
     products?: boolean | Tenant$productsArgs<ExtArgs>
@@ -5580,6 +5639,17 @@ export namespace Prisma {
       staffPolicyVersion: number
       staffPolicyIssuedAt: Date | null
       staffPolicyIssuedBy: string | null
+      /**
+       * Store topology (lib/topology.ts): "unset" (every store before it existed: no topology rule applies),
+       * "direct" (registers connect straight to the cloud; the cloud is the stock authority) or "hub" (registers
+       * connect through the hub `topologyHubId`, the stock authority; the cloud records what it forwards).
+       * Changed only by an explicit, audited owner decision after readiness checks; never by a connecting device.
+       */
+      storeTopology: string
+      topologyHubId: string | null
+      topologyVersion: number
+      topologyChangedAt: Date | null
+      topologyChangedBy: string | null
       planName: string
       trialStartDate: Date | null
       trialEndDate: Date | null
@@ -6054,6 +6124,11 @@ export namespace Prisma {
     readonly staffPolicyVersion: FieldRef<"Tenant", 'Int'>
     readonly staffPolicyIssuedAt: FieldRef<"Tenant", 'DateTime'>
     readonly staffPolicyIssuedBy: FieldRef<"Tenant", 'String'>
+    readonly storeTopology: FieldRef<"Tenant", 'String'>
+    readonly topologyHubId: FieldRef<"Tenant", 'String'>
+    readonly topologyVersion: FieldRef<"Tenant", 'Int'>
+    readonly topologyChangedAt: FieldRef<"Tenant", 'DateTime'>
+    readonly topologyChangedBy: FieldRef<"Tenant", 'String'>
     readonly planName: FieldRef<"Tenant", 'String'>
     readonly trialStartDate: FieldRef<"Tenant", 'DateTime'>
     readonly trialEndDate: FieldRef<"Tenant", 'DateTime'>
@@ -11366,6 +11441,9 @@ export namespace Prisma {
     soldAtCost: boolean | null
     cashier: string | null
     cashierId: string | null
+    voidedById: string | null
+    voidedByName: string | null
+    voidedAt: Date | null
     shiftId: string | null
     shiftNumber: string | null
     payableLbp: Decimal | null
@@ -11390,6 +11468,9 @@ export namespace Prisma {
     soldAtCost: boolean | null
     cashier: string | null
     cashierId: string | null
+    voidedById: string | null
+    voidedByName: string | null
+    voidedAt: Date | null
     shiftId: string | null
     shiftNumber: string | null
     payableLbp: Decimal | null
@@ -11414,6 +11495,11 @@ export namespace Prisma {
     soldAtCost: number
     cashier: number
     cashierId: number
+    voidedById: number
+    voidedByName: number
+    voidedAt: number
+    voidAttribution: number
+    attribution: number
     shiftId: number
     shiftNumber: number
     payableLbp: number
@@ -11462,6 +11548,9 @@ export namespace Prisma {
     soldAtCost?: true
     cashier?: true
     cashierId?: true
+    voidedById?: true
+    voidedByName?: true
+    voidedAt?: true
     shiftId?: true
     shiftNumber?: true
     payableLbp?: true
@@ -11486,6 +11575,9 @@ export namespace Prisma {
     soldAtCost?: true
     cashier?: true
     cashierId?: true
+    voidedById?: true
+    voidedByName?: true
+    voidedAt?: true
     shiftId?: true
     shiftNumber?: true
     payableLbp?: true
@@ -11510,6 +11602,11 @@ export namespace Prisma {
     soldAtCost?: true
     cashier?: true
     cashierId?: true
+    voidedById?: true
+    voidedByName?: true
+    voidedAt?: true
+    voidAttribution?: true
+    attribution?: true
     shiftId?: true
     shiftNumber?: true
     payableLbp?: true
@@ -11621,6 +11718,11 @@ export namespace Prisma {
     soldAtCost: boolean
     cashier: string
     cashierId: string | null
+    voidedById: string | null
+    voidedByName: string | null
+    voidedAt: Date | null
+    voidAttribution: JsonValue | null
+    attribution: JsonValue | null
     shiftId: string | null
     shiftNumber: string | null
     payableLbp: Decimal | null
@@ -11664,6 +11766,11 @@ export namespace Prisma {
     soldAtCost?: boolean
     cashier?: boolean
     cashierId?: boolean
+    voidedById?: boolean
+    voidedByName?: boolean
+    voidedAt?: boolean
+    voidAttribution?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     payableLbp?: boolean
@@ -11693,6 +11800,11 @@ export namespace Prisma {
     soldAtCost?: boolean
     cashier?: boolean
     cashierId?: boolean
+    voidedById?: boolean
+    voidedByName?: boolean
+    voidedAt?: boolean
+    voidAttribution?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     payableLbp?: boolean
@@ -11718,6 +11830,11 @@ export namespace Prisma {
     soldAtCost?: boolean
     cashier?: boolean
     cashierId?: boolean
+    voidedById?: boolean
+    voidedByName?: boolean
+    voidedAt?: boolean
+    voidAttribution?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     payableLbp?: boolean
@@ -11743,6 +11860,11 @@ export namespace Prisma {
     soldAtCost?: boolean
     cashier?: boolean
     cashierId?: boolean
+    voidedById?: boolean
+    voidedByName?: boolean
+    voidedAt?: boolean
+    voidAttribution?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     payableLbp?: boolean
@@ -11751,7 +11873,7 @@ export namespace Prisma {
     createdAt?: boolean
   }
 
-  export type SaleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "saleNumber" | "paymentMethod" | "customerId" | "customerName" | "subtotal" | "discountTotal" | "tax" | "total" | "cost" | "profit" | "soldAtCost" | "cashier" | "cashierId" | "shiftId" | "shiftNumber" | "payableLbp" | "status" | "refundVersion" | "createdAt", ExtArgs["result"]["sale"]>
+  export type SaleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "saleNumber" | "paymentMethod" | "customerId" | "customerName" | "subtotal" | "discountTotal" | "tax" | "total" | "cost" | "profit" | "soldAtCost" | "cashier" | "cashierId" | "voidedById" | "voidedByName" | "voidedAt" | "voidAttribution" | "attribution" | "shiftId" | "shiftNumber" | "payableLbp" | "status" | "refundVersion" | "createdAt", ExtArgs["result"]["sale"]>
   export type SaleInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     items?: boolean | Sale$itemsArgs<ExtArgs>
@@ -11790,6 +11912,19 @@ export namespace Prisma {
       soldAtCost: boolean
       cashier: string
       cashierId: string | null
+      /**
+       * Who voided it (the seller above is never changed by a void), when, and how it is known.
+       */
+      voidedById: string | null
+      voidedByName: string | null
+      voidedAt: Date | null
+      voidAttribution: Prisma.JsonValue | null
+      /**
+       * Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+       * offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+       * server when it applies the operation (never taken from the client); null for records made before it existed.
+       */
+      attribution: Prisma.JsonValue | null
       shiftId: string | null
       shiftNumber: string | null
       payableLbp: Prisma.Decimal | null
@@ -12242,6 +12377,11 @@ export namespace Prisma {
     readonly soldAtCost: FieldRef<"Sale", 'Boolean'>
     readonly cashier: FieldRef<"Sale", 'String'>
     readonly cashierId: FieldRef<"Sale", 'String'>
+    readonly voidedById: FieldRef<"Sale", 'String'>
+    readonly voidedByName: FieldRef<"Sale", 'String'>
+    readonly voidedAt: FieldRef<"Sale", 'DateTime'>
+    readonly voidAttribution: FieldRef<"Sale", 'Json'>
+    readonly attribution: FieldRef<"Sale", 'Json'>
     readonly shiftId: FieldRef<"Sale", 'String'>
     readonly shiftNumber: FieldRef<"Sale", 'String'>
     readonly payableLbp: FieldRef<"Sale", 'Decimal'>
@@ -15252,6 +15392,7 @@ export namespace Prisma {
     total: number
     cashier: number
     cashierId: number
+    attribution: number
     shiftId: number
     shiftNumber: number
     exchangeRate: number
@@ -15324,6 +15465,7 @@ export namespace Prisma {
     total?: true
     cashier?: true
     cashierId?: true
+    attribution?: true
     shiftId?: true
     shiftNumber?: true
     exchangeRate?: true
@@ -15431,6 +15573,7 @@ export namespace Prisma {
     total: Decimal
     cashier: string
     cashierId: string | null
+    attribution: JsonValue | null
     shiftId: string | null
     shiftNumber: string | null
     exchangeRate: Decimal | null
@@ -15470,6 +15613,7 @@ export namespace Prisma {
     total?: boolean
     cashier?: boolean
     cashierId?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     exchangeRate?: boolean
@@ -15494,6 +15638,7 @@ export namespace Prisma {
     total?: boolean
     cashier?: boolean
     cashierId?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     exchangeRate?: boolean
@@ -15516,6 +15661,7 @@ export namespace Prisma {
     total?: boolean
     cashier?: boolean
     cashierId?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     exchangeRate?: boolean
@@ -15538,6 +15684,7 @@ export namespace Prisma {
     total?: boolean
     cashier?: boolean
     cashierId?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     exchangeRate?: boolean
@@ -15545,7 +15692,7 @@ export namespace Prisma {
     createdAt?: boolean
   }
 
-  export type SaleRefundOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "refundNumber" | "saleId" | "saleNumber" | "customerId" | "customerName" | "method" | "reason" | "total" | "cashier" | "cashierId" | "shiftId" | "shiftNumber" | "exchangeRate" | "rateSource" | "createdAt", ExtArgs["result"]["saleRefund"]>
+  export type SaleRefundOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "refundNumber" | "saleId" | "saleNumber" | "customerId" | "customerName" | "method" | "reason" | "total" | "cashier" | "cashierId" | "attribution" | "shiftId" | "shiftNumber" | "exchangeRate" | "rateSource" | "createdAt", ExtArgs["result"]["saleRefund"]>
   export type SaleRefundInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     sale?: boolean | SaleDefaultArgs<ExtArgs>
@@ -15581,6 +15728,12 @@ export namespace Prisma {
       total: Prisma.Decimal
       cashier: string
       cashierId: string | null
+      /**
+       * Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+       * offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+       * server when it applies the operation (never taken from the client); null for records made before it existed.
+       */
+      attribution: Prisma.JsonValue | null
       shiftId: string | null
       shiftNumber: string | null
       /**
@@ -16027,6 +16180,7 @@ export namespace Prisma {
     readonly total: FieldRef<"SaleRefund", 'Decimal'>
     readonly cashier: FieldRef<"SaleRefund", 'String'>
     readonly cashierId: FieldRef<"SaleRefund", 'String'>
+    readonly attribution: FieldRef<"SaleRefund", 'Json'>
     readonly shiftId: FieldRef<"SaleRefund", 'String'>
     readonly shiftNumber: FieldRef<"SaleRefund", 'String'>
     readonly exchangeRate: FieldRef<"SaleRefund", 'Decimal'>
@@ -18960,6 +19114,8 @@ export namespace Prisma {
     discountTotal: Decimal | null
     tax: Decimal | null
     total: Decimal | null
+    recordedById: string | null
+    recordedByName: string | null
     createdAt: Date | null
   }
 
@@ -18973,6 +19129,8 @@ export namespace Prisma {
     discountTotal: Decimal | null
     tax: Decimal | null
     total: Decimal | null
+    recordedById: string | null
+    recordedByName: string | null
     createdAt: Date | null
   }
 
@@ -18986,6 +19144,9 @@ export namespace Prisma {
     discountTotal: number
     tax: number
     total: number
+    recordedById: number
+    recordedByName: number
+    attribution: number
     createdAt: number
     _all: number
   }
@@ -19015,6 +19176,8 @@ export namespace Prisma {
     discountTotal?: true
     tax?: true
     total?: true
+    recordedById?: true
+    recordedByName?: true
     createdAt?: true
   }
 
@@ -19028,6 +19191,8 @@ export namespace Prisma {
     discountTotal?: true
     tax?: true
     total?: true
+    recordedById?: true
+    recordedByName?: true
     createdAt?: true
   }
 
@@ -19041,6 +19206,9 @@ export namespace Prisma {
     discountTotal?: true
     tax?: true
     total?: true
+    recordedById?: true
+    recordedByName?: true
+    attribution?: true
     createdAt?: true
     _all?: true
   }
@@ -19141,6 +19309,9 @@ export namespace Prisma {
     discountTotal: Decimal | null
     tax: Decimal
     total: Decimal
+    recordedById: string | null
+    recordedByName: string | null
+    attribution: JsonValue | null
     createdAt: Date
     _count: DebtSaleCountAggregateOutputType | null
     _avg: DebtSaleAvgAggregateOutputType | null
@@ -19173,6 +19344,9 @@ export namespace Prisma {
     discountTotal?: boolean
     tax?: boolean
     total?: boolean
+    recordedById?: boolean
+    recordedByName?: boolean
+    attribution?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
@@ -19188,6 +19362,9 @@ export namespace Prisma {
     discountTotal?: boolean
     tax?: boolean
     total?: boolean
+    recordedById?: boolean
+    recordedByName?: boolean
+    attribution?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
@@ -19203,6 +19380,9 @@ export namespace Prisma {
     discountTotal?: boolean
     tax?: boolean
     total?: boolean
+    recordedById?: boolean
+    recordedByName?: boolean
+    attribution?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
@@ -19218,10 +19398,13 @@ export namespace Prisma {
     discountTotal?: boolean
     tax?: boolean
     total?: boolean
+    recordedById?: boolean
+    recordedByName?: boolean
+    attribution?: boolean
     createdAt?: boolean
   }
 
-  export type DebtSaleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "customerId" | "saleNumber" | "saleId" | "subtotal" | "discountTotal" | "tax" | "total" | "createdAt", ExtArgs["result"]["debtSale"]>
+  export type DebtSaleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "customerId" | "saleNumber" | "saleId" | "subtotal" | "discountTotal" | "tax" | "total" | "recordedById" | "recordedByName" | "attribution" | "createdAt", ExtArgs["result"]["debtSale"]>
   export type DebtSaleInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
@@ -19255,6 +19438,14 @@ export namespace Prisma {
       discountTotal: Prisma.Decimal | null
       tax: Prisma.Decimal
       total: Prisma.Decimal
+      recordedById: string | null
+      recordedByName: string | null
+      /**
+       * Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+       * offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+       * server when it applies the operation (never taken from the client); null for records made before it existed.
+       */
+      attribution: Prisma.JsonValue | null
       createdAt: Date
     }, ExtArgs["result"]["debtSale"]>
     composites: {}
@@ -19690,6 +19881,9 @@ export namespace Prisma {
     readonly discountTotal: FieldRef<"DebtSale", 'Decimal'>
     readonly tax: FieldRef<"DebtSale", 'Decimal'>
     readonly total: FieldRef<"DebtSale", 'Decimal'>
+    readonly recordedById: FieldRef<"DebtSale", 'String'>
+    readonly recordedByName: FieldRef<"DebtSale", 'String'>
+    readonly attribution: FieldRef<"DebtSale", 'Json'>
     readonly createdAt: FieldRef<"DebtSale", 'DateTime'>
   }
     
@@ -20132,6 +20326,8 @@ export namespace Prisma {
     amount: Decimal | null
     method: string | null
     reference: string | null
+    recordedById: string | null
+    recordedByName: string | null
     createdAt: Date | null
   }
 
@@ -20142,6 +20338,8 @@ export namespace Prisma {
     amount: Decimal | null
     method: string | null
     reference: string | null
+    recordedById: string | null
+    recordedByName: string | null
     createdAt: Date | null
   }
 
@@ -20152,6 +20350,9 @@ export namespace Prisma {
     amount: number
     method: number
     reference: number
+    recordedById: number
+    recordedByName: number
+    attribution: number
     createdAt: number
     _all: number
   }
@@ -20172,6 +20373,8 @@ export namespace Prisma {
     amount?: true
     method?: true
     reference?: true
+    recordedById?: true
+    recordedByName?: true
     createdAt?: true
   }
 
@@ -20182,6 +20385,8 @@ export namespace Prisma {
     amount?: true
     method?: true
     reference?: true
+    recordedById?: true
+    recordedByName?: true
     createdAt?: true
   }
 
@@ -20192,6 +20397,9 @@ export namespace Prisma {
     amount?: true
     method?: true
     reference?: true
+    recordedById?: true
+    recordedByName?: true
+    attribution?: true
     createdAt?: true
     _all?: true
   }
@@ -20289,6 +20497,9 @@ export namespace Prisma {
     amount: Decimal
     method: string
     reference: string
+    recordedById: string | null
+    recordedByName: string | null
+    attribution: JsonValue | null
     createdAt: Date
     _count: DebtPaymentCountAggregateOutputType | null
     _avg: DebtPaymentAvgAggregateOutputType | null
@@ -20318,6 +20529,9 @@ export namespace Prisma {
     amount?: boolean
     method?: boolean
     reference?: boolean
+    recordedById?: boolean
+    recordedByName?: boolean
+    attribution?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
@@ -20330,6 +20544,9 @@ export namespace Prisma {
     amount?: boolean
     method?: boolean
     reference?: boolean
+    recordedById?: boolean
+    recordedByName?: boolean
+    attribution?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
@@ -20342,6 +20559,9 @@ export namespace Prisma {
     amount?: boolean
     method?: boolean
     reference?: boolean
+    recordedById?: boolean
+    recordedByName?: boolean
+    attribution?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
@@ -20354,10 +20574,13 @@ export namespace Prisma {
     amount?: boolean
     method?: boolean
     reference?: boolean
+    recordedById?: boolean
+    recordedByName?: boolean
+    attribution?: boolean
     createdAt?: boolean
   }
 
-  export type DebtPaymentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "customerId" | "amount" | "method" | "reference" | "createdAt", ExtArgs["result"]["debtPayment"]>
+  export type DebtPaymentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "customerId" | "amount" | "method" | "reference" | "recordedById" | "recordedByName" | "attribution" | "createdAt", ExtArgs["result"]["debtPayment"]>
   export type DebtPaymentInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
@@ -20384,6 +20607,14 @@ export namespace Prisma {
       amount: Prisma.Decimal
       method: string
       reference: string
+      recordedById: string | null
+      recordedByName: string | null
+      /**
+       * Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+       * offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+       * server when it applies the operation (never taken from the client); null for records made before it existed.
+       */
+      attribution: Prisma.JsonValue | null
       createdAt: Date
     }, ExtArgs["result"]["debtPayment"]>
     composites: {}
@@ -20816,6 +21047,9 @@ export namespace Prisma {
     readonly amount: FieldRef<"DebtPayment", 'Decimal'>
     readonly method: FieldRef<"DebtPayment", 'String'>
     readonly reference: FieldRef<"DebtPayment", 'String'>
+    readonly recordedById: FieldRef<"DebtPayment", 'String'>
+    readonly recordedByName: FieldRef<"DebtPayment", 'String'>
+    readonly attribution: FieldRef<"DebtPayment", 'Json'>
     readonly createdAt: FieldRef<"DebtPayment", 'DateTime'>
   }
     
@@ -22475,6 +22709,7 @@ export namespace Prisma {
     total: Decimal | null
     paidTotal: Decimal | null
     createdBy: string | null
+    createdById: string | null
     shiftId: string | null
     shiftNumber: string | null
     createdAt: Date | null
@@ -22494,6 +22729,7 @@ export namespace Prisma {
     total: Decimal | null
     paidTotal: Decimal | null
     createdBy: string | null
+    createdById: string | null
     shiftId: string | null
     shiftNumber: string | null
     createdAt: Date | null
@@ -22513,6 +22749,8 @@ export namespace Prisma {
     total: number
     paidTotal: number
     createdBy: number
+    createdById: number
+    attribution: number
     shiftId: number
     shiftNumber: number
     createdAt: number
@@ -22544,6 +22782,7 @@ export namespace Prisma {
     total?: true
     paidTotal?: true
     createdBy?: true
+    createdById?: true
     shiftId?: true
     shiftNumber?: true
     createdAt?: true
@@ -22563,6 +22802,7 @@ export namespace Prisma {
     total?: true
     paidTotal?: true
     createdBy?: true
+    createdById?: true
     shiftId?: true
     shiftNumber?: true
     createdAt?: true
@@ -22582,6 +22822,8 @@ export namespace Prisma {
     total?: true
     paidTotal?: true
     createdBy?: true
+    createdById?: true
+    attribution?: true
     shiftId?: true
     shiftNumber?: true
     createdAt?: true
@@ -22688,6 +22930,8 @@ export namespace Prisma {
     total: Decimal
     paidTotal: Decimal
     createdBy: string
+    createdById: string | null
+    attribution: JsonValue | null
     shiftId: string | null
     shiftNumber: string | null
     createdAt: Date
@@ -22726,6 +22970,8 @@ export namespace Prisma {
     total?: boolean
     paidTotal?: boolean
     createdBy?: boolean
+    createdById?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     createdAt?: boolean
@@ -22749,6 +22995,8 @@ export namespace Prisma {
     total?: boolean
     paidTotal?: boolean
     createdBy?: boolean
+    createdById?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     createdAt?: boolean
@@ -22770,6 +23018,8 @@ export namespace Prisma {
     total?: boolean
     paidTotal?: boolean
     createdBy?: boolean
+    createdById?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     createdAt?: boolean
@@ -22791,13 +23041,15 @@ export namespace Prisma {
     total?: boolean
     paidTotal?: boolean
     createdBy?: boolean
+    createdById?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     createdAt?: boolean
     receivedAt?: boolean
   }
 
-  export type PurchaseOrderOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "poNumber" | "supplierId" | "supplierName" | "status" | "paymentStatus" | "invoiceNumber" | "note" | "total" | "paidTotal" | "createdBy" | "shiftId" | "shiftNumber" | "createdAt" | "receivedAt", ExtArgs["result"]["purchaseOrder"]>
+  export type PurchaseOrderOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "poNumber" | "supplierId" | "supplierName" | "status" | "paymentStatus" | "invoiceNumber" | "note" | "total" | "paidTotal" | "createdBy" | "createdById" | "attribution" | "shiftId" | "shiftNumber" | "createdAt" | "receivedAt", ExtArgs["result"]["purchaseOrder"]>
   export type PurchaseOrderInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     supplier?: boolean | SupplierDefaultArgs<ExtArgs>
@@ -22833,6 +23085,13 @@ export namespace Prisma {
       total: Prisma.Decimal
       paidTotal: Prisma.Decimal
       createdBy: string
+      createdById: string | null
+      /**
+       * Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+       * offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+       * server when it applies the operation (never taken from the client); null for records made before it existed.
+       */
+      attribution: Prisma.JsonValue | null
       shiftId: string | null
       shiftNumber: string | null
       createdAt: Date
@@ -23275,6 +23534,8 @@ export namespace Prisma {
     readonly total: FieldRef<"PurchaseOrder", 'Decimal'>
     readonly paidTotal: FieldRef<"PurchaseOrder", 'Decimal'>
     readonly createdBy: FieldRef<"PurchaseOrder", 'String'>
+    readonly createdById: FieldRef<"PurchaseOrder", 'String'>
+    readonly attribution: FieldRef<"PurchaseOrder", 'Json'>
     readonly shiftId: FieldRef<"PurchaseOrder", 'String'>
     readonly shiftNumber: FieldRef<"PurchaseOrder", 'String'>
     readonly createdAt: FieldRef<"PurchaseOrder", 'DateTime'>
@@ -24912,6 +25173,7 @@ export namespace Prisma {
     method: string | null
     reference: string | null
     recordedBy: string | null
+    recordedById: string | null
     shiftId: string | null
     shiftNumber: string | null
     createdAt: Date | null
@@ -24928,6 +25190,7 @@ export namespace Prisma {
     method: string | null
     reference: string | null
     recordedBy: string | null
+    recordedById: string | null
     shiftId: string | null
     shiftNumber: string | null
     createdAt: Date | null
@@ -24944,6 +25207,8 @@ export namespace Prisma {
     method: number
     reference: number
     recordedBy: number
+    recordedById: number
+    attribution: number
     shiftId: number
     shiftNumber: number
     createdAt: number
@@ -24970,6 +25235,7 @@ export namespace Prisma {
     method?: true
     reference?: true
     recordedBy?: true
+    recordedById?: true
     shiftId?: true
     shiftNumber?: true
     createdAt?: true
@@ -24986,6 +25252,7 @@ export namespace Prisma {
     method?: true
     reference?: true
     recordedBy?: true
+    recordedById?: true
     shiftId?: true
     shiftNumber?: true
     createdAt?: true
@@ -25002,6 +25269,8 @@ export namespace Prisma {
     method?: true
     reference?: true
     recordedBy?: true
+    recordedById?: true
+    attribution?: true
     shiftId?: true
     shiftNumber?: true
     createdAt?: true
@@ -25105,6 +25374,8 @@ export namespace Prisma {
     method: string
     reference: string
     recordedBy: string
+    recordedById: string | null
+    attribution: JsonValue | null
     shiftId: string | null
     shiftNumber: string | null
     createdAt: Date
@@ -25140,6 +25411,8 @@ export namespace Prisma {
     method?: boolean
     reference?: boolean
     recordedBy?: boolean
+    recordedById?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     createdAt?: boolean
@@ -25158,6 +25431,8 @@ export namespace Prisma {
     method?: boolean
     reference?: boolean
     recordedBy?: boolean
+    recordedById?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     createdAt?: boolean
@@ -25176,6 +25451,8 @@ export namespace Prisma {
     method?: boolean
     reference?: boolean
     recordedBy?: boolean
+    recordedById?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     createdAt?: boolean
@@ -25194,12 +25471,14 @@ export namespace Prisma {
     method?: boolean
     reference?: boolean
     recordedBy?: boolean
+    recordedById?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     createdAt?: boolean
   }
 
-  export type SupplierPaymentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "supplierId" | "supplierName" | "purchaseOrderId" | "purchaseOrderNumber" | "amount" | "method" | "reference" | "recordedBy" | "shiftId" | "shiftNumber" | "createdAt", ExtArgs["result"]["supplierPayment"]>
+  export type SupplierPaymentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "supplierId" | "supplierName" | "purchaseOrderId" | "purchaseOrderNumber" | "amount" | "method" | "reference" | "recordedBy" | "recordedById" | "attribution" | "shiftId" | "shiftNumber" | "createdAt", ExtArgs["result"]["supplierPayment"]>
   export type SupplierPaymentInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     supplier?: boolean | SupplierDefaultArgs<ExtArgs>
@@ -25230,6 +25509,13 @@ export namespace Prisma {
       method: string
       reference: string
       recordedBy: string
+      recordedById: string | null
+      /**
+       * Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+       * offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+       * server when it applies the operation (never taken from the client); null for records made before it existed.
+       */
+      attribution: Prisma.JsonValue | null
       shiftId: string | null
       shiftNumber: string | null
       createdAt: Date
@@ -25668,6 +25954,8 @@ export namespace Prisma {
     readonly method: FieldRef<"SupplierPayment", 'String'>
     readonly reference: FieldRef<"SupplierPayment", 'String'>
     readonly recordedBy: FieldRef<"SupplierPayment", 'String'>
+    readonly recordedById: FieldRef<"SupplierPayment", 'String'>
+    readonly attribution: FieldRef<"SupplierPayment", 'Json'>
     readonly shiftId: FieldRef<"SupplierPayment", 'String'>
     readonly shiftNumber: FieldRef<"SupplierPayment", 'String'>
     readonly createdAt: FieldRef<"SupplierPayment", 'DateTime'>
@@ -26183,6 +26471,8 @@ export namespace Prisma {
     closedById: number
     closedByName: number
     notes: number
+    openAttribution: number
+    closeAttribution: number
     _all: number
   }
 
@@ -26273,6 +26563,8 @@ export namespace Prisma {
     closedById?: true
     closedByName?: true
     notes?: true
+    openAttribution?: true
+    closeAttribution?: true
     _all?: true
   }
 
@@ -26382,6 +26674,8 @@ export namespace Prisma {
     closedById: string | null
     closedByName: string | null
     notes: string | null
+    openAttribution: JsonValue | null
+    closeAttribution: JsonValue | null
     _count: ShiftCountAggregateOutputType | null
     _avg: ShiftAvgAggregateOutputType | null
     _sum: ShiftSumAggregateOutputType | null
@@ -26423,6 +26717,8 @@ export namespace Prisma {
     closedById?: boolean
     closedByName?: boolean
     notes?: boolean
+    openAttribution?: boolean
+    closeAttribution?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     openedBy?: boolean | StaffUserDefaultArgs<ExtArgs>
     closedBy?: boolean | Shift$closedByArgs<ExtArgs>
@@ -26448,6 +26744,8 @@ export namespace Prisma {
     closedById?: boolean
     closedByName?: boolean
     notes?: boolean
+    openAttribution?: boolean
+    closeAttribution?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     openedBy?: boolean | StaffUserDefaultArgs<ExtArgs>
     closedBy?: boolean | Shift$closedByArgs<ExtArgs>
@@ -26473,6 +26771,8 @@ export namespace Prisma {
     closedById?: boolean
     closedByName?: boolean
     notes?: boolean
+    openAttribution?: boolean
+    closeAttribution?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     openedBy?: boolean | StaffUserDefaultArgs<ExtArgs>
     closedBy?: boolean | Shift$closedByArgs<ExtArgs>
@@ -26498,9 +26798,11 @@ export namespace Prisma {
     closedById?: boolean
     closedByName?: boolean
     notes?: boolean
+    openAttribution?: boolean
+    closeAttribution?: boolean
   }
 
-  export type ShiftOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "shiftNumber" | "status" | "openedAt" | "closedAt" | "openingFloatUsd" | "cashSalesUsd" | "cashRefundsUsd" | "cashExpensesUsd" | "supplierPaymentsUsd" | "expectedCashUsd" | "closingCashUsd" | "differenceUsd" | "openedById" | "openedByName" | "closedById" | "closedByName" | "notes", ExtArgs["result"]["shift"]>
+  export type ShiftOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "shiftNumber" | "status" | "openedAt" | "closedAt" | "openingFloatUsd" | "cashSalesUsd" | "cashRefundsUsd" | "cashExpensesUsd" | "supplierPaymentsUsd" | "expectedCashUsd" | "closingCashUsd" | "differenceUsd" | "openedById" | "openedByName" | "closedById" | "closedByName" | "notes" | "openAttribution" | "closeAttribution", ExtArgs["result"]["shift"]>
   export type ShiftInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     openedBy?: boolean | StaffUserDefaultArgs<ExtArgs>
@@ -26544,6 +26846,11 @@ export namespace Prisma {
       closedById: string | null
       closedByName: string | null
       notes: string | null
+      /**
+       * how the opener and the closer are known (lib/attribution.ts); null before it existed
+       */
+      openAttribution: Prisma.JsonValue | null
+      closeAttribution: Prisma.JsonValue | null
     }, ExtArgs["result"]["shift"]>
     composites: {}
   }
@@ -26989,6 +27296,8 @@ export namespace Prisma {
     readonly closedById: FieldRef<"Shift", 'String'>
     readonly closedByName: FieldRef<"Shift", 'String'>
     readonly notes: FieldRef<"Shift", 'String'>
+    readonly openAttribution: FieldRef<"Shift", 'Json'>
+    readonly closeAttribution: FieldRef<"Shift", 'Json'>
   }
     
 
@@ -28607,6 +28916,7 @@ export namespace Prisma {
     note: number
     recordedBy: number
     recordedById: number
+    attribution: number
     shiftId: number
     shiftNumber: number
     createdAt: number
@@ -28668,6 +28978,7 @@ export namespace Prisma {
     note?: true
     recordedBy?: true
     recordedById?: true
+    attribution?: true
     shiftId?: true
     shiftNumber?: true
     createdAt?: true
@@ -28772,6 +29083,7 @@ export namespace Prisma {
     note: string
     recordedBy: string
     recordedById: string | null
+    attribution: JsonValue | null
     shiftId: string | null
     shiftNumber: string | null
     createdAt: Date
@@ -28808,6 +29120,7 @@ export namespace Prisma {
     note?: boolean
     recordedBy?: boolean
     recordedById?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     createdAt?: boolean
@@ -28827,6 +29140,7 @@ export namespace Prisma {
     note?: boolean
     recordedBy?: boolean
     recordedById?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     createdAt?: boolean
@@ -28846,6 +29160,7 @@ export namespace Prisma {
     note?: boolean
     recordedBy?: boolean
     recordedById?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     createdAt?: boolean
@@ -28865,12 +29180,13 @@ export namespace Prisma {
     note?: boolean
     recordedBy?: boolean
     recordedById?: boolean
+    attribution?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
     createdAt?: boolean
   }
 
-  export type ExpenseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "expenseNumber" | "vendor" | "category" | "amount" | "paymentMethod" | "invoiceNumber" | "note" | "recordedBy" | "recordedById" | "shiftId" | "shiftNumber" | "createdAt", ExtArgs["result"]["expense"]>
+  export type ExpenseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "expenseNumber" | "vendor" | "category" | "amount" | "paymentMethod" | "invoiceNumber" | "note" | "recordedBy" | "recordedById" | "attribution" | "shiftId" | "shiftNumber" | "createdAt", ExtArgs["result"]["expense"]>
   export type ExpenseInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     recordedByUser?: boolean | Expense$recordedByUserArgs<ExtArgs>
@@ -28902,6 +29218,12 @@ export namespace Prisma {
       note: string
       recordedBy: string
       recordedById: string | null
+      /**
+       * Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+       * offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+       * server when it applies the operation (never taken from the client); null for records made before it existed.
+       */
+      attribution: Prisma.JsonValue | null
       shiftId: string | null
       shiftNumber: string | null
       createdAt: Date
@@ -29341,6 +29663,7 @@ export namespace Prisma {
     readonly note: FieldRef<"Expense", 'String'>
     readonly recordedBy: FieldRef<"Expense", 'String'>
     readonly recordedById: FieldRef<"Expense", 'String'>
+    readonly attribution: FieldRef<"Expense", 'Json'>
     readonly shiftId: FieldRef<"Expense", 'String'>
     readonly shiftNumber: FieldRef<"Expense", 'String'>
     readonly createdAt: FieldRef<"Expense", 'DateTime'>
@@ -29823,6 +30146,8 @@ export namespace Prisma {
     receivedAt: Date | null
     updatedAt: Date | null
     status: $Enums.InventoryBatchStatus | null
+    receivedById: string | null
+    receivedByName: string | null
   }
 
   export type InventoryBatchMaxAggregateOutputType = {
@@ -29843,6 +30168,8 @@ export namespace Prisma {
     receivedAt: Date | null
     updatedAt: Date | null
     status: $Enums.InventoryBatchStatus | null
+    receivedById: string | null
+    receivedByName: string | null
   }
 
   export type InventoryBatchCountAggregateOutputType = {
@@ -29863,6 +30190,9 @@ export namespace Prisma {
     receivedAt: number
     updatedAt: number
     status: number
+    receivedById: number
+    receivedByName: number
+    attribution: number
     _all: number
   }
 
@@ -29901,6 +30231,8 @@ export namespace Prisma {
     receivedAt?: true
     updatedAt?: true
     status?: true
+    receivedById?: true
+    receivedByName?: true
   }
 
   export type InventoryBatchMaxAggregateInputType = {
@@ -29921,6 +30253,8 @@ export namespace Prisma {
     receivedAt?: true
     updatedAt?: true
     status?: true
+    receivedById?: true
+    receivedByName?: true
   }
 
   export type InventoryBatchCountAggregateInputType = {
@@ -29941,6 +30275,9 @@ export namespace Prisma {
     receivedAt?: true
     updatedAt?: true
     status?: true
+    receivedById?: true
+    receivedByName?: true
+    attribution?: true
     _all?: true
   }
 
@@ -30048,6 +30385,9 @@ export namespace Prisma {
     receivedAt: Date
     updatedAt: Date
     status: $Enums.InventoryBatchStatus
+    receivedById: string | null
+    receivedByName: string | null
+    attribution: JsonValue | null
     _count: InventoryBatchCountAggregateOutputType | null
     _avg: InventoryBatchAvgAggregateOutputType | null
     _sum: InventoryBatchSumAggregateOutputType | null
@@ -30087,6 +30427,9 @@ export namespace Prisma {
     receivedAt?: boolean
     updatedAt?: boolean
     status?: boolean
+    receivedById?: boolean
+    receivedByName?: boolean
+    attribution?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
     supplier?: boolean | InventoryBatch$supplierArgs<ExtArgs>
@@ -30110,6 +30453,9 @@ export namespace Prisma {
     receivedAt?: boolean
     updatedAt?: boolean
     status?: boolean
+    receivedById?: boolean
+    receivedByName?: boolean
+    attribution?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
     supplier?: boolean | InventoryBatch$supplierArgs<ExtArgs>
@@ -30133,6 +30479,9 @@ export namespace Prisma {
     receivedAt?: boolean
     updatedAt?: boolean
     status?: boolean
+    receivedById?: boolean
+    receivedByName?: boolean
+    attribution?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
     supplier?: boolean | InventoryBatch$supplierArgs<ExtArgs>
@@ -30156,9 +30505,12 @@ export namespace Prisma {
     receivedAt?: boolean
     updatedAt?: boolean
     status?: boolean
+    receivedById?: boolean
+    receivedByName?: boolean
+    attribution?: boolean
   }
 
-  export type InventoryBatchOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "batchNumber" | "productId" | "productName" | "barcode" | "initialQuantity" | "quantityRemaining" | "unitCost" | "unitPrice" | "expiryDate" | "supplierId" | "supplierName" | "purchaseOrderNumber" | "receivedAt" | "updatedAt" | "status", ExtArgs["result"]["inventoryBatch"]>
+  export type InventoryBatchOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "batchNumber" | "productId" | "productName" | "barcode" | "initialQuantity" | "quantityRemaining" | "unitCost" | "unitPrice" | "expiryDate" | "supplierId" | "supplierName" | "purchaseOrderNumber" | "receivedAt" | "updatedAt" | "status" | "receivedById" | "receivedByName" | "attribution", ExtArgs["result"]["inventoryBatch"]>
   export type InventoryBatchInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -30200,6 +30552,14 @@ export namespace Prisma {
       receivedAt: Date
       updatedAt: Date
       status: $Enums.InventoryBatchStatus
+      receivedById: string | null
+      receivedByName: string | null
+      /**
+       * Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+       * offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+       * server when it applies the operation (never taken from the client); null for records made before it existed.
+       */
+      attribution: Prisma.JsonValue | null
     }, ExtArgs["result"]["inventoryBatch"]>
     composites: {}
   }
@@ -30643,6 +31003,9 @@ export namespace Prisma {
     readonly receivedAt: FieldRef<"InventoryBatch", 'DateTime'>
     readonly updatedAt: FieldRef<"InventoryBatch", 'DateTime'>
     readonly status: FieldRef<"InventoryBatch", 'InventoryBatchStatus'>
+    readonly receivedById: FieldRef<"InventoryBatch", 'String'>
+    readonly receivedByName: FieldRef<"InventoryBatch", 'String'>
+    readonly attribution: FieldRef<"InventoryBatch", 'Json'>
   }
     
 
@@ -31118,6 +31481,8 @@ export namespace Prisma {
     note: string | null
     batchId: string | null
     valueImpact: Decimal | null
+    createdById: string | null
+    createdByName: string | null
     createdAt: Date | null
   }
 
@@ -31135,6 +31500,8 @@ export namespace Prisma {
     note: string | null
     batchId: string | null
     valueImpact: Decimal | null
+    createdById: string | null
+    createdByName: string | null
     createdAt: Date | null
   }
 
@@ -31153,6 +31520,9 @@ export namespace Prisma {
     batchId: number
     batchAllocations: number
     valueImpact: number
+    createdById: number
+    createdByName: number
+    attribution: number
     createdAt: number
     _all: number
   }
@@ -31188,6 +31558,8 @@ export namespace Prisma {
     note?: true
     batchId?: true
     valueImpact?: true
+    createdById?: true
+    createdByName?: true
     createdAt?: true
   }
 
@@ -31205,6 +31577,8 @@ export namespace Prisma {
     note?: true
     batchId?: true
     valueImpact?: true
+    createdById?: true
+    createdByName?: true
     createdAt?: true
   }
 
@@ -31223,6 +31597,9 @@ export namespace Prisma {
     batchId?: true
     batchAllocations?: true
     valueImpact?: true
+    createdById?: true
+    createdByName?: true
+    attribution?: true
     createdAt?: true
     _all?: true
   }
@@ -31328,6 +31705,9 @@ export namespace Prisma {
     batchId: string | null
     batchAllocations: JsonValue | null
     valueImpact: Decimal
+    createdById: string | null
+    createdByName: string | null
+    attribution: JsonValue | null
     createdAt: Date
     _count: StockAdjustmentCountAggregateOutputType | null
     _avg: StockAdjustmentAvgAggregateOutputType | null
@@ -31365,6 +31745,9 @@ export namespace Prisma {
     batchId?: boolean
     batchAllocations?: boolean
     valueImpact?: boolean
+    createdById?: boolean
+    createdByName?: boolean
+    attribution?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -31385,6 +31768,9 @@ export namespace Prisma {
     batchId?: boolean
     batchAllocations?: boolean
     valueImpact?: boolean
+    createdById?: boolean
+    createdByName?: boolean
+    attribution?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -31405,6 +31791,9 @@ export namespace Prisma {
     batchId?: boolean
     batchAllocations?: boolean
     valueImpact?: boolean
+    createdById?: boolean
+    createdByName?: boolean
+    attribution?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -31425,10 +31814,13 @@ export namespace Prisma {
     batchId?: boolean
     batchAllocations?: boolean
     valueImpact?: boolean
+    createdById?: boolean
+    createdByName?: boolean
+    attribution?: boolean
     createdAt?: boolean
   }
 
-  export type StockAdjustmentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "adjustmentNumber" | "productId" | "productName" | "barcode" | "quantityBefore" | "quantityChange" | "quantityAfter" | "reason" | "note" | "batchId" | "batchAllocations" | "valueImpact" | "createdAt", ExtArgs["result"]["stockAdjustment"]>
+  export type StockAdjustmentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "adjustmentNumber" | "productId" | "productName" | "barcode" | "quantityBefore" | "quantityChange" | "quantityAfter" | "reason" | "note" | "batchId" | "batchAllocations" | "valueImpact" | "createdById" | "createdByName" | "attribution" | "createdAt", ExtArgs["result"]["stockAdjustment"]>
   export type StockAdjustmentInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -31463,6 +31855,14 @@ export namespace Prisma {
       batchId: string | null
       batchAllocations: Prisma.JsonValue | null
       valueImpact: Prisma.Decimal
+      createdById: string | null
+      createdByName: string | null
+      /**
+       * Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+       * offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+       * server when it applies the operation (never taken from the client); null for records made before it existed.
+       */
+      attribution: Prisma.JsonValue | null
       createdAt: Date
     }, ExtArgs["result"]["stockAdjustment"]>
     composites: {}
@@ -31903,6 +32303,9 @@ export namespace Prisma {
     readonly batchId: FieldRef<"StockAdjustment", 'String'>
     readonly batchAllocations: FieldRef<"StockAdjustment", 'Json'>
     readonly valueImpact: FieldRef<"StockAdjustment", 'Decimal'>
+    readonly createdById: FieldRef<"StockAdjustment", 'String'>
+    readonly createdByName: FieldRef<"StockAdjustment", 'String'>
+    readonly attribution: FieldRef<"StockAdjustment", 'Json'>
     readonly createdAt: FieldRef<"StockAdjustment", 'DateTime'>
   }
     
@@ -32349,6 +32752,8 @@ export namespace Prisma {
     completedAt: Date | null
     totalVariance: Decimal | null
     totalValueImpact: Decimal | null
+    completedById: string | null
+    completedByName: string | null
   }
 
   export type StockCountSessionMaxAggregateOutputType = {
@@ -32360,6 +32765,8 @@ export namespace Prisma {
     completedAt: Date | null
     totalVariance: Decimal | null
     totalValueImpact: Decimal | null
+    completedById: string | null
+    completedByName: string | null
   }
 
   export type StockCountSessionCountAggregateOutputType = {
@@ -32371,6 +32778,9 @@ export namespace Prisma {
     completedAt: number
     totalVariance: number
     totalValueImpact: number
+    completedById: number
+    completedByName: number
+    attribution: number
     _all: number
   }
 
@@ -32394,6 +32804,8 @@ export namespace Prisma {
     completedAt?: true
     totalVariance?: true
     totalValueImpact?: true
+    completedById?: true
+    completedByName?: true
   }
 
   export type StockCountSessionMaxAggregateInputType = {
@@ -32405,6 +32817,8 @@ export namespace Prisma {
     completedAt?: true
     totalVariance?: true
     totalValueImpact?: true
+    completedById?: true
+    completedByName?: true
   }
 
   export type StockCountSessionCountAggregateInputType = {
@@ -32416,6 +32830,9 @@ export namespace Prisma {
     completedAt?: true
     totalVariance?: true
     totalValueImpact?: true
+    completedById?: true
+    completedByName?: true
+    attribution?: true
     _all?: true
   }
 
@@ -32514,6 +32931,9 @@ export namespace Prisma {
     completedAt: Date | null
     totalVariance: Decimal
     totalValueImpact: Decimal
+    completedById: string | null
+    completedByName: string | null
+    attribution: JsonValue | null
     _count: StockCountSessionCountAggregateOutputType | null
     _avg: StockCountSessionAvgAggregateOutputType | null
     _sum: StockCountSessionSumAggregateOutputType | null
@@ -32544,6 +32964,9 @@ export namespace Prisma {
     completedAt?: boolean
     totalVariance?: boolean
     totalValueImpact?: boolean
+    completedById?: boolean
+    completedByName?: boolean
+    attribution?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     lines?: boolean | StockCountSession$linesArgs<ExtArgs>
     _count?: boolean | StockCountSessionCountOutputTypeDefaultArgs<ExtArgs>
@@ -32558,6 +32981,9 @@ export namespace Prisma {
     completedAt?: boolean
     totalVariance?: boolean
     totalValueImpact?: boolean
+    completedById?: boolean
+    completedByName?: boolean
+    attribution?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["stockCountSession"]>
 
@@ -32570,6 +32996,9 @@ export namespace Prisma {
     completedAt?: boolean
     totalVariance?: boolean
     totalValueImpact?: boolean
+    completedById?: boolean
+    completedByName?: boolean
+    attribution?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["stockCountSession"]>
 
@@ -32582,9 +33011,12 @@ export namespace Prisma {
     completedAt?: boolean
     totalVariance?: boolean
     totalValueImpact?: boolean
+    completedById?: boolean
+    completedByName?: boolean
+    attribution?: boolean
   }
 
-  export type StockCountSessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "countNumber" | "status" | "createdAt" | "completedAt" | "totalVariance" | "totalValueImpact", ExtArgs["result"]["stockCountSession"]>
+  export type StockCountSessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "countNumber" | "status" | "createdAt" | "completedAt" | "totalVariance" | "totalValueImpact" | "completedById" | "completedByName" | "attribution", ExtArgs["result"]["stockCountSession"]>
   export type StockCountSessionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     lines?: boolean | StockCountSession$linesArgs<ExtArgs>
@@ -32612,6 +33044,14 @@ export namespace Prisma {
       completedAt: Date | null
       totalVariance: Prisma.Decimal
       totalValueImpact: Prisma.Decimal
+      completedById: string | null
+      completedByName: string | null
+      /**
+       * Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+       * offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+       * server when it applies the operation (never taken from the client); null for records made before it existed.
+       */
+      attribution: Prisma.JsonValue | null
     }, ExtArgs["result"]["stockCountSession"]>
     composites: {}
   }
@@ -33045,6 +33485,9 @@ export namespace Prisma {
     readonly completedAt: FieldRef<"StockCountSession", 'DateTime'>
     readonly totalVariance: FieldRef<"StockCountSession", 'Decimal'>
     readonly totalValueImpact: FieldRef<"StockCountSession", 'Decimal'>
+    readonly completedById: FieldRef<"StockCountSession", 'String'>
+    readonly completedByName: FieldRef<"StockCountSession", 'String'>
+    readonly attribution: FieldRef<"StockCountSession", 'Json'>
   }
     
 
@@ -37355,6 +37798,7 @@ export namespace Prisma {
     cashOut: Decimal | null
     note: string | null
     closedBy: string | null
+    closedById: string | null
     unsyncedCountAtClose: number | null
     createdAt: Date | null
     scope: string | null
@@ -37385,6 +37829,7 @@ export namespace Prisma {
     cashOut: Decimal | null
     note: string | null
     closedBy: string | null
+    closedById: string | null
     unsyncedCountAtClose: number | null
     createdAt: Date | null
     scope: string | null
@@ -37415,6 +37860,8 @@ export namespace Prisma {
     cashOut: number
     note: number
     closedBy: number
+    closedById: number
+    attribution: number
     unsyncedCountAtClose: number
     createdAt: number
     scope: number
@@ -37479,6 +37926,7 @@ export namespace Prisma {
     cashOut?: true
     note?: true
     closedBy?: true
+    closedById?: true
     unsyncedCountAtClose?: true
     createdAt?: true
     scope?: true
@@ -37509,6 +37957,7 @@ export namespace Prisma {
     cashOut?: true
     note?: true
     closedBy?: true
+    closedById?: true
     unsyncedCountAtClose?: true
     createdAt?: true
     scope?: true
@@ -37539,6 +37988,8 @@ export namespace Prisma {
     cashOut?: true
     note?: true
     closedBy?: true
+    closedById?: true
+    attribution?: true
     unsyncedCountAtClose?: true
     createdAt?: true
     scope?: true
@@ -37656,6 +38107,8 @@ export namespace Prisma {
     cashOut: Decimal
     note: string
     closedBy: string
+    closedById: string | null
+    attribution: JsonValue | null
     unsyncedCountAtClose: number | null
     createdAt: Date
     scope: string
@@ -37705,6 +38158,8 @@ export namespace Prisma {
     cashOut?: boolean
     note?: boolean
     closedBy?: boolean
+    closedById?: boolean
+    attribution?: boolean
     unsyncedCountAtClose?: boolean
     createdAt?: boolean
     scope?: boolean
@@ -37736,6 +38191,8 @@ export namespace Prisma {
     cashOut?: boolean
     note?: boolean
     closedBy?: boolean
+    closedById?: boolean
+    attribution?: boolean
     unsyncedCountAtClose?: boolean
     createdAt?: boolean
     scope?: boolean
@@ -37767,6 +38224,8 @@ export namespace Prisma {
     cashOut?: boolean
     note?: boolean
     closedBy?: boolean
+    closedById?: boolean
+    attribution?: boolean
     unsyncedCountAtClose?: boolean
     createdAt?: boolean
     scope?: boolean
@@ -37798,6 +38257,8 @@ export namespace Prisma {
     cashOut?: boolean
     note?: boolean
     closedBy?: boolean
+    closedById?: boolean
+    attribution?: boolean
     unsyncedCountAtClose?: boolean
     createdAt?: boolean
     scope?: boolean
@@ -37810,7 +38271,7 @@ export namespace Prisma {
     supersededAt?: boolean
   }
 
-  export type DailyCloseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "dateKey" | "grossSales" | "refunds" | "netSales" | "costOfGoods" | "returnedCost" | "grossMargin" | "expenses" | "supplierPayments" | "netProfit" | "costStatus" | "cashIn" | "cashOut" | "note" | "closedBy" | "unsyncedCountAtClose" | "createdAt" | "scope" | "registerId" | "shiftId" | "revision" | "revisionOf" | "correction" | "supersededById" | "supersededAt", ExtArgs["result"]["dailyClose"]>
+  export type DailyCloseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "dateKey" | "grossSales" | "refunds" | "netSales" | "costOfGoods" | "returnedCost" | "grossMargin" | "expenses" | "supplierPayments" | "netProfit" | "costStatus" | "cashIn" | "cashOut" | "note" | "closedBy" | "closedById" | "attribution" | "unsyncedCountAtClose" | "createdAt" | "scope" | "registerId" | "shiftId" | "revision" | "revisionOf" | "correction" | "supersededById" | "supersededAt", ExtArgs["result"]["dailyClose"]>
   export type DailyCloseInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }
@@ -37849,6 +38310,13 @@ export namespace Prisma {
       cashOut: Prisma.Decimal
       note: string
       closedBy: string
+      closedById: string | null
+      /**
+       * Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+       * offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+       * server when it applies the operation (never taken from the client); null for records made before it existed.
+       */
+      attribution: Prisma.JsonValue | null
       unsyncedCountAtClose: number | null
       createdAt: Date
       /**
@@ -38310,6 +38778,8 @@ export namespace Prisma {
     readonly cashOut: FieldRef<"DailyClose", 'Decimal'>
     readonly note: FieldRef<"DailyClose", 'String'>
     readonly closedBy: FieldRef<"DailyClose", 'String'>
+    readonly closedById: FieldRef<"DailyClose", 'String'>
+    readonly attribution: FieldRef<"DailyClose", 'Json'>
     readonly unsyncedCountAtClose: FieldRef<"DailyClose", 'Int'>
     readonly createdAt: FieldRef<"DailyClose", 'DateTime'>
     readonly scope: FieldRef<"DailyClose", 'String'>
@@ -38802,6 +39272,7 @@ export namespace Prisma {
     referenceId: number
     recordedById: number
     recordedByName: number
+    attribution: number
     createdAt: number
     _all: number
   }
@@ -38863,6 +39334,7 @@ export namespace Prisma {
     referenceId?: true
     recordedById?: true
     recordedByName?: true
+    attribution?: true
     createdAt?: true
     _all?: true
   }
@@ -38967,6 +39439,7 @@ export namespace Prisma {
     referenceId: string | null
     recordedById: string | null
     recordedByName: string
+    attribution: JsonValue | null
     createdAt: Date
     _count: CashMovementCountAggregateOutputType | null
     _avg: CashMovementAvgAggregateOutputType | null
@@ -39003,6 +39476,7 @@ export namespace Prisma {
     referenceId?: boolean
     recordedById?: boolean
     recordedByName?: boolean
+    attribution?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["cashMovement"]>
@@ -39021,6 +39495,7 @@ export namespace Prisma {
     referenceId?: boolean
     recordedById?: boolean
     recordedByName?: boolean
+    attribution?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["cashMovement"]>
@@ -39039,6 +39514,7 @@ export namespace Prisma {
     referenceId?: boolean
     recordedById?: boolean
     recordedByName?: boolean
+    attribution?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["cashMovement"]>
@@ -39057,10 +39533,11 @@ export namespace Prisma {
     referenceId?: boolean
     recordedById?: boolean
     recordedByName?: boolean
+    attribution?: boolean
     createdAt?: boolean
   }
 
-  export type CashMovementOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "shiftId" | "shiftNumber" | "type" | "direction" | "amountUsd" | "reason" | "note" | "referenceEntity" | "referenceId" | "recordedById" | "recordedByName" | "createdAt", ExtArgs["result"]["cashMovement"]>
+  export type CashMovementOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "shiftId" | "shiftNumber" | "type" | "direction" | "amountUsd" | "reason" | "note" | "referenceEntity" | "referenceId" | "recordedById" | "recordedByName" | "attribution" | "createdAt", ExtArgs["result"]["cashMovement"]>
   export type CashMovementInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }
@@ -39090,6 +39567,12 @@ export namespace Prisma {
       referenceId: string | null
       recordedById: string | null
       recordedByName: string
+      /**
+       * Operational readiness (lib/attribution.ts): how the actor of this record is known — { basis: verified |
+       * offline-claimed | claimed | reviewed | system | unattributed, approver?, reviewer?, opId }. Written by the
+       * server when it applies the operation (never taken from the client); null for records made before it existed.
+       */
+      attribution: Prisma.JsonValue | null
       createdAt: Date
     }, ExtArgs["result"]["cashMovement"]>
     composites: {}
@@ -39528,6 +40011,7 @@ export namespace Prisma {
     readonly referenceId: FieldRef<"CashMovement", 'String'>
     readonly recordedById: FieldRef<"CashMovement", 'String'>
     readonly recordedByName: FieldRef<"CashMovement", 'String'>
+    readonly attribution: FieldRef<"CashMovement", 'Json'>
     readonly createdAt: FieldRef<"CashMovement", 'DateTime'>
   }
     
@@ -45737,6 +46221,7 @@ export namespace Prisma {
     retiredAt: Date | null
     retiredBy: string | null
     retiredNote: string | null
+    queueReportedAt: Date | null
   }
 
   export type SyncClientMaxAggregateOutputType = {
@@ -45749,6 +46234,7 @@ export namespace Prisma {
     retiredAt: Date | null
     retiredBy: string | null
     retiredNote: string | null
+    queueReportedAt: Date | null
   }
 
   export type SyncClientCountAggregateOutputType = {
@@ -45761,6 +46247,8 @@ export namespace Prisma {
     retiredAt: number
     retiredBy: number
     retiredNote: number
+    queueReport: number
+    queueReportedAt: number
     _all: number
   }
 
@@ -45783,6 +46271,7 @@ export namespace Prisma {
     retiredAt?: true
     retiredBy?: true
     retiredNote?: true
+    queueReportedAt?: true
   }
 
   export type SyncClientMaxAggregateInputType = {
@@ -45795,6 +46284,7 @@ export namespace Prisma {
     retiredAt?: true
     retiredBy?: true
     retiredNote?: true
+    queueReportedAt?: true
   }
 
   export type SyncClientCountAggregateInputType = {
@@ -45807,6 +46297,8 @@ export namespace Prisma {
     retiredAt?: true
     retiredBy?: true
     retiredNote?: true
+    queueReport?: true
+    queueReportedAt?: true
     _all?: true
   }
 
@@ -45906,6 +46398,8 @@ export namespace Prisma {
     retiredAt: Date | null
     retiredBy: string | null
     retiredNote: string | null
+    queueReport: JsonValue | null
+    queueReportedAt: Date | null
     _count: SyncClientCountAggregateOutputType | null
     _avg: SyncClientAvgAggregateOutputType | null
     _sum: SyncClientSumAggregateOutputType | null
@@ -45937,6 +46431,8 @@ export namespace Prisma {
     retiredAt?: boolean
     retiredBy?: boolean
     retiredNote?: boolean
+    queueReport?: boolean
+    queueReportedAt?: boolean
   }, ExtArgs["result"]["syncClient"]>
 
   export type SyncClientSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -45949,6 +46445,8 @@ export namespace Prisma {
     retiredAt?: boolean
     retiredBy?: boolean
     retiredNote?: boolean
+    queueReport?: boolean
+    queueReportedAt?: boolean
   }, ExtArgs["result"]["syncClient"]>
 
   export type SyncClientSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -45961,6 +46459,8 @@ export namespace Prisma {
     retiredAt?: boolean
     retiredBy?: boolean
     retiredNote?: boolean
+    queueReport?: boolean
+    queueReportedAt?: boolean
   }, ExtArgs["result"]["syncClient"]>
 
   export type SyncClientSelectScalar = {
@@ -45973,9 +46473,11 @@ export namespace Prisma {
     retiredAt?: boolean
     retiredBy?: boolean
     retiredNote?: boolean
+    queueReport?: boolean
+    queueReportedAt?: boolean
   }
 
-  export type SyncClientOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "clientKey" | "label" | "syncSchema" | "lastSeenAt" | "retiredAt" | "retiredBy" | "retiredNote", ExtArgs["result"]["syncClient"]>
+  export type SyncClientOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "clientKey" | "label" | "syncSchema" | "lastSeenAt" | "retiredAt" | "retiredBy" | "retiredNote" | "queueReport" | "queueReportedAt", ExtArgs["result"]["syncClient"]>
 
   export type $SyncClientPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "SyncClient"
@@ -45990,6 +46492,11 @@ export namespace Prisma {
       retiredAt: Date | null
       retiredBy: string | null
       retiredNote: string | null
+      /**
+       * What the register last reported about its own queue (pending, held, failed, staged, journal) and when
+       */
+      queueReport: Prisma.JsonValue | null
+      queueReportedAt: Date | null
     }, ExtArgs["result"]["syncClient"]>
     composites: {}
   }
@@ -46422,6 +46929,8 @@ export namespace Prisma {
     readonly retiredAt: FieldRef<"SyncClient", 'DateTime'>
     readonly retiredBy: FieldRef<"SyncClient", 'String'>
     readonly retiredNote: FieldRef<"SyncClient", 'String'>
+    readonly queueReport: FieldRef<"SyncClient", 'Json'>
+    readonly queueReportedAt: FieldRef<"SyncClient", 'DateTime'>
   }
     
 
@@ -46890,6 +47399,7 @@ export namespace Prisma {
     attestation: number
     attestationKid: number
     approval: number
+    attribution: number
     _all: number
   }
 
@@ -46984,6 +47494,7 @@ export namespace Prisma {
     attestation?: true
     attestationKid?: true
     approval?: true
+    attribution?: true
     _all?: true
   }
 
@@ -47101,6 +47612,7 @@ export namespace Prisma {
     attestation: string | null
     attestationKid: string | null
     approval: JsonValue | null
+    attribution: JsonValue | null
     _count: OperationEvidenceCountAggregateOutputType | null
     _avg: OperationEvidenceAvgAggregateOutputType | null
     _sum: OperationEvidenceSumAggregateOutputType | null
@@ -47150,6 +47662,7 @@ export namespace Prisma {
     attestation?: boolean
     attestationKid?: boolean
     approval?: boolean
+    attribution?: boolean
   }, ExtArgs["result"]["operationEvidence"]>
 
   export type OperationEvidenceSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -47180,6 +47693,7 @@ export namespace Prisma {
     attestation?: boolean
     attestationKid?: boolean
     approval?: boolean
+    attribution?: boolean
   }, ExtArgs["result"]["operationEvidence"]>
 
   export type OperationEvidenceSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -47210,6 +47724,7 @@ export namespace Prisma {
     attestation?: boolean
     attestationKid?: boolean
     approval?: boolean
+    attribution?: boolean
   }, ExtArgs["result"]["operationEvidence"]>
 
   export type OperationEvidenceSelectScalar = {
@@ -47240,9 +47755,10 @@ export namespace Prisma {
     attestation?: boolean
     attestationKid?: boolean
     approval?: boolean
+    attribution?: boolean
   }
 
-  export type OperationEvidenceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"opId" | "tenantId" | "entity" | "action" | "receivedAt" | "acceptedBy" | "transport" | "credentialKind" | "connectionAccountId" | "deviceIdClaimed" | "actorIdClaimed" | "actorNameClaimed" | "actorMatchesAccount" | "evidence" | "limitations" | "claimedAt" | "envelopeVersion" | "enrolledDeviceId" | "deviceCheck" | "sessionId" | "sessionStaffId" | "sessionAuthTime" | "sessionCheck" | "relayed" | "attestation" | "attestationKid" | "approval", ExtArgs["result"]["operationEvidence"]>
+  export type OperationEvidenceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"opId" | "tenantId" | "entity" | "action" | "receivedAt" | "acceptedBy" | "transport" | "credentialKind" | "connectionAccountId" | "deviceIdClaimed" | "actorIdClaimed" | "actorNameClaimed" | "actorMatchesAccount" | "evidence" | "limitations" | "claimedAt" | "envelopeVersion" | "enrolledDeviceId" | "deviceCheck" | "sessionId" | "sessionStaffId" | "sessionAuthTime" | "sessionCheck" | "relayed" | "attestation" | "attestationKid" | "approval" | "attribution", ExtArgs["result"]["operationEvidence"]>
 
   export type $OperationEvidencePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "OperationEvidence"
@@ -47290,6 +47806,11 @@ export namespace Prisma {
        * the person who did it; the approver is recorded separately.
        */
       approval: Prisma.JsonValue | null
+      /**
+       * Operational readiness: the attribution this server wrote on the business record (lib/attribution.ts);
+       * a hub forwards it signed, so the cloud records the same people.
+       */
+      attribution: Prisma.JsonValue | null
     }, ExtArgs["result"]["operationEvidence"]>
     composites: {}
   }
@@ -47740,6 +48261,7 @@ export namespace Prisma {
     readonly attestation: FieldRef<"OperationEvidence", 'String'>
     readonly attestationKid: FieldRef<"OperationEvidence", 'String'>
     readonly approval: FieldRef<"OperationEvidence", 'Json'>
+    readonly attribution: FieldRef<"OperationEvidence", 'Json'>
   }
     
 
@@ -48127,6 +48649,9 @@ export namespace Prisma {
     revokedAt: Date | null
     revokedById: string | null
     revokeNote: string | null
+    hubId: string | null
+    hubLabel: string | null
+    lastReportAt: Date | null
   }
 
   export type HubKeyMaxAggregateOutputType = {
@@ -48140,6 +48665,9 @@ export namespace Prisma {
     revokedAt: Date | null
     revokedById: string | null
     revokeNote: string | null
+    hubId: string | null
+    hubLabel: string | null
+    lastReportAt: Date | null
   }
 
   export type HubKeyCountAggregateOutputType = {
@@ -48153,6 +48681,10 @@ export namespace Prisma {
     revokedAt: number
     revokedById: number
     revokeNote: number
+    hubId: number
+    hubLabel: number
+    lastReport: number
+    lastReportAt: number
     _all: number
   }
 
@@ -48168,6 +48700,9 @@ export namespace Prisma {
     revokedAt?: true
     revokedById?: true
     revokeNote?: true
+    hubId?: true
+    hubLabel?: true
+    lastReportAt?: true
   }
 
   export type HubKeyMaxAggregateInputType = {
@@ -48181,6 +48716,9 @@ export namespace Prisma {
     revokedAt?: true
     revokedById?: true
     revokeNote?: true
+    hubId?: true
+    hubLabel?: true
+    lastReportAt?: true
   }
 
   export type HubKeyCountAggregateInputType = {
@@ -48194,6 +48732,10 @@ export namespace Prisma {
     revokedAt?: true
     revokedById?: true
     revokeNote?: true
+    hubId?: true
+    hubLabel?: true
+    lastReport?: true
+    lastReportAt?: true
     _all?: true
   }
 
@@ -48280,6 +48822,10 @@ export namespace Prisma {
     revokedAt: Date | null
     revokedById: string | null
     revokeNote: string | null
+    hubId: string | null
+    hubLabel: string
+    lastReport: JsonValue | null
+    lastReportAt: Date | null
     _count: HubKeyCountAggregateOutputType | null
     _min: HubKeyMinAggregateOutputType | null
     _max: HubKeyMaxAggregateOutputType | null
@@ -48310,6 +48856,10 @@ export namespace Prisma {
     revokedAt?: boolean
     revokedById?: boolean
     revokeNote?: boolean
+    hubId?: boolean
+    hubLabel?: boolean
+    lastReport?: boolean
+    lastReportAt?: boolean
   }, ExtArgs["result"]["hubKey"]>
 
   export type HubKeySelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -48323,6 +48873,10 @@ export namespace Prisma {
     revokedAt?: boolean
     revokedById?: boolean
     revokeNote?: boolean
+    hubId?: boolean
+    hubLabel?: boolean
+    lastReport?: boolean
+    lastReportAt?: boolean
   }, ExtArgs["result"]["hubKey"]>
 
   export type HubKeySelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -48336,6 +48890,10 @@ export namespace Prisma {
     revokedAt?: boolean
     revokedById?: boolean
     revokeNote?: boolean
+    hubId?: boolean
+    hubLabel?: boolean
+    lastReport?: boolean
+    lastReportAt?: boolean
   }, ExtArgs["result"]["hubKey"]>
 
   export type HubKeySelectScalar = {
@@ -48349,9 +48907,13 @@ export namespace Prisma {
     revokedAt?: boolean
     revokedById?: boolean
     revokeNote?: boolean
+    hubId?: boolean
+    hubLabel?: boolean
+    lastReport?: boolean
+    lastReportAt?: boolean
   }
 
-  export type HubKeyOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"kid" | "tenantId" | "publicPem" | "status" | "enrolledById" | "enrolledAt" | "rotatedAt" | "revokedAt" | "revokedById" | "revokeNote", ExtArgs["result"]["hubKey"]>
+  export type HubKeyOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"kid" | "tenantId" | "publicPem" | "status" | "enrolledById" | "enrolledAt" | "rotatedAt" | "revokedAt" | "revokedById" | "revokeNote" | "hubId" | "hubLabel" | "lastReport" | "lastReportAt", ExtArgs["result"]["hubKey"]>
 
   export type $HubKeyPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "HubKey"
@@ -48367,6 +48929,16 @@ export namespace Prisma {
       revokedAt: Date | null
       revokedById: string | null
       revokeNote: string | null
+      /**
+       * The hub installation this key belongs to (stable across key rotation; lib/topology.ts)
+       */
+      hubId: string | null
+      hubLabel: string
+      /**
+       * The hub's latest signed status report (queue, held work, stock, policy and topology versions)
+       */
+      lastReport: Prisma.JsonValue | null
+      lastReportAt: Date | null
     }, ExtArgs["result"]["hubKey"]>
     composites: {}
   }
@@ -48800,6 +49372,10 @@ export namespace Prisma {
     readonly revokedAt: FieldRef<"HubKey", 'DateTime'>
     readonly revokedById: FieldRef<"HubKey", 'String'>
     readonly revokeNote: FieldRef<"HubKey", 'String'>
+    readonly hubId: FieldRef<"HubKey", 'String'>
+    readonly hubLabel: FieldRef<"HubKey", 'String'>
+    readonly lastReport: FieldRef<"HubKey", 'Json'>
+    readonly lastReportAt: FieldRef<"HubKey", 'DateTime'>
   }
     
 
@@ -52546,6 +53122,11 @@ export namespace Prisma {
     staffPolicyVersion: 'staffPolicyVersion',
     staffPolicyIssuedAt: 'staffPolicyIssuedAt',
     staffPolicyIssuedBy: 'staffPolicyIssuedBy',
+    storeTopology: 'storeTopology',
+    topologyHubId: 'topologyHubId',
+    topologyVersion: 'topologyVersion',
+    topologyChangedAt: 'topologyChangedAt',
+    topologyChangedBy: 'topologyChangedBy',
     planName: 'planName',
     trialStartDate: 'trialStartDate',
     trialEndDate: 'trialEndDate',
@@ -52658,6 +53239,11 @@ export namespace Prisma {
     soldAtCost: 'soldAtCost',
     cashier: 'cashier',
     cashierId: 'cashierId',
+    voidedById: 'voidedById',
+    voidedByName: 'voidedByName',
+    voidedAt: 'voidedAt',
+    voidAttribution: 'voidAttribution',
+    attribution: 'attribution',
     shiftId: 'shiftId',
     shiftNumber: 'shiftNumber',
     payableLbp: 'payableLbp',
@@ -52720,6 +53306,7 @@ export namespace Prisma {
     total: 'total',
     cashier: 'cashier',
     cashierId: 'cashierId',
+    attribution: 'attribution',
     shiftId: 'shiftId',
     shiftNumber: 'shiftNumber',
     exchangeRate: 'exchangeRate',
@@ -52775,6 +53362,9 @@ export namespace Prisma {
     discountTotal: 'discountTotal',
     tax: 'tax',
     total: 'total',
+    recordedById: 'recordedById',
+    recordedByName: 'recordedByName',
+    attribution: 'attribution',
     createdAt: 'createdAt'
   };
 
@@ -52788,6 +53378,9 @@ export namespace Prisma {
     amount: 'amount',
     method: 'method',
     reference: 'reference',
+    recordedById: 'recordedById',
+    recordedByName: 'recordedByName',
+    attribution: 'attribution',
     createdAt: 'createdAt'
   };
 
@@ -52823,6 +53416,8 @@ export namespace Prisma {
     total: 'total',
     paidTotal: 'paidTotal',
     createdBy: 'createdBy',
+    createdById: 'createdById',
+    attribution: 'attribution',
     shiftId: 'shiftId',
     shiftNumber: 'shiftNumber',
     createdAt: 'createdAt',
@@ -52858,6 +53453,8 @@ export namespace Prisma {
     method: 'method',
     reference: 'reference',
     recordedBy: 'recordedBy',
+    recordedById: 'recordedById',
+    attribution: 'attribution',
     shiftId: 'shiftId',
     shiftNumber: 'shiftNumber',
     createdAt: 'createdAt'
@@ -52885,7 +53482,9 @@ export namespace Prisma {
     openedByName: 'openedByName',
     closedById: 'closedById',
     closedByName: 'closedByName',
-    notes: 'notes'
+    notes: 'notes',
+    openAttribution: 'openAttribution',
+    closeAttribution: 'closeAttribution'
   };
 
   export type ShiftScalarFieldEnum = (typeof ShiftScalarFieldEnum)[keyof typeof ShiftScalarFieldEnum]
@@ -52919,6 +53518,7 @@ export namespace Prisma {
     note: 'note',
     recordedBy: 'recordedBy',
     recordedById: 'recordedById',
+    attribution: 'attribution',
     shiftId: 'shiftId',
     shiftNumber: 'shiftNumber',
     createdAt: 'createdAt'
@@ -52944,7 +53544,10 @@ export namespace Prisma {
     purchaseOrderNumber: 'purchaseOrderNumber',
     receivedAt: 'receivedAt',
     updatedAt: 'updatedAt',
-    status: 'status'
+    status: 'status',
+    receivedById: 'receivedById',
+    receivedByName: 'receivedByName',
+    attribution: 'attribution'
   };
 
   export type InventoryBatchScalarFieldEnum = (typeof InventoryBatchScalarFieldEnum)[keyof typeof InventoryBatchScalarFieldEnum]
@@ -52965,6 +53568,9 @@ export namespace Prisma {
     batchId: 'batchId',
     batchAllocations: 'batchAllocations',
     valueImpact: 'valueImpact',
+    createdById: 'createdById',
+    createdByName: 'createdByName',
+    attribution: 'attribution',
     createdAt: 'createdAt'
   };
 
@@ -52979,7 +53585,10 @@ export namespace Prisma {
     createdAt: 'createdAt',
     completedAt: 'completedAt',
     totalVariance: 'totalVariance',
-    totalValueImpact: 'totalValueImpact'
+    totalValueImpact: 'totalValueImpact',
+    completedById: 'completedById',
+    completedByName: 'completedByName',
+    attribution: 'attribution'
   };
 
   export type StockCountSessionScalarFieldEnum = (typeof StockCountSessionScalarFieldEnum)[keyof typeof StockCountSessionScalarFieldEnum]
@@ -53066,6 +53675,8 @@ export namespace Prisma {
     cashOut: 'cashOut',
     note: 'note',
     closedBy: 'closedBy',
+    closedById: 'closedById',
+    attribution: 'attribution',
     unsyncedCountAtClose: 'unsyncedCountAtClose',
     createdAt: 'createdAt',
     scope: 'scope',
@@ -53095,6 +53706,7 @@ export namespace Prisma {
     referenceId: 'referenceId',
     recordedById: 'recordedById',
     recordedByName: 'recordedByName',
+    attribution: 'attribution',
     createdAt: 'createdAt'
   };
 
@@ -53194,7 +53806,9 @@ export namespace Prisma {
     lastSeenAt: 'lastSeenAt',
     retiredAt: 'retiredAt',
     retiredBy: 'retiredBy',
-    retiredNote: 'retiredNote'
+    retiredNote: 'retiredNote',
+    queueReport: 'queueReport',
+    queueReportedAt: 'queueReportedAt'
   };
 
   export type SyncClientScalarFieldEnum = (typeof SyncClientScalarFieldEnum)[keyof typeof SyncClientScalarFieldEnum]
@@ -53227,7 +53841,8 @@ export namespace Prisma {
     relayed: 'relayed',
     attestation: 'attestation',
     attestationKid: 'attestationKid',
-    approval: 'approval'
+    approval: 'approval',
+    attribution: 'attribution'
   };
 
   export type OperationEvidenceScalarFieldEnum = (typeof OperationEvidenceScalarFieldEnum)[keyof typeof OperationEvidenceScalarFieldEnum]
@@ -53243,7 +53858,11 @@ export namespace Prisma {
     rotatedAt: 'rotatedAt',
     revokedAt: 'revokedAt',
     revokedById: 'revokedById',
-    revokeNote: 'revokeNote'
+    revokeNote: 'revokeNote',
+    hubId: 'hubId',
+    hubLabel: 'hubLabel',
+    lastReport: 'lastReport',
+    lastReportAt: 'lastReportAt'
   };
 
   export type HubKeyScalarFieldEnum = (typeof HubKeyScalarFieldEnum)[keyof typeof HubKeyScalarFieldEnum]
@@ -53618,6 +54237,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFilter<"Tenant"> | number
     staffPolicyIssuedAt?: DateTimeNullableFilter<"Tenant"> | Date | string | null
     staffPolicyIssuedBy?: StringNullableFilter<"Tenant"> | string | null
+    storeTopology?: StringFilter<"Tenant"> | string
+    topologyHubId?: StringNullableFilter<"Tenant"> | string | null
+    topologyVersion?: IntFilter<"Tenant"> | number
+    topologyChangedAt?: DateTimeNullableFilter<"Tenant"> | Date | string | null
+    topologyChangedBy?: StringNullableFilter<"Tenant"> | string | null
     planName?: StringFilter<"Tenant"> | string
     trialStartDate?: DateTimeNullableFilter<"Tenant"> | Date | string | null
     trialEndDate?: DateTimeNullableFilter<"Tenant"> | Date | string | null
@@ -53672,6 +54296,11 @@ export namespace Prisma {
     staffPolicyVersion?: SortOrder
     staffPolicyIssuedAt?: SortOrderInput | SortOrder
     staffPolicyIssuedBy?: SortOrderInput | SortOrder
+    storeTopology?: SortOrder
+    topologyHubId?: SortOrderInput | SortOrder
+    topologyVersion?: SortOrder
+    topologyChangedAt?: SortOrderInput | SortOrder
+    topologyChangedBy?: SortOrderInput | SortOrder
     planName?: SortOrder
     trialStartDate?: SortOrderInput | SortOrder
     trialEndDate?: SortOrderInput | SortOrder
@@ -53729,6 +54358,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFilter<"Tenant"> | number
     staffPolicyIssuedAt?: DateTimeNullableFilter<"Tenant"> | Date | string | null
     staffPolicyIssuedBy?: StringNullableFilter<"Tenant"> | string | null
+    storeTopology?: StringFilter<"Tenant"> | string
+    topologyHubId?: StringNullableFilter<"Tenant"> | string | null
+    topologyVersion?: IntFilter<"Tenant"> | number
+    topologyChangedAt?: DateTimeNullableFilter<"Tenant"> | Date | string | null
+    topologyChangedBy?: StringNullableFilter<"Tenant"> | string | null
     planName?: StringFilter<"Tenant"> | string
     trialStartDate?: DateTimeNullableFilter<"Tenant"> | Date | string | null
     trialEndDate?: DateTimeNullableFilter<"Tenant"> | Date | string | null
@@ -53783,6 +54417,11 @@ export namespace Prisma {
     staffPolicyVersion?: SortOrder
     staffPolicyIssuedAt?: SortOrderInput | SortOrder
     staffPolicyIssuedBy?: SortOrderInput | SortOrder
+    storeTopology?: SortOrder
+    topologyHubId?: SortOrderInput | SortOrder
+    topologyVersion?: SortOrder
+    topologyChangedAt?: SortOrderInput | SortOrder
+    topologyChangedBy?: SortOrderInput | SortOrder
     planName?: SortOrder
     trialStartDate?: SortOrderInput | SortOrder
     trialEndDate?: SortOrderInput | SortOrder
@@ -53820,6 +54459,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntWithAggregatesFilter<"Tenant"> | number
     staffPolicyIssuedAt?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
     staffPolicyIssuedBy?: StringNullableWithAggregatesFilter<"Tenant"> | string | null
+    storeTopology?: StringWithAggregatesFilter<"Tenant"> | string
+    topologyHubId?: StringNullableWithAggregatesFilter<"Tenant"> | string | null
+    topologyVersion?: IntWithAggregatesFilter<"Tenant"> | number
+    topologyChangedAt?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
+    topologyChangedBy?: StringNullableWithAggregatesFilter<"Tenant"> | string | null
     planName?: StringWithAggregatesFilter<"Tenant"> | string
     trialStartDate?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
     trialEndDate?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
@@ -54295,6 +54939,11 @@ export namespace Prisma {
     soldAtCost?: BoolFilter<"Sale"> | boolean
     cashier?: StringFilter<"Sale"> | string
     cashierId?: StringNullableFilter<"Sale"> | string | null
+    voidedById?: StringNullableFilter<"Sale"> | string | null
+    voidedByName?: StringNullableFilter<"Sale"> | string | null
+    voidedAt?: DateTimeNullableFilter<"Sale"> | Date | string | null
+    voidAttribution?: JsonNullableFilter<"Sale">
+    attribution?: JsonNullableFilter<"Sale">
     shiftId?: StringNullableFilter<"Sale"> | string | null
     shiftNumber?: StringNullableFilter<"Sale"> | string | null
     payableLbp?: DecimalNullableFilter<"Sale"> | Decimal | DecimalJsLike | number | string | null
@@ -54323,6 +54972,11 @@ export namespace Prisma {
     soldAtCost?: SortOrder
     cashier?: SortOrder
     cashierId?: SortOrderInput | SortOrder
+    voidedById?: SortOrderInput | SortOrder
+    voidedByName?: SortOrderInput | SortOrder
+    voidedAt?: SortOrderInput | SortOrder
+    voidAttribution?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     shiftId?: SortOrderInput | SortOrder
     shiftNumber?: SortOrderInput | SortOrder
     payableLbp?: SortOrderInput | SortOrder
@@ -54354,6 +55008,11 @@ export namespace Prisma {
     soldAtCost?: BoolFilter<"Sale"> | boolean
     cashier?: StringFilter<"Sale"> | string
     cashierId?: StringNullableFilter<"Sale"> | string | null
+    voidedById?: StringNullableFilter<"Sale"> | string | null
+    voidedByName?: StringNullableFilter<"Sale"> | string | null
+    voidedAt?: DateTimeNullableFilter<"Sale"> | Date | string | null
+    voidAttribution?: JsonNullableFilter<"Sale">
+    attribution?: JsonNullableFilter<"Sale">
     shiftId?: StringNullableFilter<"Sale"> | string | null
     shiftNumber?: StringNullableFilter<"Sale"> | string | null
     payableLbp?: DecimalNullableFilter<"Sale"> | Decimal | DecimalJsLike | number | string | null
@@ -54382,6 +55041,11 @@ export namespace Prisma {
     soldAtCost?: SortOrder
     cashier?: SortOrder
     cashierId?: SortOrderInput | SortOrder
+    voidedById?: SortOrderInput | SortOrder
+    voidedByName?: SortOrderInput | SortOrder
+    voidedAt?: SortOrderInput | SortOrder
+    voidAttribution?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     shiftId?: SortOrderInput | SortOrder
     shiftNumber?: SortOrderInput | SortOrder
     payableLbp?: SortOrderInput | SortOrder
@@ -54414,6 +55078,11 @@ export namespace Prisma {
     soldAtCost?: BoolWithAggregatesFilter<"Sale"> | boolean
     cashier?: StringWithAggregatesFilter<"Sale"> | string
     cashierId?: StringNullableWithAggregatesFilter<"Sale"> | string | null
+    voidedById?: StringNullableWithAggregatesFilter<"Sale"> | string | null
+    voidedByName?: StringNullableWithAggregatesFilter<"Sale"> | string | null
+    voidedAt?: DateTimeNullableWithAggregatesFilter<"Sale"> | Date | string | null
+    voidAttribution?: JsonNullableWithAggregatesFilter<"Sale">
+    attribution?: JsonNullableWithAggregatesFilter<"Sale">
     shiftId?: StringNullableWithAggregatesFilter<"Sale"> | string | null
     shiftNumber?: StringNullableWithAggregatesFilter<"Sale"> | string | null
     payableLbp?: DecimalNullableWithAggregatesFilter<"Sale"> | Decimal | DecimalJsLike | number | string | null
@@ -54633,6 +55302,7 @@ export namespace Prisma {
     total?: DecimalFilter<"SaleRefund"> | Decimal | DecimalJsLike | number | string
     cashier?: StringFilter<"SaleRefund"> | string
     cashierId?: StringNullableFilter<"SaleRefund"> | string | null
+    attribution?: JsonNullableFilter<"SaleRefund">
     shiftId?: StringNullableFilter<"SaleRefund"> | string | null
     shiftNumber?: StringNullableFilter<"SaleRefund"> | string | null
     exchangeRate?: DecimalNullableFilter<"SaleRefund"> | Decimal | DecimalJsLike | number | string | null
@@ -54656,6 +55326,7 @@ export namespace Prisma {
     total?: SortOrder
     cashier?: SortOrder
     cashierId?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     shiftId?: SortOrderInput | SortOrder
     shiftNumber?: SortOrderInput | SortOrder
     exchangeRate?: SortOrderInput | SortOrder
@@ -54682,6 +55353,7 @@ export namespace Prisma {
     total?: DecimalFilter<"SaleRefund"> | Decimal | DecimalJsLike | number | string
     cashier?: StringFilter<"SaleRefund"> | string
     cashierId?: StringNullableFilter<"SaleRefund"> | string | null
+    attribution?: JsonNullableFilter<"SaleRefund">
     shiftId?: StringNullableFilter<"SaleRefund"> | string | null
     shiftNumber?: StringNullableFilter<"SaleRefund"> | string | null
     exchangeRate?: DecimalNullableFilter<"SaleRefund"> | Decimal | DecimalJsLike | number | string | null
@@ -54705,6 +55377,7 @@ export namespace Prisma {
     total?: SortOrder
     cashier?: SortOrder
     cashierId?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     shiftId?: SortOrderInput | SortOrder
     shiftNumber?: SortOrderInput | SortOrder
     exchangeRate?: SortOrderInput | SortOrder
@@ -54733,6 +55406,7 @@ export namespace Prisma {
     total?: DecimalWithAggregatesFilter<"SaleRefund"> | Decimal | DecimalJsLike | number | string
     cashier?: StringWithAggregatesFilter<"SaleRefund"> | string
     cashierId?: StringNullableWithAggregatesFilter<"SaleRefund"> | string | null
+    attribution?: JsonNullableWithAggregatesFilter<"SaleRefund">
     shiftId?: StringNullableWithAggregatesFilter<"SaleRefund"> | string | null
     shiftNumber?: StringNullableWithAggregatesFilter<"SaleRefund"> | string | null
     exchangeRate?: DecimalNullableWithAggregatesFilter<"SaleRefund"> | Decimal | DecimalJsLike | number | string | null
@@ -54942,6 +55616,9 @@ export namespace Prisma {
     discountTotal?: DecimalNullableFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
     total?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
+    recordedById?: StringNullableFilter<"DebtSale"> | string | null
+    recordedByName?: StringNullableFilter<"DebtSale"> | string | null
+    attribution?: JsonNullableFilter<"DebtSale">
     createdAt?: DateTimeFilter<"DebtSale"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     customer?: XOR<CustomerScalarRelationFilter, CustomerWhereInput>
@@ -54957,6 +55634,9 @@ export namespace Prisma {
     discountTotal?: SortOrderInput | SortOrder
     tax?: SortOrder
     total?: SortOrder
+    recordedById?: SortOrderInput | SortOrder
+    recordedByName?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     tenant?: TenantOrderByWithRelationInput
     customer?: CustomerOrderByWithRelationInput
@@ -54975,6 +55655,9 @@ export namespace Prisma {
     discountTotal?: DecimalNullableFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
     total?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
+    recordedById?: StringNullableFilter<"DebtSale"> | string | null
+    recordedByName?: StringNullableFilter<"DebtSale"> | string | null
+    attribution?: JsonNullableFilter<"DebtSale">
     createdAt?: DateTimeFilter<"DebtSale"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     customer?: XOR<CustomerScalarRelationFilter, CustomerWhereInput>
@@ -54990,6 +55673,9 @@ export namespace Prisma {
     discountTotal?: SortOrderInput | SortOrder
     tax?: SortOrder
     total?: SortOrder
+    recordedById?: SortOrderInput | SortOrder
+    recordedByName?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: DebtSaleCountOrderByAggregateInput
     _avg?: DebtSaleAvgOrderByAggregateInput
@@ -55011,6 +55697,9 @@ export namespace Prisma {
     discountTotal?: DecimalNullableWithAggregatesFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalWithAggregatesFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
     total?: DecimalWithAggregatesFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
+    recordedById?: StringNullableWithAggregatesFilter<"DebtSale"> | string | null
+    recordedByName?: StringNullableWithAggregatesFilter<"DebtSale"> | string | null
+    attribution?: JsonNullableWithAggregatesFilter<"DebtSale">
     createdAt?: DateTimeWithAggregatesFilter<"DebtSale"> | Date | string
   }
 
@@ -55024,6 +55713,9 @@ export namespace Prisma {
     amount?: DecimalFilter<"DebtPayment"> | Decimal | DecimalJsLike | number | string
     method?: StringFilter<"DebtPayment"> | string
     reference?: StringFilter<"DebtPayment"> | string
+    recordedById?: StringNullableFilter<"DebtPayment"> | string | null
+    recordedByName?: StringNullableFilter<"DebtPayment"> | string | null
+    attribution?: JsonNullableFilter<"DebtPayment">
     createdAt?: DateTimeFilter<"DebtPayment"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     customer?: XOR<CustomerScalarRelationFilter, CustomerWhereInput>
@@ -55036,6 +55728,9 @@ export namespace Prisma {
     amount?: SortOrder
     method?: SortOrder
     reference?: SortOrder
+    recordedById?: SortOrderInput | SortOrder
+    recordedByName?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     tenant?: TenantOrderByWithRelationInput
     customer?: CustomerOrderByWithRelationInput
@@ -55051,6 +55746,9 @@ export namespace Prisma {
     amount?: DecimalFilter<"DebtPayment"> | Decimal | DecimalJsLike | number | string
     method?: StringFilter<"DebtPayment"> | string
     reference?: StringFilter<"DebtPayment"> | string
+    recordedById?: StringNullableFilter<"DebtPayment"> | string | null
+    recordedByName?: StringNullableFilter<"DebtPayment"> | string | null
+    attribution?: JsonNullableFilter<"DebtPayment">
     createdAt?: DateTimeFilter<"DebtPayment"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     customer?: XOR<CustomerScalarRelationFilter, CustomerWhereInput>
@@ -55063,6 +55761,9 @@ export namespace Prisma {
     amount?: SortOrder
     method?: SortOrder
     reference?: SortOrder
+    recordedById?: SortOrderInput | SortOrder
+    recordedByName?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: DebtPaymentCountOrderByAggregateInput
     _avg?: DebtPaymentAvgOrderByAggregateInput
@@ -55081,6 +55782,9 @@ export namespace Prisma {
     amount?: DecimalWithAggregatesFilter<"DebtPayment"> | Decimal | DecimalJsLike | number | string
     method?: StringWithAggregatesFilter<"DebtPayment"> | string
     reference?: StringWithAggregatesFilter<"DebtPayment"> | string
+    recordedById?: StringNullableWithAggregatesFilter<"DebtPayment"> | string | null
+    recordedByName?: StringNullableWithAggregatesFilter<"DebtPayment"> | string | null
+    attribution?: JsonNullableWithAggregatesFilter<"DebtPayment">
     createdAt?: DateTimeWithAggregatesFilter<"DebtPayment"> | Date | string
   }
 
@@ -55190,6 +55894,8 @@ export namespace Prisma {
     total?: DecimalFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string
     paidTotal?: DecimalFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string
     createdBy?: StringFilter<"PurchaseOrder"> | string
+    createdById?: StringNullableFilter<"PurchaseOrder"> | string | null
+    attribution?: JsonNullableFilter<"PurchaseOrder">
     shiftId?: StringNullableFilter<"PurchaseOrder"> | string | null
     shiftNumber?: StringNullableFilter<"PurchaseOrder"> | string | null
     createdAt?: DateTimeFilter<"PurchaseOrder"> | Date | string
@@ -55212,6 +55918,8 @@ export namespace Prisma {
     total?: SortOrder
     paidTotal?: SortOrder
     createdBy?: SortOrder
+    createdById?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     shiftId?: SortOrderInput | SortOrder
     shiftNumber?: SortOrderInput | SortOrder
     createdAt?: SortOrder
@@ -55237,6 +55945,8 @@ export namespace Prisma {
     total?: DecimalFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string
     paidTotal?: DecimalFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string
     createdBy?: StringFilter<"PurchaseOrder"> | string
+    createdById?: StringNullableFilter<"PurchaseOrder"> | string | null
+    attribution?: JsonNullableFilter<"PurchaseOrder">
     shiftId?: StringNullableFilter<"PurchaseOrder"> | string | null
     shiftNumber?: StringNullableFilter<"PurchaseOrder"> | string | null
     createdAt?: DateTimeFilter<"PurchaseOrder"> | Date | string
@@ -55259,6 +55969,8 @@ export namespace Prisma {
     total?: SortOrder
     paidTotal?: SortOrder
     createdBy?: SortOrder
+    createdById?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     shiftId?: SortOrderInput | SortOrder
     shiftNumber?: SortOrderInput | SortOrder
     createdAt?: SortOrder
@@ -55286,6 +55998,8 @@ export namespace Prisma {
     total?: DecimalWithAggregatesFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string
     paidTotal?: DecimalWithAggregatesFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string
     createdBy?: StringWithAggregatesFilter<"PurchaseOrder"> | string
+    createdById?: StringNullableWithAggregatesFilter<"PurchaseOrder"> | string | null
+    attribution?: JsonNullableWithAggregatesFilter<"PurchaseOrder">
     shiftId?: StringNullableWithAggregatesFilter<"PurchaseOrder"> | string | null
     shiftNumber?: StringNullableWithAggregatesFilter<"PurchaseOrder"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"PurchaseOrder"> | Date | string
@@ -55386,6 +56100,8 @@ export namespace Prisma {
     method?: StringFilter<"SupplierPayment"> | string
     reference?: StringFilter<"SupplierPayment"> | string
     recordedBy?: StringFilter<"SupplierPayment"> | string
+    recordedById?: StringNullableFilter<"SupplierPayment"> | string | null
+    attribution?: JsonNullableFilter<"SupplierPayment">
     shiftId?: StringNullableFilter<"SupplierPayment"> | string | null
     shiftNumber?: StringNullableFilter<"SupplierPayment"> | string | null
     createdAt?: DateTimeFilter<"SupplierPayment"> | Date | string
@@ -55404,6 +56120,8 @@ export namespace Prisma {
     method?: SortOrder
     reference?: SortOrder
     recordedBy?: SortOrder
+    recordedById?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     shiftId?: SortOrderInput | SortOrder
     shiftNumber?: SortOrderInput | SortOrder
     createdAt?: SortOrder
@@ -55425,6 +56143,8 @@ export namespace Prisma {
     method?: StringFilter<"SupplierPayment"> | string
     reference?: StringFilter<"SupplierPayment"> | string
     recordedBy?: StringFilter<"SupplierPayment"> | string
+    recordedById?: StringNullableFilter<"SupplierPayment"> | string | null
+    attribution?: JsonNullableFilter<"SupplierPayment">
     shiftId?: StringNullableFilter<"SupplierPayment"> | string | null
     shiftNumber?: StringNullableFilter<"SupplierPayment"> | string | null
     createdAt?: DateTimeFilter<"SupplierPayment"> | Date | string
@@ -55443,6 +56163,8 @@ export namespace Prisma {
     method?: SortOrder
     reference?: SortOrder
     recordedBy?: SortOrder
+    recordedById?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     shiftId?: SortOrderInput | SortOrder
     shiftNumber?: SortOrderInput | SortOrder
     createdAt?: SortOrder
@@ -55467,6 +56189,8 @@ export namespace Prisma {
     method?: StringWithAggregatesFilter<"SupplierPayment"> | string
     reference?: StringWithAggregatesFilter<"SupplierPayment"> | string
     recordedBy?: StringWithAggregatesFilter<"SupplierPayment"> | string
+    recordedById?: StringNullableWithAggregatesFilter<"SupplierPayment"> | string | null
+    attribution?: JsonNullableWithAggregatesFilter<"SupplierPayment">
     shiftId?: StringNullableWithAggregatesFilter<"SupplierPayment"> | string | null
     shiftNumber?: StringNullableWithAggregatesFilter<"SupplierPayment"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"SupplierPayment"> | Date | string
@@ -55495,6 +56219,8 @@ export namespace Prisma {
     closedById?: StringNullableFilter<"Shift"> | string | null
     closedByName?: StringNullableFilter<"Shift"> | string | null
     notes?: StringNullableFilter<"Shift"> | string | null
+    openAttribution?: JsonNullableFilter<"Shift">
+    closeAttribution?: JsonNullableFilter<"Shift">
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     openedBy?: XOR<StaffUserScalarRelationFilter, StaffUserWhereInput>
     closedBy?: XOR<StaffUserNullableScalarRelationFilter, StaffUserWhereInput> | null
@@ -55520,6 +56246,8 @@ export namespace Prisma {
     closedById?: SortOrderInput | SortOrder
     closedByName?: SortOrderInput | SortOrder
     notes?: SortOrderInput | SortOrder
+    openAttribution?: SortOrderInput | SortOrder
+    closeAttribution?: SortOrderInput | SortOrder
     tenant?: TenantOrderByWithRelationInput
     openedBy?: StaffUserOrderByWithRelationInput
     closedBy?: StaffUserOrderByWithRelationInput
@@ -55548,6 +56276,8 @@ export namespace Prisma {
     closedById?: StringNullableFilter<"Shift"> | string | null
     closedByName?: StringNullableFilter<"Shift"> | string | null
     notes?: StringNullableFilter<"Shift"> | string | null
+    openAttribution?: JsonNullableFilter<"Shift">
+    closeAttribution?: JsonNullableFilter<"Shift">
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     openedBy?: XOR<StaffUserScalarRelationFilter, StaffUserWhereInput>
     closedBy?: XOR<StaffUserNullableScalarRelationFilter, StaffUserWhereInput> | null
@@ -55573,6 +56303,8 @@ export namespace Prisma {
     closedById?: SortOrderInput | SortOrder
     closedByName?: SortOrderInput | SortOrder
     notes?: SortOrderInput | SortOrder
+    openAttribution?: SortOrderInput | SortOrder
+    closeAttribution?: SortOrderInput | SortOrder
     _count?: ShiftCountOrderByAggregateInput
     _avg?: ShiftAvgOrderByAggregateInput
     _max?: ShiftMaxOrderByAggregateInput
@@ -55603,6 +56335,8 @@ export namespace Prisma {
     closedById?: StringNullableWithAggregatesFilter<"Shift"> | string | null
     closedByName?: StringNullableWithAggregatesFilter<"Shift"> | string | null
     notes?: StringNullableWithAggregatesFilter<"Shift"> | string | null
+    openAttribution?: JsonNullableWithAggregatesFilter<"Shift">
+    closeAttribution?: JsonNullableWithAggregatesFilter<"Shift">
   }
 
   export type AuditEventWhereInput = {
@@ -55700,6 +56434,7 @@ export namespace Prisma {
     note?: StringFilter<"Expense"> | string
     recordedBy?: StringFilter<"Expense"> | string
     recordedById?: StringNullableFilter<"Expense"> | string | null
+    attribution?: JsonNullableFilter<"Expense">
     shiftId?: StringNullableFilter<"Expense"> | string | null
     shiftNumber?: StringNullableFilter<"Expense"> | string | null
     createdAt?: DateTimeFilter<"Expense"> | Date | string
@@ -55719,6 +56454,7 @@ export namespace Prisma {
     note?: SortOrder
     recordedBy?: SortOrder
     recordedById?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     shiftId?: SortOrderInput | SortOrder
     shiftNumber?: SortOrderInput | SortOrder
     createdAt?: SortOrder
@@ -55741,6 +56477,7 @@ export namespace Prisma {
     note?: StringFilter<"Expense"> | string
     recordedBy?: StringFilter<"Expense"> | string
     recordedById?: StringNullableFilter<"Expense"> | string | null
+    attribution?: JsonNullableFilter<"Expense">
     shiftId?: StringNullableFilter<"Expense"> | string | null
     shiftNumber?: StringNullableFilter<"Expense"> | string | null
     createdAt?: DateTimeFilter<"Expense"> | Date | string
@@ -55760,6 +56497,7 @@ export namespace Prisma {
     note?: SortOrder
     recordedBy?: SortOrder
     recordedById?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     shiftId?: SortOrderInput | SortOrder
     shiftNumber?: SortOrderInput | SortOrder
     createdAt?: SortOrder
@@ -55785,6 +56523,7 @@ export namespace Prisma {
     note?: StringWithAggregatesFilter<"Expense"> | string
     recordedBy?: StringWithAggregatesFilter<"Expense"> | string
     recordedById?: StringNullableWithAggregatesFilter<"Expense"> | string | null
+    attribution?: JsonNullableWithAggregatesFilter<"Expense">
     shiftId?: StringNullableWithAggregatesFilter<"Expense"> | string | null
     shiftNumber?: StringNullableWithAggregatesFilter<"Expense"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Expense"> | Date | string
@@ -55811,6 +56550,9 @@ export namespace Prisma {
     receivedAt?: DateTimeFilter<"InventoryBatch"> | Date | string
     updatedAt?: DateTimeFilter<"InventoryBatch"> | Date | string
     status?: EnumInventoryBatchStatusFilter<"InventoryBatch"> | $Enums.InventoryBatchStatus
+    receivedById?: StringNullableFilter<"InventoryBatch"> | string | null
+    receivedByName?: StringNullableFilter<"InventoryBatch"> | string | null
+    attribution?: JsonNullableFilter<"InventoryBatch">
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
     supplier?: XOR<SupplierNullableScalarRelationFilter, SupplierWhereInput> | null
@@ -55834,6 +56576,9 @@ export namespace Prisma {
     receivedAt?: SortOrder
     updatedAt?: SortOrder
     status?: SortOrder
+    receivedById?: SortOrderInput | SortOrder
+    receivedByName?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     tenant?: TenantOrderByWithRelationInput
     product?: ProductOrderByWithRelationInput
     supplier?: SupplierOrderByWithRelationInput
@@ -55860,6 +56605,9 @@ export namespace Prisma {
     receivedAt?: DateTimeFilter<"InventoryBatch"> | Date | string
     updatedAt?: DateTimeFilter<"InventoryBatch"> | Date | string
     status?: EnumInventoryBatchStatusFilter<"InventoryBatch"> | $Enums.InventoryBatchStatus
+    receivedById?: StringNullableFilter<"InventoryBatch"> | string | null
+    receivedByName?: StringNullableFilter<"InventoryBatch"> | string | null
+    attribution?: JsonNullableFilter<"InventoryBatch">
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
     supplier?: XOR<SupplierNullableScalarRelationFilter, SupplierWhereInput> | null
@@ -55883,6 +56631,9 @@ export namespace Prisma {
     receivedAt?: SortOrder
     updatedAt?: SortOrder
     status?: SortOrder
+    receivedById?: SortOrderInput | SortOrder
+    receivedByName?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     _count?: InventoryBatchCountOrderByAggregateInput
     _avg?: InventoryBatchAvgOrderByAggregateInput
     _max?: InventoryBatchMaxOrderByAggregateInput
@@ -55911,6 +56662,9 @@ export namespace Prisma {
     receivedAt?: DateTimeWithAggregatesFilter<"InventoryBatch"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"InventoryBatch"> | Date | string
     status?: EnumInventoryBatchStatusWithAggregatesFilter<"InventoryBatch"> | $Enums.InventoryBatchStatus
+    receivedById?: StringNullableWithAggregatesFilter<"InventoryBatch"> | string | null
+    receivedByName?: StringNullableWithAggregatesFilter<"InventoryBatch"> | string | null
+    attribution?: JsonNullableWithAggregatesFilter<"InventoryBatch">
   }
 
   export type StockAdjustmentWhereInput = {
@@ -55931,6 +56685,9 @@ export namespace Prisma {
     batchId?: StringNullableFilter<"StockAdjustment"> | string | null
     batchAllocations?: JsonNullableFilter<"StockAdjustment">
     valueImpact?: DecimalFilter<"StockAdjustment"> | Decimal | DecimalJsLike | number | string
+    createdById?: StringNullableFilter<"StockAdjustment"> | string | null
+    createdByName?: StringNullableFilter<"StockAdjustment"> | string | null
+    attribution?: JsonNullableFilter<"StockAdjustment">
     createdAt?: DateTimeFilter<"StockAdjustment"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
@@ -55951,6 +56708,9 @@ export namespace Prisma {
     batchId?: SortOrderInput | SortOrder
     batchAllocations?: SortOrderInput | SortOrder
     valueImpact?: SortOrder
+    createdById?: SortOrderInput | SortOrder
+    createdByName?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     tenant?: TenantOrderByWithRelationInput
     product?: ProductOrderByWithRelationInput
@@ -55974,6 +56734,9 @@ export namespace Prisma {
     batchId?: StringNullableFilter<"StockAdjustment"> | string | null
     batchAllocations?: JsonNullableFilter<"StockAdjustment">
     valueImpact?: DecimalFilter<"StockAdjustment"> | Decimal | DecimalJsLike | number | string
+    createdById?: StringNullableFilter<"StockAdjustment"> | string | null
+    createdByName?: StringNullableFilter<"StockAdjustment"> | string | null
+    attribution?: JsonNullableFilter<"StockAdjustment">
     createdAt?: DateTimeFilter<"StockAdjustment"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
@@ -55994,6 +56757,9 @@ export namespace Prisma {
     batchId?: SortOrderInput | SortOrder
     batchAllocations?: SortOrderInput | SortOrder
     valueImpact?: SortOrder
+    createdById?: SortOrderInput | SortOrder
+    createdByName?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: StockAdjustmentCountOrderByAggregateInput
     _avg?: StockAdjustmentAvgOrderByAggregateInput
@@ -56020,6 +56786,9 @@ export namespace Prisma {
     batchId?: StringNullableWithAggregatesFilter<"StockAdjustment"> | string | null
     batchAllocations?: JsonNullableWithAggregatesFilter<"StockAdjustment">
     valueImpact?: DecimalWithAggregatesFilter<"StockAdjustment"> | Decimal | DecimalJsLike | number | string
+    createdById?: StringNullableWithAggregatesFilter<"StockAdjustment"> | string | null
+    createdByName?: StringNullableWithAggregatesFilter<"StockAdjustment"> | string | null
+    attribution?: JsonNullableWithAggregatesFilter<"StockAdjustment">
     createdAt?: DateTimeWithAggregatesFilter<"StockAdjustment"> | Date | string
   }
 
@@ -56035,6 +56804,9 @@ export namespace Prisma {
     completedAt?: DateTimeNullableFilter<"StockCountSession"> | Date | string | null
     totalVariance?: DecimalFilter<"StockCountSession"> | Decimal | DecimalJsLike | number | string
     totalValueImpact?: DecimalFilter<"StockCountSession"> | Decimal | DecimalJsLike | number | string
+    completedById?: StringNullableFilter<"StockCountSession"> | string | null
+    completedByName?: StringNullableFilter<"StockCountSession"> | string | null
+    attribution?: JsonNullableFilter<"StockCountSession">
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     lines?: StockCountLineListRelationFilter
   }
@@ -56048,6 +56820,9 @@ export namespace Prisma {
     completedAt?: SortOrderInput | SortOrder
     totalVariance?: SortOrder
     totalValueImpact?: SortOrder
+    completedById?: SortOrderInput | SortOrder
+    completedByName?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     tenant?: TenantOrderByWithRelationInput
     lines?: StockCountLineOrderByRelationAggregateInput
   }
@@ -56064,6 +56839,9 @@ export namespace Prisma {
     completedAt?: DateTimeNullableFilter<"StockCountSession"> | Date | string | null
     totalVariance?: DecimalFilter<"StockCountSession"> | Decimal | DecimalJsLike | number | string
     totalValueImpact?: DecimalFilter<"StockCountSession"> | Decimal | DecimalJsLike | number | string
+    completedById?: StringNullableFilter<"StockCountSession"> | string | null
+    completedByName?: StringNullableFilter<"StockCountSession"> | string | null
+    attribution?: JsonNullableFilter<"StockCountSession">
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     lines?: StockCountLineListRelationFilter
   }, "id">
@@ -56077,6 +56855,9 @@ export namespace Prisma {
     completedAt?: SortOrderInput | SortOrder
     totalVariance?: SortOrder
     totalValueImpact?: SortOrder
+    completedById?: SortOrderInput | SortOrder
+    completedByName?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     _count?: StockCountSessionCountOrderByAggregateInput
     _avg?: StockCountSessionAvgOrderByAggregateInput
     _max?: StockCountSessionMaxOrderByAggregateInput
@@ -56096,6 +56877,9 @@ export namespace Prisma {
     completedAt?: DateTimeNullableWithAggregatesFilter<"StockCountSession"> | Date | string | null
     totalVariance?: DecimalWithAggregatesFilter<"StockCountSession"> | Decimal | DecimalJsLike | number | string
     totalValueImpact?: DecimalWithAggregatesFilter<"StockCountSession"> | Decimal | DecimalJsLike | number | string
+    completedById?: StringNullableWithAggregatesFilter<"StockCountSession"> | string | null
+    completedByName?: StringNullableWithAggregatesFilter<"StockCountSession"> | string | null
+    attribution?: JsonNullableWithAggregatesFilter<"StockCountSession">
   }
 
   export type StockCountLineWhereInput = {
@@ -56453,6 +57237,8 @@ export namespace Prisma {
     cashOut?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     note?: StringFilter<"DailyClose"> | string
     closedBy?: StringFilter<"DailyClose"> | string
+    closedById?: StringNullableFilter<"DailyClose"> | string | null
+    attribution?: JsonNullableFilter<"DailyClose">
     unsyncedCountAtClose?: IntNullableFilter<"DailyClose"> | number | null
     createdAt?: DateTimeFilter<"DailyClose"> | Date | string
     scope?: StringFilter<"DailyClose"> | string
@@ -56484,6 +57270,8 @@ export namespace Prisma {
     cashOut?: SortOrder
     note?: SortOrder
     closedBy?: SortOrder
+    closedById?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     unsyncedCountAtClose?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     scope?: SortOrder
@@ -56519,6 +57307,8 @@ export namespace Prisma {
     cashOut?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     note?: StringFilter<"DailyClose"> | string
     closedBy?: StringFilter<"DailyClose"> | string
+    closedById?: StringNullableFilter<"DailyClose"> | string | null
+    attribution?: JsonNullableFilter<"DailyClose">
     unsyncedCountAtClose?: IntNullableFilter<"DailyClose"> | number | null
     createdAt?: DateTimeFilter<"DailyClose"> | Date | string
     scope?: StringFilter<"DailyClose"> | string
@@ -56550,6 +57340,8 @@ export namespace Prisma {
     cashOut?: SortOrder
     note?: SortOrder
     closedBy?: SortOrder
+    closedById?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     unsyncedCountAtClose?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     scope?: SortOrder
@@ -56588,6 +57380,8 @@ export namespace Prisma {
     cashOut?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     note?: StringWithAggregatesFilter<"DailyClose"> | string
     closedBy?: StringWithAggregatesFilter<"DailyClose"> | string
+    closedById?: StringNullableWithAggregatesFilter<"DailyClose"> | string | null
+    attribution?: JsonNullableWithAggregatesFilter<"DailyClose">
     unsyncedCountAtClose?: IntNullableWithAggregatesFilter<"DailyClose"> | number | null
     createdAt?: DateTimeWithAggregatesFilter<"DailyClose"> | Date | string
     scope?: StringWithAggregatesFilter<"DailyClose"> | string
@@ -56617,6 +57411,7 @@ export namespace Prisma {
     referenceId?: StringNullableFilter<"CashMovement"> | string | null
     recordedById?: StringNullableFilter<"CashMovement"> | string | null
     recordedByName?: StringFilter<"CashMovement"> | string
+    attribution?: JsonNullableFilter<"CashMovement">
     createdAt?: DateTimeFilter<"CashMovement"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }
@@ -56635,6 +57430,7 @@ export namespace Prisma {
     referenceId?: SortOrderInput | SortOrder
     recordedById?: SortOrderInput | SortOrder
     recordedByName?: SortOrder
+    attribution?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     tenant?: TenantOrderByWithRelationInput
   }
@@ -56656,6 +57452,7 @@ export namespace Prisma {
     referenceId?: StringNullableFilter<"CashMovement"> | string | null
     recordedById?: StringNullableFilter<"CashMovement"> | string | null
     recordedByName?: StringFilter<"CashMovement"> | string
+    attribution?: JsonNullableFilter<"CashMovement">
     createdAt?: DateTimeFilter<"CashMovement"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }, "id">
@@ -56674,6 +57471,7 @@ export namespace Prisma {
     referenceId?: SortOrderInput | SortOrder
     recordedById?: SortOrderInput | SortOrder
     recordedByName?: SortOrder
+    attribution?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: CashMovementCountOrderByAggregateInput
     _avg?: CashMovementAvgOrderByAggregateInput
@@ -56699,6 +57497,7 @@ export namespace Prisma {
     referenceId?: StringNullableWithAggregatesFilter<"CashMovement"> | string | null
     recordedById?: StringNullableWithAggregatesFilter<"CashMovement"> | string | null
     recordedByName?: StringWithAggregatesFilter<"CashMovement"> | string
+    attribution?: JsonNullableWithAggregatesFilter<"CashMovement">
     createdAt?: DateTimeWithAggregatesFilter<"CashMovement"> | Date | string
   }
 
@@ -57145,6 +57944,8 @@ export namespace Prisma {
     retiredAt?: DateTimeNullableFilter<"SyncClient"> | Date | string | null
     retiredBy?: StringNullableFilter<"SyncClient"> | string | null
     retiredNote?: StringNullableFilter<"SyncClient"> | string | null
+    queueReport?: JsonNullableFilter<"SyncClient">
+    queueReportedAt?: DateTimeNullableFilter<"SyncClient"> | Date | string | null
   }
 
   export type SyncClientOrderByWithRelationInput = {
@@ -57157,6 +57958,8 @@ export namespace Prisma {
     retiredAt?: SortOrderInput | SortOrder
     retiredBy?: SortOrderInput | SortOrder
     retiredNote?: SortOrderInput | SortOrder
+    queueReport?: SortOrderInput | SortOrder
+    queueReportedAt?: SortOrderInput | SortOrder
   }
 
   export type SyncClientWhereUniqueInput = Prisma.AtLeast<{
@@ -57173,6 +57976,8 @@ export namespace Prisma {
     retiredAt?: DateTimeNullableFilter<"SyncClient"> | Date | string | null
     retiredBy?: StringNullableFilter<"SyncClient"> | string | null
     retiredNote?: StringNullableFilter<"SyncClient"> | string | null
+    queueReport?: JsonNullableFilter<"SyncClient">
+    queueReportedAt?: DateTimeNullableFilter<"SyncClient"> | Date | string | null
   }, "id" | "tenantId_clientKey">
 
   export type SyncClientOrderByWithAggregationInput = {
@@ -57185,6 +57990,8 @@ export namespace Prisma {
     retiredAt?: SortOrderInput | SortOrder
     retiredBy?: SortOrderInput | SortOrder
     retiredNote?: SortOrderInput | SortOrder
+    queueReport?: SortOrderInput | SortOrder
+    queueReportedAt?: SortOrderInput | SortOrder
     _count?: SyncClientCountOrderByAggregateInput
     _avg?: SyncClientAvgOrderByAggregateInput
     _max?: SyncClientMaxOrderByAggregateInput
@@ -57205,6 +58012,8 @@ export namespace Prisma {
     retiredAt?: DateTimeNullableWithAggregatesFilter<"SyncClient"> | Date | string | null
     retiredBy?: StringNullableWithAggregatesFilter<"SyncClient"> | string | null
     retiredNote?: StringNullableWithAggregatesFilter<"SyncClient"> | string | null
+    queueReport?: JsonNullableWithAggregatesFilter<"SyncClient">
+    queueReportedAt?: DateTimeNullableWithAggregatesFilter<"SyncClient"> | Date | string | null
   }
 
   export type OperationEvidenceWhereInput = {
@@ -57238,6 +58047,7 @@ export namespace Prisma {
     attestation?: StringNullableFilter<"OperationEvidence"> | string | null
     attestationKid?: StringNullableFilter<"OperationEvidence"> | string | null
     approval?: JsonNullableFilter<"OperationEvidence">
+    attribution?: JsonNullableFilter<"OperationEvidence">
   }
 
   export type OperationEvidenceOrderByWithRelationInput = {
@@ -57268,6 +58078,7 @@ export namespace Prisma {
     attestation?: SortOrderInput | SortOrder
     attestationKid?: SortOrderInput | SortOrder
     approval?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
   }
 
   export type OperationEvidenceWhereUniqueInput = Prisma.AtLeast<{
@@ -57301,6 +58112,7 @@ export namespace Prisma {
     attestation?: StringNullableFilter<"OperationEvidence"> | string | null
     attestationKid?: StringNullableFilter<"OperationEvidence"> | string | null
     approval?: JsonNullableFilter<"OperationEvidence">
+    attribution?: JsonNullableFilter<"OperationEvidence">
   }, "opId">
 
   export type OperationEvidenceOrderByWithAggregationInput = {
@@ -57331,6 +58143,7 @@ export namespace Prisma {
     attestation?: SortOrderInput | SortOrder
     attestationKid?: SortOrderInput | SortOrder
     approval?: SortOrderInput | SortOrder
+    attribution?: SortOrderInput | SortOrder
     _count?: OperationEvidenceCountOrderByAggregateInput
     _avg?: OperationEvidenceAvgOrderByAggregateInput
     _max?: OperationEvidenceMaxOrderByAggregateInput
@@ -57369,6 +58182,7 @@ export namespace Prisma {
     attestation?: StringNullableWithAggregatesFilter<"OperationEvidence"> | string | null
     attestationKid?: StringNullableWithAggregatesFilter<"OperationEvidence"> | string | null
     approval?: JsonNullableWithAggregatesFilter<"OperationEvidence">
+    attribution?: JsonNullableWithAggregatesFilter<"OperationEvidence">
   }
 
   export type HubKeyWhereInput = {
@@ -57385,6 +58199,10 @@ export namespace Prisma {
     revokedAt?: DateTimeNullableFilter<"HubKey"> | Date | string | null
     revokedById?: StringNullableFilter<"HubKey"> | string | null
     revokeNote?: StringNullableFilter<"HubKey"> | string | null
+    hubId?: StringNullableFilter<"HubKey"> | string | null
+    hubLabel?: StringFilter<"HubKey"> | string
+    lastReport?: JsonNullableFilter<"HubKey">
+    lastReportAt?: DateTimeNullableFilter<"HubKey"> | Date | string | null
   }
 
   export type HubKeyOrderByWithRelationInput = {
@@ -57398,6 +58216,10 @@ export namespace Prisma {
     revokedAt?: SortOrderInput | SortOrder
     revokedById?: SortOrderInput | SortOrder
     revokeNote?: SortOrderInput | SortOrder
+    hubId?: SortOrderInput | SortOrder
+    hubLabel?: SortOrder
+    lastReport?: SortOrderInput | SortOrder
+    lastReportAt?: SortOrderInput | SortOrder
   }
 
   export type HubKeyWhereUniqueInput = Prisma.AtLeast<{
@@ -57414,6 +58236,10 @@ export namespace Prisma {
     revokedAt?: DateTimeNullableFilter<"HubKey"> | Date | string | null
     revokedById?: StringNullableFilter<"HubKey"> | string | null
     revokeNote?: StringNullableFilter<"HubKey"> | string | null
+    hubId?: StringNullableFilter<"HubKey"> | string | null
+    hubLabel?: StringFilter<"HubKey"> | string
+    lastReport?: JsonNullableFilter<"HubKey">
+    lastReportAt?: DateTimeNullableFilter<"HubKey"> | Date | string | null
   }, "kid">
 
   export type HubKeyOrderByWithAggregationInput = {
@@ -57427,6 +58253,10 @@ export namespace Prisma {
     revokedAt?: SortOrderInput | SortOrder
     revokedById?: SortOrderInput | SortOrder
     revokeNote?: SortOrderInput | SortOrder
+    hubId?: SortOrderInput | SortOrder
+    hubLabel?: SortOrder
+    lastReport?: SortOrderInput | SortOrder
+    lastReportAt?: SortOrderInput | SortOrder
     _count?: HubKeyCountOrderByAggregateInput
     _max?: HubKeyMaxOrderByAggregateInput
     _min?: HubKeyMinOrderByAggregateInput
@@ -57446,6 +58276,10 @@ export namespace Prisma {
     revokedAt?: DateTimeNullableWithAggregatesFilter<"HubKey"> | Date | string | null
     revokedById?: StringNullableWithAggregatesFilter<"HubKey"> | string | null
     revokeNote?: StringNullableWithAggregatesFilter<"HubKey"> | string | null
+    hubId?: StringNullableWithAggregatesFilter<"HubKey"> | string | null
+    hubLabel?: StringWithAggregatesFilter<"HubKey"> | string
+    lastReport?: JsonNullableWithAggregatesFilter<"HubKey">
+    lastReportAt?: DateTimeNullableWithAggregatesFilter<"HubKey"> | Date | string | null
   }
 
   export type ManagerApprovalWhereInput = {
@@ -57766,6 +58600,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -57820,6 +58659,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -57874,6 +58718,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -57928,6 +58777,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -57982,6 +58836,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -58011,6 +58870,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -58040,6 +58904,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -58600,6 +59469,11 @@ export namespace Prisma {
     soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
+    voidedById?: string | null
+    voidedByName?: string | null
+    voidedAt?: Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
@@ -58628,6 +59502,11 @@ export namespace Prisma {
     soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
+    voidedById?: string | null
+    voidedByName?: string | null
+    voidedAt?: Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
@@ -58654,6 +59533,11 @@ export namespace Prisma {
     soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedById?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -58682,6 +59566,11 @@ export namespace Prisma {
     soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedById?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -58709,6 +59598,11 @@ export namespace Prisma {
     soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
+    voidedById?: string | null
+    voidedByName?: string | null
+    voidedAt?: Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
@@ -58732,6 +59626,11 @@ export namespace Prisma {
     soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedById?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -58756,6 +59655,11 @@ export namespace Prisma {
     soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedById?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -58997,6 +59901,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     exchangeRate?: Decimal | DecimalJsLike | number | string | null
@@ -59020,6 +59925,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     exchangeRate?: Decimal | DecimalJsLike | number | string | null
@@ -59039,6 +59945,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -59062,6 +59969,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -59083,6 +59991,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     exchangeRate?: Decimal | DecimalJsLike | number | string | null
@@ -59101,6 +60010,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -59121,6 +60031,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -59349,6 +60260,9 @@ export namespace Prisma {
     discountTotal?: Decimal | DecimalJsLike | number | string | null
     tax: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    recordedById?: string | null
+    recordedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutDebtSalesInput
     customer: CustomerCreateNestedOneWithoutDebtSalesInput
@@ -59364,6 +60278,9 @@ export namespace Prisma {
     discountTotal?: Decimal | DecimalJsLike | number | string | null
     tax: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    recordedById?: string | null
+    recordedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -59375,6 +60292,9 @@ export namespace Prisma {
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutDebtSalesNestedInput
     customer?: CustomerUpdateOneRequiredWithoutDebtSalesNestedInput
@@ -59390,6 +60310,9 @@ export namespace Prisma {
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -59403,6 +60326,9 @@ export namespace Prisma {
     discountTotal?: Decimal | DecimalJsLike | number | string | null
     tax: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    recordedById?: string | null
+    recordedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -59414,6 +60340,9 @@ export namespace Prisma {
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -59427,6 +60356,9 @@ export namespace Prisma {
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -59435,6 +60367,9 @@ export namespace Prisma {
     amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
+    recordedById?: string | null
+    recordedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutDebtPaymentsInput
     customer: CustomerCreateNestedOneWithoutDebtPaymentsInput
@@ -59447,6 +60382,9 @@ export namespace Prisma {
     amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
+    recordedById?: string | null
+    recordedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -59455,6 +60393,9 @@ export namespace Prisma {
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutDebtPaymentsNestedInput
     customer?: CustomerUpdateOneRequiredWithoutDebtPaymentsNestedInput
@@ -59467,6 +60408,9 @@ export namespace Prisma {
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -59477,6 +60421,9 @@ export namespace Prisma {
     amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
+    recordedById?: string | null
+    recordedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -59485,6 +60432,9 @@ export namespace Prisma {
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -59495,6 +60445,9 @@ export namespace Prisma {
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -59611,6 +60564,8 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
+    createdById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -59633,6 +60588,8 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
+    createdById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -59651,6 +60608,8 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -59673,6 +60632,8 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -59693,6 +60654,8 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
+    createdById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -59710,6 +60673,8 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -59729,6 +60694,8 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -59826,6 +60793,8 @@ export namespace Prisma {
     method: string
     reference?: string
     recordedBy: string
+    recordedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -59844,6 +60813,8 @@ export namespace Prisma {
     method: string
     reference?: string
     recordedBy: string
+    recordedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -59858,6 +60829,8 @@ export namespace Prisma {
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -59876,6 +60849,8 @@ export namespace Prisma {
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -59892,6 +60867,8 @@ export namespace Prisma {
     method: string
     reference?: string
     recordedBy: string
+    recordedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -59906,6 +60883,8 @@ export namespace Prisma {
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -59922,6 +60901,8 @@ export namespace Prisma {
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -59944,6 +60925,8 @@ export namespace Prisma {
     openedByName: string
     closedByName?: string | null
     notes?: string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
     tenant: TenantCreateNestedOneWithoutShiftsInput
     openedBy: StaffUserCreateNestedOneWithoutOpenedShiftsInput
     closedBy?: StaffUserCreateNestedOneWithoutClosedShiftsInput
@@ -59969,6 +60952,8 @@ export namespace Prisma {
     closedById?: string | null
     closedByName?: string | null
     notes?: string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ShiftUpdateInput = {
@@ -59988,6 +60973,8 @@ export namespace Prisma {
     openedByName?: StringFieldUpdateOperationsInput | string
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
     tenant?: TenantUpdateOneRequiredWithoutShiftsNestedInput
     openedBy?: StaffUserUpdateOneRequiredWithoutOpenedShiftsNestedInput
     closedBy?: StaffUserUpdateOneWithoutClosedShiftsNestedInput
@@ -60013,6 +61000,8 @@ export namespace Prisma {
     closedById?: NullableStringFieldUpdateOperationsInput | string | null
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ShiftCreateManyInput = {
@@ -60035,6 +61024,8 @@ export namespace Prisma {
     closedById?: string | null
     closedByName?: string | null
     notes?: string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ShiftUpdateManyMutationInput = {
@@ -60054,6 +61045,8 @@ export namespace Prisma {
     openedByName?: StringFieldUpdateOperationsInput | string
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ShiftUncheckedUpdateManyInput = {
@@ -60076,6 +61069,8 @@ export namespace Prisma {
     closedById?: NullableStringFieldUpdateOperationsInput | string | null
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type AuditEventCreateInput = {
@@ -60178,6 +61173,7 @@ export namespace Prisma {
     invoiceNumber?: string
     note?: string
     recordedBy: string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -60197,6 +61193,7 @@ export namespace Prisma {
     note?: string
     recordedBy: string
     recordedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -60212,6 +61209,7 @@ export namespace Prisma {
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -60231,6 +61229,7 @@ export namespace Prisma {
     note?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
     recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -60248,6 +61247,7 @@ export namespace Prisma {
     note?: string
     recordedBy: string
     recordedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -60263,6 +61263,7 @@ export namespace Prisma {
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -60280,6 +61281,7 @@ export namespace Prisma {
     note?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
     recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -60300,6 +61302,9 @@ export namespace Prisma {
     receivedAt?: Date | string
     updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
+    receivedById?: string | null
+    receivedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     tenant: TenantCreateNestedOneWithoutInventoryBatchesInput
     product: ProductCreateNestedOneWithoutBatchesInput
     supplier?: SupplierCreateNestedOneWithoutInventoryBatchesInput
@@ -60323,6 +61328,9 @@ export namespace Prisma {
     receivedAt?: Date | string
     updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
+    receivedById?: string | null
+    receivedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type InventoryBatchUpdateInput = {
@@ -60340,6 +61348,9 @@ export namespace Prisma {
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
+    receivedById?: NullableStringFieldUpdateOperationsInput | string | null
+    receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     tenant?: TenantUpdateOneRequiredWithoutInventoryBatchesNestedInput
     product?: ProductUpdateOneRequiredWithoutBatchesNestedInput
     supplier?: SupplierUpdateOneWithoutInventoryBatchesNestedInput
@@ -60363,6 +61374,9 @@ export namespace Prisma {
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
+    receivedById?: NullableStringFieldUpdateOperationsInput | string | null
+    receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type InventoryBatchCreateManyInput = {
@@ -60383,6 +61397,9 @@ export namespace Prisma {
     receivedAt?: Date | string
     updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
+    receivedById?: string | null
+    receivedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type InventoryBatchUpdateManyMutationInput = {
@@ -60400,6 +61417,9 @@ export namespace Prisma {
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
+    receivedById?: NullableStringFieldUpdateOperationsInput | string | null
+    receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type InventoryBatchUncheckedUpdateManyInput = {
@@ -60420,6 +61440,9 @@ export namespace Prisma {
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
+    receivedById?: NullableStringFieldUpdateOperationsInput | string | null
+    receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type StockAdjustmentCreateInput = {
@@ -60435,6 +61458,9 @@ export namespace Prisma {
     batchId?: string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
+    createdById?: string | null
+    createdByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutStockAdjustmentsInput
     product: ProductCreateNestedOneWithoutAdjustmentsInput
@@ -60455,6 +61481,9 @@ export namespace Prisma {
     batchId?: string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
+    createdById?: string | null
+    createdByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -60471,6 +61500,9 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    createdByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutStockAdjustmentsNestedInput
     product?: ProductUpdateOneRequiredWithoutAdjustmentsNestedInput
@@ -60491,6 +61523,9 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    createdByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -60509,6 +61544,9 @@ export namespace Prisma {
     batchId?: string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
+    createdById?: string | null
+    createdByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -60525,6 +61563,9 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    createdByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -60543,6 +61584,9 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    createdByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -60554,6 +61598,9 @@ export namespace Prisma {
     completedAt?: Date | string | null
     totalVariance?: Decimal | DecimalJsLike | number | string
     totalValueImpact?: Decimal | DecimalJsLike | number | string
+    completedById?: string | null
+    completedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     tenant: TenantCreateNestedOneWithoutStockCountsInput
     lines?: StockCountLineCreateNestedManyWithoutSessionInput
   }
@@ -60567,6 +61614,9 @@ export namespace Prisma {
     completedAt?: Date | string | null
     totalVariance?: Decimal | DecimalJsLike | number | string
     totalValueImpact?: Decimal | DecimalJsLike | number | string
+    completedById?: string | null
+    completedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     lines?: StockCountLineUncheckedCreateNestedManyWithoutSessionInput
   }
 
@@ -60578,6 +61628,9 @@ export namespace Prisma {
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalVariance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalValueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    completedById?: NullableStringFieldUpdateOperationsInput | string | null
+    completedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     tenant?: TenantUpdateOneRequiredWithoutStockCountsNestedInput
     lines?: StockCountLineUpdateManyWithoutSessionNestedInput
   }
@@ -60591,6 +61644,9 @@ export namespace Prisma {
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalVariance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalValueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    completedById?: NullableStringFieldUpdateOperationsInput | string | null
+    completedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     lines?: StockCountLineUncheckedUpdateManyWithoutSessionNestedInput
   }
 
@@ -60603,6 +61659,9 @@ export namespace Prisma {
     completedAt?: Date | string | null
     totalVariance?: Decimal | DecimalJsLike | number | string
     totalValueImpact?: Decimal | DecimalJsLike | number | string
+    completedById?: string | null
+    completedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type StockCountSessionUpdateManyMutationInput = {
@@ -60613,6 +61672,9 @@ export namespace Prisma {
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalVariance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalValueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    completedById?: NullableStringFieldUpdateOperationsInput | string | null
+    completedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type StockCountSessionUncheckedUpdateManyInput = {
@@ -60624,6 +61686,9 @@ export namespace Prisma {
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalVariance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalValueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    completedById?: NullableStringFieldUpdateOperationsInput | string | null
+    completedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type StockCountLineCreateInput = {
@@ -61019,6 +62084,8 @@ export namespace Prisma {
     cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
     closedBy: string
+    closedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     unsyncedCountAtClose?: number | null
     createdAt?: Date | string
     scope?: string
@@ -61050,6 +62117,8 @@ export namespace Prisma {
     cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
     closedBy: string
+    closedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     unsyncedCountAtClose?: number | null
     createdAt?: Date | string
     scope?: string
@@ -61079,6 +62148,8 @@ export namespace Prisma {
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
+    closedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     scope?: StringFieldUpdateOperationsInput | string
@@ -61110,6 +62181,8 @@ export namespace Prisma {
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
+    closedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     scope?: StringFieldUpdateOperationsInput | string
@@ -61140,6 +62213,8 @@ export namespace Prisma {
     cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
     closedBy: string
+    closedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     unsyncedCountAtClose?: number | null
     createdAt?: Date | string
     scope?: string
@@ -61169,6 +62244,8 @@ export namespace Prisma {
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
+    closedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     scope?: StringFieldUpdateOperationsInput | string
@@ -61199,6 +62276,8 @@ export namespace Prisma {
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
+    closedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     scope?: StringFieldUpdateOperationsInput | string
@@ -61224,6 +62303,7 @@ export namespace Prisma {
     referenceId?: string | null
     recordedById?: string | null
     recordedByName: string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutCashMovementsInput
   }
@@ -61242,6 +62322,7 @@ export namespace Prisma {
     referenceId?: string | null
     recordedById?: string | null
     recordedByName: string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -61258,6 +62339,7 @@ export namespace Prisma {
     referenceId?: NullableStringFieldUpdateOperationsInput | string | null
     recordedById?: NullableStringFieldUpdateOperationsInput | string | null
     recordedByName?: StringFieldUpdateOperationsInput | string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutCashMovementsNestedInput
   }
@@ -61276,6 +62358,7 @@ export namespace Prisma {
     referenceId?: NullableStringFieldUpdateOperationsInput | string | null
     recordedById?: NullableStringFieldUpdateOperationsInput | string | null
     recordedByName?: StringFieldUpdateOperationsInput | string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -61293,6 +62376,7 @@ export namespace Prisma {
     referenceId?: string | null
     recordedById?: string | null
     recordedByName: string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -61309,6 +62393,7 @@ export namespace Prisma {
     referenceId?: NullableStringFieldUpdateOperationsInput | string | null
     recordedById?: NullableStringFieldUpdateOperationsInput | string | null
     recordedByName?: StringFieldUpdateOperationsInput | string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -61326,6 +62411,7 @@ export namespace Prisma {
     referenceId?: NullableStringFieldUpdateOperationsInput | string | null
     recordedById?: NullableStringFieldUpdateOperationsInput | string | null
     recordedByName?: StringFieldUpdateOperationsInput | string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -61817,6 +62903,8 @@ export namespace Prisma {
     retiredAt?: Date | string | null
     retiredBy?: string | null
     retiredNote?: string | null
+    queueReport?: NullableJsonNullValueInput | InputJsonValue
+    queueReportedAt?: Date | string | null
   }
 
   export type SyncClientUncheckedCreateInput = {
@@ -61829,6 +62917,8 @@ export namespace Prisma {
     retiredAt?: Date | string | null
     retiredBy?: string | null
     retiredNote?: string | null
+    queueReport?: NullableJsonNullValueInput | InputJsonValue
+    queueReportedAt?: Date | string | null
   }
 
   export type SyncClientUpdateInput = {
@@ -61841,6 +62931,8 @@ export namespace Prisma {
     retiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     retiredBy?: NullableStringFieldUpdateOperationsInput | string | null
     retiredNote?: NullableStringFieldUpdateOperationsInput | string | null
+    queueReport?: NullableJsonNullValueInput | InputJsonValue
+    queueReportedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type SyncClientUncheckedUpdateInput = {
@@ -61853,6 +62945,8 @@ export namespace Prisma {
     retiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     retiredBy?: NullableStringFieldUpdateOperationsInput | string | null
     retiredNote?: NullableStringFieldUpdateOperationsInput | string | null
+    queueReport?: NullableJsonNullValueInput | InputJsonValue
+    queueReportedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type SyncClientCreateManyInput = {
@@ -61865,6 +62959,8 @@ export namespace Prisma {
     retiredAt?: Date | string | null
     retiredBy?: string | null
     retiredNote?: string | null
+    queueReport?: NullableJsonNullValueInput | InputJsonValue
+    queueReportedAt?: Date | string | null
   }
 
   export type SyncClientUpdateManyMutationInput = {
@@ -61877,6 +62973,8 @@ export namespace Prisma {
     retiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     retiredBy?: NullableStringFieldUpdateOperationsInput | string | null
     retiredNote?: NullableStringFieldUpdateOperationsInput | string | null
+    queueReport?: NullableJsonNullValueInput | InputJsonValue
+    queueReportedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type SyncClientUncheckedUpdateManyInput = {
@@ -61889,6 +62987,8 @@ export namespace Prisma {
     retiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     retiredBy?: NullableStringFieldUpdateOperationsInput | string | null
     retiredNote?: NullableStringFieldUpdateOperationsInput | string | null
+    queueReport?: NullableJsonNullValueInput | InputJsonValue
+    queueReportedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type OperationEvidenceCreateInput = {
@@ -61919,6 +63019,7 @@ export namespace Prisma {
     attestation?: string | null
     attestationKid?: string | null
     approval?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type OperationEvidenceUncheckedCreateInput = {
@@ -61949,6 +63050,7 @@ export namespace Prisma {
     attestation?: string | null
     attestationKid?: string | null
     approval?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type OperationEvidenceUpdateInput = {
@@ -61979,6 +63081,7 @@ export namespace Prisma {
     attestation?: NullableStringFieldUpdateOperationsInput | string | null
     attestationKid?: NullableStringFieldUpdateOperationsInput | string | null
     approval?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type OperationEvidenceUncheckedUpdateInput = {
@@ -62009,6 +63112,7 @@ export namespace Prisma {
     attestation?: NullableStringFieldUpdateOperationsInput | string | null
     attestationKid?: NullableStringFieldUpdateOperationsInput | string | null
     approval?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type OperationEvidenceCreateManyInput = {
@@ -62039,6 +63143,7 @@ export namespace Prisma {
     attestation?: string | null
     attestationKid?: string | null
     approval?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type OperationEvidenceUpdateManyMutationInput = {
@@ -62069,6 +63174,7 @@ export namespace Prisma {
     attestation?: NullableStringFieldUpdateOperationsInput | string | null
     attestationKid?: NullableStringFieldUpdateOperationsInput | string | null
     approval?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type OperationEvidenceUncheckedUpdateManyInput = {
@@ -62099,6 +63205,7 @@ export namespace Prisma {
     attestation?: NullableStringFieldUpdateOperationsInput | string | null
     attestationKid?: NullableStringFieldUpdateOperationsInput | string | null
     approval?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type HubKeyCreateInput = {
@@ -62112,6 +63219,10 @@ export namespace Prisma {
     revokedAt?: Date | string | null
     revokedById?: string | null
     revokeNote?: string | null
+    hubId?: string | null
+    hubLabel?: string
+    lastReport?: NullableJsonNullValueInput | InputJsonValue
+    lastReportAt?: Date | string | null
   }
 
   export type HubKeyUncheckedCreateInput = {
@@ -62125,6 +63236,10 @@ export namespace Prisma {
     revokedAt?: Date | string | null
     revokedById?: string | null
     revokeNote?: string | null
+    hubId?: string | null
+    hubLabel?: string
+    lastReport?: NullableJsonNullValueInput | InputJsonValue
+    lastReportAt?: Date | string | null
   }
 
   export type HubKeyUpdateInput = {
@@ -62138,6 +63253,10 @@ export namespace Prisma {
     revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     revokedById?: NullableStringFieldUpdateOperationsInput | string | null
     revokeNote?: NullableStringFieldUpdateOperationsInput | string | null
+    hubId?: NullableStringFieldUpdateOperationsInput | string | null
+    hubLabel?: StringFieldUpdateOperationsInput | string
+    lastReport?: NullableJsonNullValueInput | InputJsonValue
+    lastReportAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type HubKeyUncheckedUpdateInput = {
@@ -62151,6 +63270,10 @@ export namespace Prisma {
     revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     revokedById?: NullableStringFieldUpdateOperationsInput | string | null
     revokeNote?: NullableStringFieldUpdateOperationsInput | string | null
+    hubId?: NullableStringFieldUpdateOperationsInput | string | null
+    hubLabel?: StringFieldUpdateOperationsInput | string
+    lastReport?: NullableJsonNullValueInput | InputJsonValue
+    lastReportAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type HubKeyCreateManyInput = {
@@ -62164,6 +63287,10 @@ export namespace Prisma {
     revokedAt?: Date | string | null
     revokedById?: string | null
     revokeNote?: string | null
+    hubId?: string | null
+    hubLabel?: string
+    lastReport?: NullableJsonNullValueInput | InputJsonValue
+    lastReportAt?: Date | string | null
   }
 
   export type HubKeyUpdateManyMutationInput = {
@@ -62177,6 +63304,10 @@ export namespace Prisma {
     revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     revokedById?: NullableStringFieldUpdateOperationsInput | string | null
     revokeNote?: NullableStringFieldUpdateOperationsInput | string | null
+    hubId?: NullableStringFieldUpdateOperationsInput | string | null
+    hubLabel?: StringFieldUpdateOperationsInput | string
+    lastReport?: NullableJsonNullValueInput | InputJsonValue
+    lastReportAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type HubKeyUncheckedUpdateManyInput = {
@@ -62190,6 +63321,10 @@ export namespace Prisma {
     revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     revokedById?: NullableStringFieldUpdateOperationsInput | string | null
     revokeNote?: NullableStringFieldUpdateOperationsInput | string | null
+    hubId?: NullableStringFieldUpdateOperationsInput | string | null
+    hubLabel?: StringFieldUpdateOperationsInput | string
+    lastReport?: NullableJsonNullValueInput | InputJsonValue
+    lastReportAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type ManagerApprovalCreateInput = {
@@ -62898,6 +64033,11 @@ export namespace Prisma {
     staffPolicyVersion?: SortOrder
     staffPolicyIssuedAt?: SortOrder
     staffPolicyIssuedBy?: SortOrder
+    storeTopology?: SortOrder
+    topologyHubId?: SortOrder
+    topologyVersion?: SortOrder
+    topologyChangedAt?: SortOrder
+    topologyChangedBy?: SortOrder
     planName?: SortOrder
     trialStartDate?: SortOrder
     trialEndDate?: SortOrder
@@ -62914,6 +64054,7 @@ export namespace Prisma {
     offlineGraceDays?: SortOrder
     policyVersion?: SortOrder
     staffPolicyVersion?: SortOrder
+    topologyVersion?: SortOrder
   }
 
   export type TenantMaxOrderByAggregateInput = {
@@ -62933,6 +64074,11 @@ export namespace Prisma {
     staffPolicyVersion?: SortOrder
     staffPolicyIssuedAt?: SortOrder
     staffPolicyIssuedBy?: SortOrder
+    storeTopology?: SortOrder
+    topologyHubId?: SortOrder
+    topologyVersion?: SortOrder
+    topologyChangedAt?: SortOrder
+    topologyChangedBy?: SortOrder
     planName?: SortOrder
     trialStartDate?: SortOrder
     trialEndDate?: SortOrder
@@ -62962,6 +64108,11 @@ export namespace Prisma {
     staffPolicyVersion?: SortOrder
     staffPolicyIssuedAt?: SortOrder
     staffPolicyIssuedBy?: SortOrder
+    storeTopology?: SortOrder
+    topologyHubId?: SortOrder
+    topologyVersion?: SortOrder
+    topologyChangedAt?: SortOrder
+    topologyChangedBy?: SortOrder
     planName?: SortOrder
     trialStartDate?: SortOrder
     trialEndDate?: SortOrder
@@ -62978,6 +64129,7 @@ export namespace Prisma {
     offlineGraceDays?: SortOrder
     policyVersion?: SortOrder
     staffPolicyVersion?: SortOrder
+    topologyVersion?: SortOrder
   }
 
   export type StringWithAggregatesFilter<$PrismaModel = never> = {
@@ -63557,6 +64709,29 @@ export namespace Prisma {
     notIn?: $Enums.SalePaymentMethod[] | ListEnumSalePaymentMethodFieldRefInput<$PrismaModel>
     not?: NestedEnumSalePaymentMethodFilter<$PrismaModel> | $Enums.SalePaymentMethod
   }
+  export type JsonNullableFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
 
   export type EnumSaleStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.SaleStatus | EnumSaleStatusFieldRefInput<$PrismaModel>
@@ -63596,6 +64771,11 @@ export namespace Prisma {
     soldAtCost?: SortOrder
     cashier?: SortOrder
     cashierId?: SortOrder
+    voidedById?: SortOrder
+    voidedByName?: SortOrder
+    voidedAt?: SortOrder
+    voidAttribution?: SortOrder
+    attribution?: SortOrder
     shiftId?: SortOrder
     shiftNumber?: SortOrder
     payableLbp?: SortOrder
@@ -63631,6 +64811,9 @@ export namespace Prisma {
     soldAtCost?: SortOrder
     cashier?: SortOrder
     cashierId?: SortOrder
+    voidedById?: SortOrder
+    voidedByName?: SortOrder
+    voidedAt?: SortOrder
     shiftId?: SortOrder
     shiftNumber?: SortOrder
     payableLbp?: SortOrder
@@ -63655,6 +64838,9 @@ export namespace Prisma {
     soldAtCost?: SortOrder
     cashier?: SortOrder
     cashierId?: SortOrder
+    voidedById?: SortOrder
+    voidedByName?: SortOrder
+    voidedAt?: SortOrder
     shiftId?: SortOrder
     shiftNumber?: SortOrder
     payableLbp?: SortOrder
@@ -63683,24 +64869,14 @@ export namespace Prisma {
     _min?: NestedEnumSalePaymentMethodFilter<$PrismaModel>
     _max?: NestedEnumSalePaymentMethodFilter<$PrismaModel>
   }
-
-  export type EnumSaleStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.SaleStatus | EnumSaleStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.SaleStatus[] | ListEnumSaleStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.SaleStatus[] | ListEnumSaleStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumSaleStatusWithAggregatesFilter<$PrismaModel> | $Enums.SaleStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumSaleStatusFilter<$PrismaModel>
-    _max?: NestedEnumSaleStatusFilter<$PrismaModel>
-  }
-  export type JsonNullableFilter<$PrismaModel = never> =
+  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> =
     | PatchUndefined<
-        Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonNullableFilterBase<$PrismaModel>>
+        Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
       >
-    | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
+    | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
 
-  export type JsonNullableFilterBase<$PrismaModel = never> = {
+  export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
     equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
     path?: string[]
     mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
@@ -63715,6 +64891,19 @@ export namespace Prisma {
     gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
     gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedJsonNullableFilter<$PrismaModel>
+    _max?: NestedJsonNullableFilter<$PrismaModel>
+  }
+
+  export type EnumSaleStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.SaleStatus | EnumSaleStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.SaleStatus[] | ListEnumSaleStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SaleStatus[] | ListEnumSaleStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumSaleStatusWithAggregatesFilter<$PrismaModel> | $Enums.SaleStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumSaleStatusFilter<$PrismaModel>
+    _max?: NestedEnumSaleStatusFilter<$PrismaModel>
   }
 
   export type SaleScalarRelationFilter = {
@@ -63795,32 +64984,6 @@ export namespace Prisma {
     total?: SortOrder
     cost?: SortOrder
     lineIndex?: SortOrder
-  }
-  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> =
-    | PatchUndefined<
-        Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedJsonNullableFilter<$PrismaModel>
-    _max?: NestedJsonNullableFilter<$PrismaModel>
   }
 
   export type SaleTenderCountOrderByAggregateInput = {
@@ -63915,6 +65078,7 @@ export namespace Prisma {
     total?: SortOrder
     cashier?: SortOrder
     cashierId?: SortOrder
+    attribution?: SortOrder
     shiftId?: SortOrder
     shiftNumber?: SortOrder
     exchangeRate?: SortOrder
@@ -64116,6 +65280,9 @@ export namespace Prisma {
     discountTotal?: SortOrder
     tax?: SortOrder
     total?: SortOrder
+    recordedById?: SortOrder
+    recordedByName?: SortOrder
+    attribution?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -64136,6 +65303,8 @@ export namespace Prisma {
     discountTotal?: SortOrder
     tax?: SortOrder
     total?: SortOrder
+    recordedById?: SortOrder
+    recordedByName?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -64149,6 +65318,8 @@ export namespace Prisma {
     discountTotal?: SortOrder
     tax?: SortOrder
     total?: SortOrder
+    recordedById?: SortOrder
+    recordedByName?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -64166,6 +65337,9 @@ export namespace Prisma {
     amount?: SortOrder
     method?: SortOrder
     reference?: SortOrder
+    recordedById?: SortOrder
+    recordedByName?: SortOrder
+    attribution?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -64180,6 +65354,8 @@ export namespace Prisma {
     amount?: SortOrder
     method?: SortOrder
     reference?: SortOrder
+    recordedById?: SortOrder
+    recordedByName?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -64190,6 +65366,8 @@ export namespace Prisma {
     amount?: SortOrder
     method?: SortOrder
     reference?: SortOrder
+    recordedById?: SortOrder
+    recordedByName?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -64273,6 +65451,8 @@ export namespace Prisma {
     total?: SortOrder
     paidTotal?: SortOrder
     createdBy?: SortOrder
+    createdById?: SortOrder
+    attribution?: SortOrder
     shiftId?: SortOrder
     shiftNumber?: SortOrder
     createdAt?: SortOrder
@@ -64297,6 +65477,7 @@ export namespace Prisma {
     total?: SortOrder
     paidTotal?: SortOrder
     createdBy?: SortOrder
+    createdById?: SortOrder
     shiftId?: SortOrder
     shiftNumber?: SortOrder
     createdAt?: SortOrder
@@ -64316,6 +65497,7 @@ export namespace Prisma {
     total?: SortOrder
     paidTotal?: SortOrder
     createdBy?: SortOrder
+    createdById?: SortOrder
     shiftId?: SortOrder
     shiftNumber?: SortOrder
     createdAt?: SortOrder
@@ -64413,6 +65595,8 @@ export namespace Prisma {
     method?: SortOrder
     reference?: SortOrder
     recordedBy?: SortOrder
+    recordedById?: SortOrder
+    attribution?: SortOrder
     shiftId?: SortOrder
     shiftNumber?: SortOrder
     createdAt?: SortOrder
@@ -64433,6 +65617,7 @@ export namespace Prisma {
     method?: SortOrder
     reference?: SortOrder
     recordedBy?: SortOrder
+    recordedById?: SortOrder
     shiftId?: SortOrder
     shiftNumber?: SortOrder
     createdAt?: SortOrder
@@ -64449,6 +65634,7 @@ export namespace Prisma {
     method?: SortOrder
     reference?: SortOrder
     recordedBy?: SortOrder
+    recordedById?: SortOrder
     shiftId?: SortOrder
     shiftNumber?: SortOrder
     createdAt?: SortOrder
@@ -64495,6 +65681,8 @@ export namespace Prisma {
     closedById?: SortOrder
     closedByName?: SortOrder
     notes?: SortOrder
+    openAttribution?: SortOrder
+    closeAttribution?: SortOrder
   }
 
   export type ShiftAvgOrderByAggregateInput = {
@@ -64622,6 +65810,7 @@ export namespace Prisma {
     note?: SortOrder
     recordedBy?: SortOrder
     recordedById?: SortOrder
+    attribution?: SortOrder
     shiftId?: SortOrder
     shiftNumber?: SortOrder
     createdAt?: SortOrder
@@ -64704,6 +65893,9 @@ export namespace Prisma {
     receivedAt?: SortOrder
     updatedAt?: SortOrder
     status?: SortOrder
+    receivedById?: SortOrder
+    receivedByName?: SortOrder
+    attribution?: SortOrder
   }
 
   export type InventoryBatchAvgOrderByAggregateInput = {
@@ -64732,6 +65924,8 @@ export namespace Prisma {
     receivedAt?: SortOrder
     updatedAt?: SortOrder
     status?: SortOrder
+    receivedById?: SortOrder
+    receivedByName?: SortOrder
   }
 
   export type InventoryBatchMinOrderByAggregateInput = {
@@ -64752,6 +65946,8 @@ export namespace Prisma {
     receivedAt?: SortOrder
     updatedAt?: SortOrder
     status?: SortOrder
+    receivedById?: SortOrder
+    receivedByName?: SortOrder
   }
 
   export type InventoryBatchSumOrderByAggregateInput = {
@@ -64787,6 +65983,9 @@ export namespace Prisma {
     batchId?: SortOrder
     batchAllocations?: SortOrder
     valueImpact?: SortOrder
+    createdById?: SortOrder
+    createdByName?: SortOrder
+    attribution?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -64812,6 +66011,8 @@ export namespace Prisma {
     note?: SortOrder
     batchId?: SortOrder
     valueImpact?: SortOrder
+    createdById?: SortOrder
+    createdByName?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -64829,6 +66030,8 @@ export namespace Prisma {
     note?: SortOrder
     batchId?: SortOrder
     valueImpact?: SortOrder
+    createdById?: SortOrder
+    createdByName?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -64856,6 +66059,9 @@ export namespace Prisma {
     completedAt?: SortOrder
     totalVariance?: SortOrder
     totalValueImpact?: SortOrder
+    completedById?: SortOrder
+    completedByName?: SortOrder
+    attribution?: SortOrder
   }
 
   export type StockCountSessionAvgOrderByAggregateInput = {
@@ -64872,6 +66078,8 @@ export namespace Prisma {
     completedAt?: SortOrder
     totalVariance?: SortOrder
     totalValueImpact?: SortOrder
+    completedById?: SortOrder
+    completedByName?: SortOrder
   }
 
   export type StockCountSessionMinOrderByAggregateInput = {
@@ -64883,6 +66091,8 @@ export namespace Prisma {
     completedAt?: SortOrder
     totalVariance?: SortOrder
     totalValueImpact?: SortOrder
+    completedById?: SortOrder
+    completedByName?: SortOrder
   }
 
   export type StockCountSessionSumOrderByAggregateInput = {
@@ -65211,6 +66421,8 @@ export namespace Prisma {
     cashOut?: SortOrder
     note?: SortOrder
     closedBy?: SortOrder
+    closedById?: SortOrder
+    attribution?: SortOrder
     unsyncedCountAtClose?: SortOrder
     createdAt?: SortOrder
     scope?: SortOrder
@@ -65257,6 +66469,7 @@ export namespace Prisma {
     cashOut?: SortOrder
     note?: SortOrder
     closedBy?: SortOrder
+    closedById?: SortOrder
     unsyncedCountAtClose?: SortOrder
     createdAt?: SortOrder
     scope?: SortOrder
@@ -65287,6 +66500,7 @@ export namespace Prisma {
     cashOut?: SortOrder
     note?: SortOrder
     closedBy?: SortOrder
+    closedById?: SortOrder
     unsyncedCountAtClose?: SortOrder
     createdAt?: SortOrder
     scope?: SortOrder
@@ -65329,6 +66543,7 @@ export namespace Prisma {
     referenceId?: SortOrder
     recordedById?: SortOrder
     recordedByName?: SortOrder
+    attribution?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -65638,6 +66853,8 @@ export namespace Prisma {
     retiredAt?: SortOrder
     retiredBy?: SortOrder
     retiredNote?: SortOrder
+    queueReport?: SortOrder
+    queueReportedAt?: SortOrder
   }
 
   export type SyncClientAvgOrderByAggregateInput = {
@@ -65654,6 +66871,7 @@ export namespace Prisma {
     retiredAt?: SortOrder
     retiredBy?: SortOrder
     retiredNote?: SortOrder
+    queueReportedAt?: SortOrder
   }
 
   export type SyncClientMinOrderByAggregateInput = {
@@ -65666,6 +66884,7 @@ export namespace Prisma {
     retiredAt?: SortOrder
     retiredBy?: SortOrder
     retiredNote?: SortOrder
+    queueReportedAt?: SortOrder
   }
 
   export type SyncClientSumOrderByAggregateInput = {
@@ -65705,6 +66924,7 @@ export namespace Prisma {
     attestation?: SortOrder
     attestationKid?: SortOrder
     approval?: SortOrder
+    attribution?: SortOrder
   }
 
   export type OperationEvidenceAvgOrderByAggregateInput = {
@@ -65788,6 +67008,10 @@ export namespace Prisma {
     revokedAt?: SortOrder
     revokedById?: SortOrder
     revokeNote?: SortOrder
+    hubId?: SortOrder
+    hubLabel?: SortOrder
+    lastReport?: SortOrder
+    lastReportAt?: SortOrder
   }
 
   export type HubKeyMaxOrderByAggregateInput = {
@@ -65801,6 +67025,9 @@ export namespace Prisma {
     revokedAt?: SortOrder
     revokedById?: SortOrder
     revokeNote?: SortOrder
+    hubId?: SortOrder
+    hubLabel?: SortOrder
+    lastReportAt?: SortOrder
   }
 
   export type HubKeyMinOrderByAggregateInput = {
@@ -65814,6 +67041,9 @@ export namespace Prisma {
     revokedAt?: SortOrder
     revokedById?: SortOrder
     revokeNote?: SortOrder
+    hubId?: SortOrder
+    hubLabel?: SortOrder
+    lastReportAt?: SortOrder
   }
 
   export type ManagerApprovalCountOrderByAggregateInput = {
@@ -69073,16 +70303,6 @@ export namespace Prisma {
     _min?: NestedEnumSalePaymentMethodFilter<$PrismaModel>
     _max?: NestedEnumSalePaymentMethodFilter<$PrismaModel>
   }
-
-  export type NestedEnumSaleStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.SaleStatus | EnumSaleStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.SaleStatus[] | ListEnumSaleStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.SaleStatus[] | ListEnumSaleStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumSaleStatusWithAggregatesFilter<$PrismaModel> | $Enums.SaleStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumSaleStatusFilter<$PrismaModel>
-    _max?: NestedEnumSaleStatusFilter<$PrismaModel>
-  }
   export type NestedJsonNullableFilter<$PrismaModel = never> =
     | PatchUndefined<
         Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
@@ -69105,6 +70325,16 @@ export namespace Prisma {
     gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
     gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
+
+  export type NestedEnumSaleStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.SaleStatus | EnumSaleStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.SaleStatus[] | ListEnumSaleStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SaleStatus[] | ListEnumSaleStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumSaleStatusWithAggregatesFilter<$PrismaModel> | $Enums.SaleStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumSaleStatusFilter<$PrismaModel>
+    _max?: NestedEnumSaleStatusFilter<$PrismaModel>
   }
 
   export type NestedEnumRefundMethodFilter<$PrismaModel = never> = {
@@ -69405,6 +70635,11 @@ export namespace Prisma {
     soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
+    voidedById?: string | null
+    voidedByName?: string | null
+    voidedAt?: Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
@@ -69431,6 +70666,11 @@ export namespace Prisma {
     soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
+    voidedById?: string | null
+    voidedByName?: string | null
+    voidedAt?: Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
@@ -69463,6 +70703,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     exchangeRate?: Decimal | DecimalJsLike | number | string | null
@@ -69484,6 +70725,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     exchangeRate?: Decimal | DecimalJsLike | number | string | null
@@ -69554,6 +70796,9 @@ export namespace Prisma {
     discountTotal?: Decimal | DecimalJsLike | number | string | null
     tax: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    recordedById?: string | null
+    recordedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     customer: CustomerCreateNestedOneWithoutDebtSalesInput
   }
@@ -69567,6 +70812,9 @@ export namespace Prisma {
     discountTotal?: Decimal | DecimalJsLike | number | string | null
     tax: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    recordedById?: string | null
+    recordedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -69585,6 +70833,9 @@ export namespace Prisma {
     amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
+    recordedById?: string | null
+    recordedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     customer: CustomerCreateNestedOneWithoutDebtPaymentsInput
   }
@@ -69595,6 +70846,9 @@ export namespace Prisma {
     amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
+    recordedById?: string | null
+    recordedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -69659,6 +70913,8 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
+    createdById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -69679,6 +70935,8 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
+    createdById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -69737,6 +70995,8 @@ export namespace Prisma {
     method: string
     reference?: string
     recordedBy: string
+    recordedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -69753,6 +71013,8 @@ export namespace Prisma {
     method: string
     reference?: string
     recordedBy: string
+    recordedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -69785,6 +71047,8 @@ export namespace Prisma {
     openedByName: string
     closedByName?: string | null
     notes?: string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
     openedBy: StaffUserCreateNestedOneWithoutOpenedShiftsInput
     closedBy?: StaffUserCreateNestedOneWithoutClosedShiftsInput
   }
@@ -69808,6 +71072,8 @@ export namespace Prisma {
     closedById?: string | null
     closedByName?: string | null
     notes?: string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ShiftCreateOrConnectWithoutTenantInput = {
@@ -69909,6 +71175,7 @@ export namespace Prisma {
     invoiceNumber?: string
     note?: string
     recordedBy: string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -69926,6 +71193,7 @@ export namespace Prisma {
     note?: string
     recordedBy: string
     recordedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -69956,6 +71224,9 @@ export namespace Prisma {
     receivedAt?: Date | string
     updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
+    receivedById?: string | null
+    receivedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     product: ProductCreateNestedOneWithoutBatchesInput
     supplier?: SupplierCreateNestedOneWithoutInventoryBatchesInput
   }
@@ -69977,6 +71248,9 @@ export namespace Prisma {
     receivedAt?: Date | string
     updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
+    receivedById?: string | null
+    receivedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type InventoryBatchCreateOrConnectWithoutTenantInput = {
@@ -70002,6 +71276,9 @@ export namespace Prisma {
     batchId?: string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
+    createdById?: string | null
+    createdByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     product: ProductCreateNestedOneWithoutAdjustmentsInput
   }
@@ -70020,6 +71297,9 @@ export namespace Prisma {
     batchId?: string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
+    createdById?: string | null
+    createdByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -70041,6 +71321,9 @@ export namespace Prisma {
     completedAt?: Date | string | null
     totalVariance?: Decimal | DecimalJsLike | number | string
     totalValueImpact?: Decimal | DecimalJsLike | number | string
+    completedById?: string | null
+    completedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     lines?: StockCountLineCreateNestedManyWithoutSessionInput
   }
 
@@ -70052,6 +71335,9 @@ export namespace Prisma {
     completedAt?: Date | string | null
     totalVariance?: Decimal | DecimalJsLike | number | string
     totalValueImpact?: Decimal | DecimalJsLike | number | string
+    completedById?: string | null
+    completedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     lines?: StockCountLineUncheckedCreateNestedManyWithoutSessionInput
   }
 
@@ -70082,6 +71368,8 @@ export namespace Prisma {
     cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
     closedBy: string
+    closedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     unsyncedCountAtClose?: number | null
     createdAt?: Date | string
     scope?: string
@@ -70111,6 +71399,8 @@ export namespace Prisma {
     cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
     closedBy: string
+    closedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     unsyncedCountAtClose?: number | null
     createdAt?: Date | string
     scope?: string
@@ -70300,6 +71590,7 @@ export namespace Prisma {
     referenceId?: string | null
     recordedById?: string | null
     recordedByName: string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -70316,6 +71607,7 @@ export namespace Prisma {
     referenceId?: string | null
     recordedById?: string | null
     recordedByName: string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -70523,6 +71815,11 @@ export namespace Prisma {
     soldAtCost?: BoolFilter<"Sale"> | boolean
     cashier?: StringFilter<"Sale"> | string
     cashierId?: StringNullableFilter<"Sale"> | string | null
+    voidedById?: StringNullableFilter<"Sale"> | string | null
+    voidedByName?: StringNullableFilter<"Sale"> | string | null
+    voidedAt?: DateTimeNullableFilter<"Sale"> | Date | string | null
+    voidAttribution?: JsonNullableFilter<"Sale">
+    attribution?: JsonNullableFilter<"Sale">
     shiftId?: StringNullableFilter<"Sale"> | string | null
     shiftNumber?: StringNullableFilter<"Sale"> | string | null
     payableLbp?: DecimalNullableFilter<"Sale"> | Decimal | DecimalJsLike | number | string | null
@@ -70563,6 +71860,7 @@ export namespace Prisma {
     total?: DecimalFilter<"SaleRefund"> | Decimal | DecimalJsLike | number | string
     cashier?: StringFilter<"SaleRefund"> | string
     cashierId?: StringNullableFilter<"SaleRefund"> | string | null
+    attribution?: JsonNullableFilter<"SaleRefund">
     shiftId?: StringNullableFilter<"SaleRefund"> | string | null
     shiftNumber?: StringNullableFilter<"SaleRefund"> | string | null
     exchangeRate?: DecimalNullableFilter<"SaleRefund"> | Decimal | DecimalJsLike | number | string | null
@@ -70633,6 +71931,9 @@ export namespace Prisma {
     discountTotal?: DecimalNullableFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
     total?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
+    recordedById?: StringNullableFilter<"DebtSale"> | string | null
+    recordedByName?: StringNullableFilter<"DebtSale"> | string | null
+    attribution?: JsonNullableFilter<"DebtSale">
     createdAt?: DateTimeFilter<"DebtSale"> | Date | string
   }
 
@@ -70662,6 +71963,9 @@ export namespace Prisma {
     amount?: DecimalFilter<"DebtPayment"> | Decimal | DecimalJsLike | number | string
     method?: StringFilter<"DebtPayment"> | string
     reference?: StringFilter<"DebtPayment"> | string
+    recordedById?: StringNullableFilter<"DebtPayment"> | string | null
+    recordedByName?: StringNullableFilter<"DebtPayment"> | string | null
+    attribution?: JsonNullableFilter<"DebtPayment">
     createdAt?: DateTimeFilter<"DebtPayment"> | Date | string
   }
 
@@ -70729,6 +72033,8 @@ export namespace Prisma {
     total?: DecimalFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string
     paidTotal?: DecimalFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string
     createdBy?: StringFilter<"PurchaseOrder"> | string
+    createdById?: StringNullableFilter<"PurchaseOrder"> | string | null
+    attribution?: JsonNullableFilter<"PurchaseOrder">
     shiftId?: StringNullableFilter<"PurchaseOrder"> | string | null
     shiftNumber?: StringNullableFilter<"PurchaseOrder"> | string | null
     createdAt?: DateTimeFilter<"PurchaseOrder"> | Date | string
@@ -70796,6 +72102,8 @@ export namespace Prisma {
     method?: StringFilter<"SupplierPayment"> | string
     reference?: StringFilter<"SupplierPayment"> | string
     recordedBy?: StringFilter<"SupplierPayment"> | string
+    recordedById?: StringNullableFilter<"SupplierPayment"> | string | null
+    attribution?: JsonNullableFilter<"SupplierPayment">
     shiftId?: StringNullableFilter<"SupplierPayment"> | string | null
     shiftNumber?: StringNullableFilter<"SupplierPayment"> | string | null
     createdAt?: DateTimeFilter<"SupplierPayment"> | Date | string
@@ -70840,6 +72148,8 @@ export namespace Prisma {
     closedById?: StringNullableFilter<"Shift"> | string | null
     closedByName?: StringNullableFilter<"Shift"> | string | null
     notes?: StringNullableFilter<"Shift"> | string | null
+    openAttribution?: JsonNullableFilter<"Shift">
+    closeAttribution?: JsonNullableFilter<"Shift">
   }
 
   export type AuditEventUpsertWithWhereUniqueWithoutTenantInput = {
@@ -70956,6 +72266,7 @@ export namespace Prisma {
     note?: StringFilter<"Expense"> | string
     recordedBy?: StringFilter<"Expense"> | string
     recordedById?: StringNullableFilter<"Expense"> | string | null
+    attribution?: JsonNullableFilter<"Expense">
     shiftId?: StringNullableFilter<"Expense"> | string | null
     shiftNumber?: StringNullableFilter<"Expense"> | string | null
     createdAt?: DateTimeFilter<"Expense"> | Date | string
@@ -70998,6 +72309,9 @@ export namespace Prisma {
     receivedAt?: DateTimeFilter<"InventoryBatch"> | Date | string
     updatedAt?: DateTimeFilter<"InventoryBatch"> | Date | string
     status?: EnumInventoryBatchStatusFilter<"InventoryBatch"> | $Enums.InventoryBatchStatus
+    receivedById?: StringNullableFilter<"InventoryBatch"> | string | null
+    receivedByName?: StringNullableFilter<"InventoryBatch"> | string | null
+    attribution?: JsonNullableFilter<"InventoryBatch">
   }
 
   export type StockAdjustmentUpsertWithWhereUniqueWithoutTenantInput = {
@@ -71034,6 +72348,9 @@ export namespace Prisma {
     batchId?: StringNullableFilter<"StockAdjustment"> | string | null
     batchAllocations?: JsonNullableFilter<"StockAdjustment">
     valueImpact?: DecimalFilter<"StockAdjustment"> | Decimal | DecimalJsLike | number | string
+    createdById?: StringNullableFilter<"StockAdjustment"> | string | null
+    createdByName?: StringNullableFilter<"StockAdjustment"> | string | null
+    attribution?: JsonNullableFilter<"StockAdjustment">
     createdAt?: DateTimeFilter<"StockAdjustment"> | Date | string
   }
 
@@ -71065,6 +72382,9 @@ export namespace Prisma {
     completedAt?: DateTimeNullableFilter<"StockCountSession"> | Date | string | null
     totalVariance?: DecimalFilter<"StockCountSession"> | Decimal | DecimalJsLike | number | string
     totalValueImpact?: DecimalFilter<"StockCountSession"> | Decimal | DecimalJsLike | number | string
+    completedById?: StringNullableFilter<"StockCountSession"> | string | null
+    completedByName?: StringNullableFilter<"StockCountSession"> | string | null
+    attribution?: JsonNullableFilter<"StockCountSession">
   }
 
   export type DailyCloseUpsertWithWhereUniqueWithoutTenantInput = {
@@ -71104,6 +72424,8 @@ export namespace Prisma {
     cashOut?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     note?: StringFilter<"DailyClose"> | string
     closedBy?: StringFilter<"DailyClose"> | string
+    closedById?: StringNullableFilter<"DailyClose"> | string | null
+    attribution?: JsonNullableFilter<"DailyClose">
     unsyncedCountAtClose?: IntNullableFilter<"DailyClose"> | number | null
     createdAt?: DateTimeFilter<"DailyClose"> | Date | string
     scope?: StringFilter<"DailyClose"> | string
@@ -71270,6 +72592,7 @@ export namespace Prisma {
     referenceId?: StringNullableFilter<"CashMovement"> | string | null
     recordedById?: StringNullableFilter<"CashMovement"> | string | null
     recordedByName?: StringFilter<"CashMovement"> | string
+    attribution?: JsonNullableFilter<"CashMovement">
     createdAt?: DateTimeFilter<"CashMovement"> | Date | string
   }
 
@@ -71355,6 +72678,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -71408,6 +72736,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -71466,6 +72799,8 @@ export namespace Prisma {
     openedByName: string
     closedByName?: string | null
     notes?: string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
     tenant: TenantCreateNestedOneWithoutShiftsInput
     closedBy?: StaffUserCreateNestedOneWithoutClosedShiftsInput
   }
@@ -71489,6 +72824,8 @@ export namespace Prisma {
     closedById?: string | null
     closedByName?: string | null
     notes?: string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ShiftCreateOrConnectWithoutOpenedByInput = {
@@ -71518,6 +72855,8 @@ export namespace Prisma {
     openedByName: string
     closedByName?: string | null
     notes?: string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
     tenant: TenantCreateNestedOneWithoutShiftsInput
     openedBy: StaffUserCreateNestedOneWithoutOpenedShiftsInput
   }
@@ -71541,6 +72880,8 @@ export namespace Prisma {
     openedByName: string
     closedByName?: string | null
     notes?: string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ShiftCreateOrConnectWithoutClosedByInput = {
@@ -71563,6 +72904,7 @@ export namespace Prisma {
     invoiceNumber?: string
     note?: string
     recordedBy: string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -71580,6 +72922,7 @@ export namespace Prisma {
     invoiceNumber?: string
     note?: string
     recordedBy: string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -71693,6 +73036,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71746,6 +73094,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71863,6 +73216,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -71916,6 +73274,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -71985,6 +73348,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -72038,6 +73406,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -72091,6 +73464,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -72144,6 +73522,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -72361,6 +73744,9 @@ export namespace Prisma {
     receivedAt?: Date | string
     updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
+    receivedById?: string | null
+    receivedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     tenant: TenantCreateNestedOneWithoutInventoryBatchesInput
     supplier?: SupplierCreateNestedOneWithoutInventoryBatchesInput
   }
@@ -72382,6 +73768,9 @@ export namespace Prisma {
     receivedAt?: Date | string
     updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
+    receivedById?: string | null
+    receivedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type InventoryBatchCreateOrConnectWithoutProductInput = {
@@ -72407,6 +73796,9 @@ export namespace Prisma {
     batchId?: string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
+    createdById?: string | null
+    createdByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutStockAdjustmentsInput
   }
@@ -72425,6 +73817,9 @@ export namespace Prisma {
     batchId?: string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
+    createdById?: string | null
+    createdByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -72540,6 +73935,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -72593,6 +73993,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -72826,6 +74231,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -72879,6 +74289,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -72975,6 +74390,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     exchangeRate?: Decimal | DecimalJsLike | number | string | null
@@ -72996,6 +74412,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     exchangeRate?: Decimal | DecimalJsLike | number | string | null
@@ -73073,6 +74490,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -73126,6 +74548,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -73267,6 +74694,11 @@ export namespace Prisma {
     soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
+    voidedById?: string | null
+    voidedByName?: string | null
+    voidedAt?: Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
@@ -73294,6 +74726,11 @@ export namespace Prisma {
     soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
+    voidedById?: string | null
+    voidedByName?: string | null
+    voidedAt?: Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
@@ -73335,6 +74772,11 @@ export namespace Prisma {
     soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedById?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -73362,6 +74804,11 @@ export namespace Prisma {
     soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedById?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -73387,6 +74834,11 @@ export namespace Prisma {
     soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
+    voidedById?: string | null
+    voidedByName?: string | null
+    voidedAt?: Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
@@ -73414,6 +74866,11 @@ export namespace Prisma {
     soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
+    voidedById?: string | null
+    voidedByName?: string | null
+    voidedAt?: Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
@@ -73455,6 +74912,11 @@ export namespace Prisma {
     soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedById?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -73482,6 +74944,11 @@ export namespace Prisma {
     soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedById?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -73509,6 +74976,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -73562,6 +75034,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -73618,6 +75095,11 @@ export namespace Prisma {
     soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
+    voidedById?: string | null
+    voidedByName?: string | null
+    voidedAt?: Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
@@ -73645,6 +75127,11 @@ export namespace Prisma {
     soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
+    voidedById?: string | null
+    voidedByName?: string | null
+    voidedAt?: Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
@@ -73724,6 +75211,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -73777,6 +75269,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -73839,6 +75336,11 @@ export namespace Prisma {
     soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedById?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -73866,6 +75368,11 @@ export namespace Prisma {
     soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedById?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -73920,6 +75427,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     exchangeRate?: Decimal | DecimalJsLike | number | string | null
@@ -73942,6 +75450,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     exchangeRate?: Decimal | DecimalJsLike | number | string | null
@@ -73976,6 +75485,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -73998,6 +75508,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -74022,6 +75533,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74075,6 +75591,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74124,6 +75645,9 @@ export namespace Prisma {
     discountTotal?: Decimal | DecimalJsLike | number | string | null
     tax: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    recordedById?: string | null
+    recordedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutDebtSalesInput
   }
@@ -74137,6 +75661,9 @@ export namespace Prisma {
     discountTotal?: Decimal | DecimalJsLike | number | string | null
     tax: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    recordedById?: string | null
+    recordedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -74155,6 +75682,9 @@ export namespace Prisma {
     amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
+    recordedById?: string | null
+    recordedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutDebtPaymentsInput
   }
@@ -74165,6 +75695,9 @@ export namespace Prisma {
     amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
+    recordedById?: string | null
+    recordedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -74276,6 +75809,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74329,6 +75867,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74430,6 +75973,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74483,6 +76031,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74591,6 +76144,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74644,6 +76202,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74742,6 +76305,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74795,6 +76363,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74903,6 +76476,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74956,6 +76534,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75054,6 +76637,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -75107,6 +76695,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -75159,6 +76752,8 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
+    createdById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -75179,6 +76774,8 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
+    createdById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -75205,6 +76802,8 @@ export namespace Prisma {
     method: string
     reference?: string
     recordedBy: string
+    recordedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -75221,6 +76820,8 @@ export namespace Prisma {
     method: string
     reference?: string
     recordedBy: string
+    recordedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -75251,6 +76852,9 @@ export namespace Prisma {
     receivedAt?: Date | string
     updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
+    receivedById?: string | null
+    receivedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     tenant: TenantCreateNestedOneWithoutInventoryBatchesInput
     product: ProductCreateNestedOneWithoutBatchesInput
   }
@@ -75272,6 +76876,9 @@ export namespace Prisma {
     receivedAt?: Date | string
     updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
+    receivedById?: string | null
+    receivedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type InventoryBatchCreateOrConnectWithoutSupplierInput = {
@@ -75312,6 +76919,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75365,6 +76977,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75466,6 +77083,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -75519,6 +77141,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -75655,6 +77282,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75708,6 +77340,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75818,6 +77455,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -75871,6 +77513,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -75923,6 +77570,8 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
+    createdById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -75944,6 +77593,8 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
+    createdById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -75983,6 +77634,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -76036,6 +77692,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -76094,6 +77755,8 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -76115,6 +77778,8 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -76138,6 +77803,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -76191,6 +77861,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -76295,6 +77970,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -76348,6 +78028,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -76442,6 +78127,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -76495,6 +78185,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -76658,6 +78353,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -76711,6 +78411,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -76870,6 +78575,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -76923,6 +78633,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -76992,6 +78707,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -77045,6 +78765,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -77098,6 +78823,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -77151,6 +78881,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -77267,6 +79002,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -77320,6 +79060,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -77426,6 +79171,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -77479,6 +79229,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -77661,6 +79416,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -77714,6 +79474,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -77892,6 +79657,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -77945,6 +79715,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -78092,6 +79867,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -78145,6 +79925,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -78282,6 +80067,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -78335,6 +80125,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -78438,6 +80233,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -78491,6 +80291,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -78551,6 +80356,9 @@ export namespace Prisma {
     completedAt?: Date | string | null
     totalVariance?: Decimal | DecimalJsLike | number | string
     totalValueImpact?: Decimal | DecimalJsLike | number | string
+    completedById?: string | null
+    completedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     tenant: TenantCreateNestedOneWithoutStockCountsInput
   }
 
@@ -78563,6 +80371,9 @@ export namespace Prisma {
     completedAt?: Date | string | null
     totalVariance?: Decimal | DecimalJsLike | number | string
     totalValueImpact?: Decimal | DecimalJsLike | number | string
+    completedById?: string | null
+    completedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type StockCountSessionCreateOrConnectWithoutLinesInput = {
@@ -78667,6 +80478,9 @@ export namespace Prisma {
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalVariance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalValueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    completedById?: NullableStringFieldUpdateOperationsInput | string | null
+    completedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     tenant?: TenantUpdateOneRequiredWithoutStockCountsNestedInput
   }
 
@@ -78679,6 +80493,9 @@ export namespace Prisma {
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalVariance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalValueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    completedById?: NullableStringFieldUpdateOperationsInput | string | null
+    completedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ProductUpsertWithoutStockCountLinesInput = {
@@ -78782,6 +80599,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -78835,6 +80657,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -79020,6 +80847,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -79073,6 +80905,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -79390,6 +81227,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -79443,6 +81285,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -79512,6 +81359,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -79565,6 +81417,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -79618,6 +81475,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -79671,6 +81533,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -79740,6 +81607,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -79793,6 +81665,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -79846,6 +81723,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -79899,6 +81781,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -79968,6 +81855,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -80021,6 +81913,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -80074,6 +81971,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -80127,6 +82029,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -80196,6 +82103,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -80249,6 +82161,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -80302,6 +82219,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -80355,6 +82277,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -80424,6 +82351,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -80477,6 +82409,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -80530,6 +82467,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -80583,6 +82525,11 @@ export namespace Prisma {
     staffPolicyVersion?: number
     staffPolicyIssuedAt?: Date | string | null
     staffPolicyIssuedBy?: string | null
+    storeTopology?: string
+    topologyHubId?: string | null
+    topologyVersion?: number
+    topologyChangedAt?: Date | string | null
+    topologyChangedBy?: string | null
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -80730,6 +82677,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -80783,6 +82735,11 @@ export namespace Prisma {
     staffPolicyVersion?: IntFieldUpdateOperationsInput | number
     staffPolicyIssuedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     staffPolicyIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    storeTopology?: StringFieldUpdateOperationsInput | string
+    topologyHubId?: NullableStringFieldUpdateOperationsInput | string | null
+    topologyVersion?: IntFieldUpdateOperationsInput | number
+    topologyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    topologyChangedBy?: NullableStringFieldUpdateOperationsInput | string | null
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -80967,6 +82924,11 @@ export namespace Prisma {
     soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
+    voidedById?: string | null
+    voidedByName?: string | null
+    voidedAt?: Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
@@ -80987,6 +82949,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     exchangeRate?: Decimal | DecimalJsLike | number | string | null
@@ -81017,6 +82980,9 @@ export namespace Prisma {
     discountTotal?: Decimal | DecimalJsLike | number | string | null
     tax: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    recordedById?: string | null
+    recordedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -81026,6 +82992,9 @@ export namespace Prisma {
     amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
+    recordedById?: string | null
+    recordedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -81053,6 +83022,8 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
+    createdById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -81080,6 +83051,8 @@ export namespace Prisma {
     method: string
     reference?: string
     recordedBy: string
+    recordedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -81104,6 +83077,8 @@ export namespace Prisma {
     closedById?: string | null
     closedByName?: string | null
     notes?: string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type AuditEventCreateManyTenantInput = {
@@ -81129,6 +83104,7 @@ export namespace Prisma {
     note?: string
     recordedBy: string
     recordedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -81151,6 +83127,9 @@ export namespace Prisma {
     receivedAt?: Date | string
     updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
+    receivedById?: string | null
+    receivedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type StockAdjustmentCreateManyTenantInput = {
@@ -81167,6 +83146,9 @@ export namespace Prisma {
     batchId?: string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
+    createdById?: string | null
+    createdByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -81178,6 +83160,9 @@ export namespace Prisma {
     completedAt?: Date | string | null
     totalVariance?: Decimal | DecimalJsLike | number | string
     totalValueImpact?: Decimal | DecimalJsLike | number | string
+    completedById?: string | null
+    completedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type DailyCloseCreateManyTenantInput = {
@@ -81197,6 +83182,8 @@ export namespace Prisma {
     cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
     closedBy: string
+    closedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     unsyncedCountAtClose?: number | null
     createdAt?: Date | string
     scope?: string
@@ -81283,6 +83270,7 @@ export namespace Prisma {
     referenceId?: string | null
     recordedById?: string | null
     recordedByName: string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -81490,6 +83478,11 @@ export namespace Prisma {
     soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedById?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -81516,6 +83509,11 @@ export namespace Prisma {
     soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedById?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -81542,6 +83540,11 @@ export namespace Prisma {
     soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedById?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidAttribution?: NullableJsonNullValueInput | InputJsonValue
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -81561,6 +83564,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -81582,6 +83586,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -81602,6 +83607,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -81665,6 +83671,9 @@ export namespace Prisma {
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customer?: CustomerUpdateOneRequiredWithoutDebtSalesNestedInput
   }
@@ -81678,6 +83687,9 @@ export namespace Prisma {
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -81690,6 +83702,9 @@ export namespace Prisma {
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -81698,6 +83713,9 @@ export namespace Prisma {
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customer?: CustomerUpdateOneRequiredWithoutDebtPaymentsNestedInput
   }
@@ -81708,6 +83726,9 @@ export namespace Prisma {
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -81717,6 +83738,9 @@ export namespace Prisma {
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -81773,6 +83797,8 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -81793,6 +83819,8 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -81812,6 +83840,8 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -81860,6 +83890,8 @@ export namespace Prisma {
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -81876,6 +83908,8 @@ export namespace Prisma {
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -81891,6 +83925,8 @@ export namespace Prisma {
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -81913,6 +83949,8 @@ export namespace Prisma {
     openedByName?: StringFieldUpdateOperationsInput | string
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
     openedBy?: StaffUserUpdateOneRequiredWithoutOpenedShiftsNestedInput
     closedBy?: StaffUserUpdateOneWithoutClosedShiftsNestedInput
   }
@@ -81936,6 +83974,8 @@ export namespace Prisma {
     closedById?: NullableStringFieldUpdateOperationsInput | string | null
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ShiftUncheckedUpdateManyWithoutTenantInput = {
@@ -81957,6 +83997,8 @@ export namespace Prisma {
     closedById?: NullableStringFieldUpdateOperationsInput | string | null
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type AuditEventUpdateWithoutTenantInput = {
@@ -82005,6 +84047,7 @@ export namespace Prisma {
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -82022,6 +84065,7 @@ export namespace Prisma {
     note?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
     recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -82038,6 +84082,7 @@ export namespace Prisma {
     note?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
     recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -82058,6 +84103,9 @@ export namespace Prisma {
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
+    receivedById?: NullableStringFieldUpdateOperationsInput | string | null
+    receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     product?: ProductUpdateOneRequiredWithoutBatchesNestedInput
     supplier?: SupplierUpdateOneWithoutInventoryBatchesNestedInput
   }
@@ -82079,6 +84127,9 @@ export namespace Prisma {
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
+    receivedById?: NullableStringFieldUpdateOperationsInput | string | null
+    receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type InventoryBatchUncheckedUpdateManyWithoutTenantInput = {
@@ -82098,6 +84149,9 @@ export namespace Prisma {
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
+    receivedById?: NullableStringFieldUpdateOperationsInput | string | null
+    receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type StockAdjustmentUpdateWithoutTenantInput = {
@@ -82113,6 +84167,9 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    createdByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     product?: ProductUpdateOneRequiredWithoutAdjustmentsNestedInput
   }
@@ -82131,6 +84188,9 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    createdByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -82148,6 +84208,9 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    createdByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -82159,6 +84222,9 @@ export namespace Prisma {
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalVariance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalValueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    completedById?: NullableStringFieldUpdateOperationsInput | string | null
+    completedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     lines?: StockCountLineUpdateManyWithoutSessionNestedInput
   }
 
@@ -82170,6 +84236,9 @@ export namespace Prisma {
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalVariance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalValueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    completedById?: NullableStringFieldUpdateOperationsInput | string | null
+    completedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     lines?: StockCountLineUncheckedUpdateManyWithoutSessionNestedInput
   }
 
@@ -82181,6 +84250,9 @@ export namespace Prisma {
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalVariance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalValueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    completedById?: NullableStringFieldUpdateOperationsInput | string | null
+    completedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type DailyCloseUpdateWithoutTenantInput = {
@@ -82200,6 +84272,8 @@ export namespace Prisma {
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
+    closedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     scope?: StringFieldUpdateOperationsInput | string
@@ -82229,6 +84303,8 @@ export namespace Prisma {
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
+    closedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     scope?: StringFieldUpdateOperationsInput | string
@@ -82258,6 +84334,8 @@ export namespace Prisma {
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
+    closedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     scope?: StringFieldUpdateOperationsInput | string
@@ -82468,6 +84546,7 @@ export namespace Prisma {
     referenceId?: NullableStringFieldUpdateOperationsInput | string | null
     recordedById?: NullableStringFieldUpdateOperationsInput | string | null
     recordedByName?: StringFieldUpdateOperationsInput | string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -82484,6 +84563,7 @@ export namespace Prisma {
     referenceId?: NullableStringFieldUpdateOperationsInput | string | null
     recordedById?: NullableStringFieldUpdateOperationsInput | string | null
     recordedByName?: StringFieldUpdateOperationsInput | string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -82500,6 +84580,7 @@ export namespace Prisma {
     referenceId?: NullableStringFieldUpdateOperationsInput | string | null
     recordedById?: NullableStringFieldUpdateOperationsInput | string | null
     recordedByName?: StringFieldUpdateOperationsInput | string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -82597,6 +84678,8 @@ export namespace Prisma {
     closedById?: string | null
     closedByName?: string | null
     notes?: string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ShiftCreateManyClosedByInput = {
@@ -82618,6 +84701,8 @@ export namespace Prisma {
     openedByName: string
     closedByName?: string | null
     notes?: string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ExpenseCreateManyRecordedByUserInput = {
@@ -82631,6 +84716,7 @@ export namespace Prisma {
     invoiceNumber?: string
     note?: string
     recordedBy: string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -82682,6 +84768,8 @@ export namespace Prisma {
     openedByName?: StringFieldUpdateOperationsInput | string
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
     tenant?: TenantUpdateOneRequiredWithoutShiftsNestedInput
     closedBy?: StaffUserUpdateOneWithoutClosedShiftsNestedInput
   }
@@ -82705,6 +84793,8 @@ export namespace Prisma {
     closedById?: NullableStringFieldUpdateOperationsInput | string | null
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ShiftUncheckedUpdateManyWithoutOpenedByInput = {
@@ -82726,6 +84816,8 @@ export namespace Prisma {
     closedById?: NullableStringFieldUpdateOperationsInput | string | null
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ShiftUpdateWithoutClosedByInput = {
@@ -82745,6 +84837,8 @@ export namespace Prisma {
     openedByName?: StringFieldUpdateOperationsInput | string
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
     tenant?: TenantUpdateOneRequiredWithoutShiftsNestedInput
     openedBy?: StaffUserUpdateOneRequiredWithoutOpenedShiftsNestedInput
   }
@@ -82768,6 +84862,8 @@ export namespace Prisma {
     openedByName?: StringFieldUpdateOperationsInput | string
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ShiftUncheckedUpdateManyWithoutClosedByInput = {
@@ -82789,6 +84885,8 @@ export namespace Prisma {
     openedByName?: StringFieldUpdateOperationsInput | string
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    openAttribution?: NullableJsonNullValueInput | InputJsonValue
+    closeAttribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ExpenseUpdateWithoutRecordedByUserInput = {
@@ -82801,6 +84899,7 @@ export namespace Prisma {
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -82818,6 +84917,7 @@ export namespace Prisma {
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -82834,6 +84934,7 @@ export namespace Prisma {
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -82977,6 +85078,9 @@ export namespace Prisma {
     receivedAt?: Date | string
     updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
+    receivedById?: string | null
+    receivedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type StockAdjustmentCreateManyProductInput = {
@@ -82993,6 +85097,9 @@ export namespace Prisma {
     batchId?: string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
+    createdById?: string | null
+    createdByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -83143,6 +85250,9 @@ export namespace Prisma {
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
+    receivedById?: NullableStringFieldUpdateOperationsInput | string | null
+    receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     tenant?: TenantUpdateOneRequiredWithoutInventoryBatchesNestedInput
     supplier?: SupplierUpdateOneWithoutInventoryBatchesNestedInput
   }
@@ -83164,6 +85274,9 @@ export namespace Prisma {
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
+    receivedById?: NullableStringFieldUpdateOperationsInput | string | null
+    receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type InventoryBatchUncheckedUpdateManyWithoutProductInput = {
@@ -83183,6 +85296,9 @@ export namespace Prisma {
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
+    receivedById?: NullableStringFieldUpdateOperationsInput | string | null
+    receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type StockAdjustmentUpdateWithoutProductInput = {
@@ -83198,6 +85314,9 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    createdByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutStockAdjustmentsNestedInput
   }
@@ -83216,6 +85335,9 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    createdByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -83233,6 +85355,9 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    createdByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -83346,6 +85471,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     exchangeRate?: Decimal | DecimalJsLike | number | string | null
@@ -83415,6 +85541,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -83436,6 +85563,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -83456,6 +85584,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -83524,6 +85653,9 @@ export namespace Prisma {
     discountTotal?: Decimal | DecimalJsLike | number | string | null
     tax: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
+    recordedById?: string | null
+    recordedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -83533,6 +85665,9 @@ export namespace Prisma {
     amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
+    recordedById?: string | null
+    recordedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -83573,6 +85708,9 @@ export namespace Prisma {
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutDebtSalesNestedInput
   }
@@ -83586,6 +85724,9 @@ export namespace Prisma {
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -83598,6 +85739,9 @@ export namespace Prisma {
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -83606,6 +85750,9 @@ export namespace Prisma {
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutDebtPaymentsNestedInput
   }
@@ -83616,6 +85763,9 @@ export namespace Prisma {
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -83625,6 +85775,9 @@ export namespace Prisma {
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -83729,6 +85882,8 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
+    createdById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -83745,6 +85900,8 @@ export namespace Prisma {
     method: string
     reference?: string
     recordedBy: string
+    recordedById?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
@@ -83767,6 +85924,9 @@ export namespace Prisma {
     receivedAt?: Date | string
     updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
+    receivedById?: string | null
+    receivedByName?: string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type PurchaseOrderUpdateWithoutSupplierInput = {
@@ -83780,6 +85940,8 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -83800,6 +85962,8 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -83819,6 +85983,8 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -83834,6 +86000,8 @@ export namespace Prisma {
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -83850,6 +86018,8 @@ export namespace Prisma {
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -83865,6 +86035,8 @@ export namespace Prisma {
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -83885,6 +86057,9 @@ export namespace Prisma {
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
+    receivedById?: NullableStringFieldUpdateOperationsInput | string | null
+    receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
     tenant?: TenantUpdateOneRequiredWithoutInventoryBatchesNestedInput
     product?: ProductUpdateOneRequiredWithoutBatchesNestedInput
   }
@@ -83906,6 +86081,9 @@ export namespace Prisma {
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
+    receivedById?: NullableStringFieldUpdateOperationsInput | string | null
+    receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type InventoryBatchUncheckedUpdateManyWithoutSupplierInput = {
@@ -83925,6 +86103,9 @@ export namespace Prisma {
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
+    receivedById?: NullableStringFieldUpdateOperationsInput | string | null
+    receivedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    attribution?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type PurchaseOrderItemCreateManyPurchaseOrderInput = {
