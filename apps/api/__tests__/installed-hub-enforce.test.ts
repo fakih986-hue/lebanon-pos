@@ -148,8 +148,9 @@ if (!ready) {
     }
     ownerTransport = await login(HUB!, "1501", "register")
     ownerPerson = await login(HUB!, "1501", "person")
-    cloudOwner = await login(CLOUD!, "1501", "person")
-    expect([!!ownerTransport, !!ownerPerson, !!cloudOwner]).toEqual([true, true, true])
+    // (the cloud is unreachable in the outage and restart phases)
+    if (["enforce-observe", "enforce-direct", "enforce-lower"].includes(PHASE)) cloudOwner = await login(CLOUD!, "1501", "person")
+    expect([!!ownerTransport, !!ownerPerson]).toEqual([true, true])
     if (fresh) {
       // the owner pairs (and enrolls) this register; it connects with the owner's account
       const code = (await call(HUB!, "POST", "/api/device/generate-code", {}, ownerPerson)).body?.code
