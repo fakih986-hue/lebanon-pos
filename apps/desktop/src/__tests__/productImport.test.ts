@@ -27,6 +27,7 @@ vi.mock("../features/pos/services/sync.service", () => ({
   registerStagedOwner: () => {},
   registerStoreSwitchHook: () => {},
   registerPreRecoveryHook: () => {},
+  registerJournalCounter: () => {},
   registerStagedCompleter: () => {},
   getCurrentTenantId: () => null,
   SyncStorageError: class SyncStorageError extends Error {},
