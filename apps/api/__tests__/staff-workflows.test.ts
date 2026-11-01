@@ -59,8 +59,8 @@ const flush = async () => {
   for (let i = 0; i < 3; i++) {
     storage.setItem("lebanonpos.sync-queue.v1", JSON.stringify(queue().map((op) => ({ ...op, status: op.status === "Failed" ? "Pending" : op.status, lastAttemptAt: "2000-01-01T00:00:00.000Z" }))))
     await d.sync.flushSyncQueue()
+    await dispose() // an automatic flush already in flight finishes before the next explicit one
   }
-  await dispose()
 }
 
 let prisma: typeof import("../src/lib/prisma.js").default
