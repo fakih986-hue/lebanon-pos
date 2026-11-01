@@ -16,6 +16,9 @@ export default function HistoryPanel({ dailyCloses, maxItems = 20 }: Props) {
   // Absent when a cost was unavailable at close; pulled rows carry decimals as strings.
   const netProfitOf = (c: DailyClose) => (c.netProfit == null ? undefined : Number(c.netProfit))
   const showCost = userCan("reports.cost")
+  // the register's device tells registers apart (they may share the label REG-001); a close from the server
+  // names it in its scope
+  const deviceOf = (c: DailyClose) => c.deviceId ?? c.scope?.match(/^device:([^|]+)/)?.[1]
 
   return (
     <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
@@ -55,8 +58,8 @@ export default function HistoryPanel({ dailyCloses, maxItems = 20 }: Props) {
                 </p>
                 <p className="mt-0.5 text-[11px] font-mono text-zinc-400">
                   {dailyClose.registerId && <>Reg: {dailyClose.registerId}</>}
-                  {dailyClose.registerId && dailyClose.deviceId && <> · </>}
-                  {dailyClose.deviceId && <>Dev: {dailyClose.deviceId}</>}
+                  {dailyClose.registerId && deviceOf(dailyClose) && <> · </>}
+                  {deviceOf(dailyClose) && <>Dev: {deviceOf(dailyClose)}</>}
                 </p>
                 {/* a corrected close: the report uses this revision; the earlier one is kept */}
                 {(dailyClose.revision ?? 1) > 1 && (

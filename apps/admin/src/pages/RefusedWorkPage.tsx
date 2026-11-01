@@ -103,6 +103,7 @@ export function RefusedWorkPage() {
       {errorMsg && <div role="alert" className="data-card text-sm" style={{ color: "#dc2626" }}>{errorMsg}</div>}
 
       {loading ? <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("refused.loading")}</p>
+        : errorMsg && ops.length === 0 ? null
         : ops.length === 0 ? <div className="data-card text-sm" style={{ color: "var(--text-secondary)" }}>{t("refused.empty")}</div>
         : ops.map((o) => (
           <article key={o.id} className="data-card space-y-3" aria-labelledby={`rw-${o.id}`}>

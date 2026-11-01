@@ -319,7 +319,7 @@ export default function QuickPOSMode({
           {items.length > 0 && (
             <div className="flex flex-col gap-2 sm:flex-row">
               {/* Sale note */}
-              <div className="flex-1 rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+              <div className="rounded-xl border overflow-hidden sm:flex-1" style={{ borderColor: "var(--border)" }}>
                 <button
                   type="button"
                   onClick={() => setSaleNoteOpen(!saleNoteOpen)}
@@ -351,7 +351,7 @@ export default function QuickPOSMode({
               </div>
 
               {/* Discount */}
-              <div className="flex-1 rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+              <div className="rounded-xl border overflow-hidden sm:flex-1" style={{ borderColor: "var(--border)" }}>
                 <button
                   type="button"
                   onClick={() => setDiscountOpen(!discountOpen)}
