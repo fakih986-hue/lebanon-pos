@@ -1,3 +1,4 @@
+import { deviceHeadersFor } from "../../features/pos/lib/deviceCredentials"
 import { useEffect, useState } from "react"
 import { Search, Truck, MapPin, Phone, User, ChevronDown, ChevronUp } from "lucide-react"
 import { useI18n, useWebSocket } from "@lebanonpos/shared"
@@ -91,7 +92,7 @@ export default function DeliveryPage() {
     try {
       setIsLoading(true)
       const res = await fetch(`${apiUrl}/api/delivery/orders`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()) },
       })
       if (res.ok) setOrders(await res.json())
     } catch { /* offline */ }
@@ -103,7 +104,7 @@ export default function DeliveryPage() {
     try {
       const res = await fetch(`${apiUrl}/api/delivery/orders/${id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()) },
         body: JSON.stringify({ status }),
       })
       if (res.ok) {

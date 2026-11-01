@@ -1,3 +1,4 @@
+import { deviceHeadersFor } from "../../features/pos/lib/deviceCredentials"
 import { useEffect, useMemo, useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router"
 import { AlertTriangle, ArrowDown, ArrowUp, Download, Lock, PackagePlus, Plus, Search, Star, Wrench, XCircle } from "lucide-react"
@@ -186,7 +187,7 @@ export default function ProductsPage() {
     if (!apiUrl || !token) { showToast(t("inv.tools.images_need_server"), "error"); return }
     setGenerating(true)
     try {
-      const res = await fetch(`${apiUrl}/api/images/generate-all`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ force: true }) })
+      const res = await fetch(`${apiUrl}/api/images/generate-all`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()) }, body: JSON.stringify({ force: true }) })
       if (!res.ok) throw new Error((await res.json().catch(() => ({ error: res.statusText }))).error || `HTTP ${res.status}`)
       const data = await res.json()
       for (const item of Array.isArray(data.products) ? data.products : []) if (item.image) updateProduct(item.id, { image: item.image })

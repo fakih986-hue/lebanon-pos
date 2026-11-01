@@ -91,7 +91,7 @@ export type CheckoutIdentityProblem = "not-enrolled" | "sign-in-again"
  * offline sales stay as today); once it is reachable again they must sign in again.
  */
 export async function checkoutIdentityGate(): Promise<CheckoutIdentityProblem | null> {
-  if (getStoreIdentityMode() !== "enforce-checkout") return null
+  if (getStoreIdentityMode() === "observe") return null
   const apiUrl = getApiUrl()
   let currentUserId: string | null = null
   try { currentUserId = localStorage.getItem("lebanonpos.current-user.v1") } catch { /* storage unavailable */ }

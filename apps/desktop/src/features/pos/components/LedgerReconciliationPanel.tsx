@@ -1,3 +1,4 @@
+import { deviceHeadersFor } from "../lib/deviceCredentials"
 import { useState, useEffect, useCallback } from "react"
 import { getApiUrl, getAuthToken } from "../services/sync.service"
 
@@ -54,7 +55,7 @@ export default function LedgerReconciliationPanel() {
     if (!apiUrl || !token) { setError("Not connected to a hub."); return }
     setLoading(true); setError(null)
     try {
-      const res = await fetch(`${apiUrl}/api/inventory/reconciliation`, { headers: { Authorization: `Bearer ${token}` } })
+      const res = await fetch(`${apiUrl}/api/inventory/reconciliation`, { headers: { Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()) } })
       if (res.status === 403) { setError("Managers only."); setReport(null); return }
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setReport(await res.json())
@@ -72,7 +73,7 @@ export default function LedgerReconciliationPanel() {
     if (!apiUrl || !token) return
     setInitializing(true); setStatus(null); setError(null)
     try {
-      const res = await fetch(`${apiUrl}/api/inventory/ledger/initialize`, { method: "POST", headers: { Authorization: `Bearer ${token}` } })
+      const res = await fetch(`${apiUrl}/api/inventory/ledger/initialize`, { method: "POST", headers: { Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()) } })
       const body = await res.json().catch(() => ({}))
       if (res.status === 403) { setError("Only an Admin can initialize the ledger."); return }
       if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`)
@@ -99,7 +100,7 @@ export default function LedgerReconciliationPanel() {
     try {
       const res = await fetch(`${apiUrl}/api/inventory/reconciliation/repair`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()) },
         body: JSON.stringify({ productId: repairTarget.productId, reason }),
       })
       const body = await res.json().catch(() => ({}))

@@ -80,7 +80,8 @@ async function isServerReachable(): Promise<boolean> {
 // session each operation was made under (SPRINT-2) — the enforcement activation gate requires it.
 // x-titan-unknown-cost: this till keeps a daily close's unknown cost as unknown (null), not 0.
 // x-titan-close-revisions: this till keeps several closes per date (register, shift) and their revisions.
-const SYNC_SCHEMA_HEADERS = { "x-titan-sync-schema": "4", "x-titan-unknown-cost": "1", "x-titan-close-revisions": "1" }
+// Schema 5: this till understands the store's staff policy "enforce" (every action is the signed-in person's).
+const SYNC_SCHEMA_HEADERS = { "x-titan-sync-schema": "5", "x-titan-unknown-cost": "1", "x-titan-close-revisions": "1" }
 
 /**
  * A rejected refund (or void) is a money conflict: the customer may already
@@ -656,7 +657,7 @@ export async function checkTenantStatus(): Promise<boolean> {
   if (!apiUrl || !token) return isSuspended()
   try {
     const res = await fetch(`${apiUrl}/api/sync/status`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()) },
     })
     if (!res.ok) {
       if (res.status === 401) return isSuspended()
@@ -1384,7 +1385,7 @@ export async function getPolicyGate(): Promise<PolicyGate> {
   const apiUrl = getApiUrl(), token = getAuthToken()
   if (!apiUrl || !token) return { allowed: false, blockers: [], reachable: false }
   try {
-    const res = await fetch(`${apiUrl}/api/sync/policy-gate`, { cache: "no-store", headers: { Authorization: `Bearer ${token}`, ...SYNC_SCHEMA_HEADERS }, signal: AbortSignal.timeout(6000) })
+    const res = await fetch(`${apiUrl}/api/sync/policy-gate`, { cache: "no-store", headers: { Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()), ...SYNC_SCHEMA_HEADERS }, signal: AbortSignal.timeout(6000) })
     if (!res.ok) return { allowed: false, blockers: [], reachable: false }
     const body = await res.json()
     return { allowed: !!body.allowed, blockers: Array.isArray(body.blockers) ? body.blockers : [], reachable: true }
@@ -1397,7 +1398,7 @@ export async function retireSyncClient(blocker: PolicyGateBlocker, note: string)
   if (!apiUrl || !token) return { ok: false, error: "offline" }
   try {
     const q = blocker.source === "cloud" ? "?source=cloud" : ""
-    const res = await fetch(`${apiUrl}/api/sync/clients/${encodeURIComponent(blocker.id)}/retire${q}`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...SYNC_SCHEMA_HEADERS }, body: JSON.stringify({ note }) })
+    const res = await fetch(`${apiUrl}/api/sync/clients/${encodeURIComponent(blocker.id)}/retire${q}`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()), ...SYNC_SCHEMA_HEADERS }, body: JSON.stringify({ note }) })
     const body = await res.json().catch(() => ({}))
     return res.ok ? { ok: true } : { ok: false, error: body?.error ?? `HTTP ${res.status}` }
   } catch (e) { return { ok: false, error: String(e) } }
@@ -1770,7 +1771,7 @@ async function _flushSyncQueue() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()),
         ...SYNC_SCHEMA_HEADERS, // SPRINT-1: the server records this till's version (upgrade gate)
         ...deviceHeadersFor(apiUrl), // SPRINT-2 C: device credential, separate from the connection token
       },
@@ -1914,7 +1915,7 @@ export async function validateStockWithHub(
   try {
     const res = await fetch(`${apiUrl}/api/sync/validate-stock`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()) },
       body: JSON.stringify({ items }),
       signal: AbortSignal.timeout(8000),
     })
@@ -1955,7 +1956,7 @@ export async function cancelHubCheckoutAttempt(saleId: string): Promise<"committ
   if (!apiUrl || !token) return null
   try {
     const res = await fetch(`${apiUrl}/api/sync/checkout-attempt/${encodeURIComponent(`wt-${saleId}`)}/cancel`, {
-      method: "POST", headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15_000),
+      method: "POST", headers: { Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()) }, signal: AbortSignal.timeout(15_000),
     })
     if (!res.ok) return null
     const data = await res.json()
@@ -1968,7 +1969,7 @@ export async function hubCheckoutAttemptState(saleId: string): Promise<"committe
   const apiUrl = getApiUrl(); const token = getAuthToken()
   if (!apiUrl || !token) return null
   try {
-    const res = await fetch(`${apiUrl}/api/sync/checkout-attempt/${encodeURIComponent(`wt-${saleId}`)}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(COMMIT_TIMEOUT_MS) })
+    const res = await fetch(`${apiUrl}/api/sync/checkout-attempt/${encodeURIComponent(`wt-${saleId}`)}`, { headers: { Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()) }, signal: AbortSignal.timeout(COMMIT_TIMEOUT_MS) })
     if (!res.ok) return null
     const data = await res.json()
     return ["committed", "cancelled", "open"].includes(data?.state) ? data.state : null
@@ -1980,7 +1981,7 @@ export async function saleCommittedOnHub(saleId: string): Promise<boolean | null
   if (!apiUrl || !token) return null
   try {
     const res = await fetch(`${apiUrl}/api/sync/sale-committed/${encodeURIComponent(saleId)}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()) },
       signal: AbortSignal.timeout(COMMIT_TIMEOUT_MS),
     })
     if (!res.ok) return null
@@ -2168,7 +2169,7 @@ async function pullFullEntity(apiUrl: string, token: string, entityPath: string,
     const params = new URLSearchParams({ limit: "5000" })
     if (cursor) params.set("cursor", cursor)
     const res = await fetch(`${apiUrl}/api/sync/pull/full/${entityPath}?${params}`, {
-      headers: { Authorization: `Bearer ${token}`, ...SYNC_SCHEMA_HEADERS },
+      headers: { Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()), ...SYNC_SCHEMA_HEADERS },
     })
     if (!res.ok) throw new Error(`Pull ${entityPath} failed: ${res.status}`)
     const raw = await res.text()
@@ -2282,7 +2283,7 @@ async function _pullFromServer(full = false) {
       // Fetch settings as a single-page entity
       {
         const res = await fetch(`${apiUrl}/api/sync/pull/full/settings?limit=1`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()) },
         })
         if (res.ok) {
           const page = await res.json()
@@ -2302,7 +2303,7 @@ async function _pullFromServer(full = false) {
           const params = new URLSearchParams({ limit: "5000" })
           if (delCursor) params.set("cursor", delCursor)
           const res = await fetch(`${apiUrl}/api/sync/pull/full/deletions?${params}`, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()) },
           })
           if (!res.ok) break
           const page = await res.json()
@@ -2349,7 +2350,7 @@ async function _incrementalPull(apiUrl: string, token: string): Promise<void> {
     ? `${apiUrl}/api/sync/pull?since=${encodeURIComponent(sinceParam)}`
     : `${apiUrl}/api/sync/pull`
 
-  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}`, ...SYNC_SCHEMA_HEADERS } })
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()), ...SYNC_SCHEMA_HEADERS } })
   if (!response.ok) throw new Error(`Sync pull failed: ${response.status}`)
 
   const data = await response.json()

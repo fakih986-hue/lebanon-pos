@@ -42,9 +42,17 @@ export function deviceCredentialFor(apiUrl: string | null | undefined): string |
   const e = getDeviceEnrollment()
   return e && !e.revoked && apiUrl && norm(e.apiUrl) === norm(apiUrl) ? e.credential : null
 }
+/**
+ * The register's identity on a request to its server: its device credential and, when the person signed in
+ * now holds a server-checked session from that server, the session. In a store that enforces staff identity
+ * the session's person is who acts (the connection token carries no personal authority).
+ */
 export function deviceHeadersFor(apiUrl: string | null | undefined): Record<string, string> {
   const c = deviceCredentialFor(apiUrl)
-  return c ? { "x-device-credential": c } : {}
+  if (!c) return {}
+  const s = getStaffSession()
+  const who = currentUser()
+  return s && who && s.staffId === who && apiUrl && norm(s.apiUrl) === norm(apiUrl) ? { "x-device-credential": c, "x-staff-session": s.session } : { "x-device-credential": c }
 }
 
 export const getStaffSession = () => read<StaffSessionRecord>(SESSION_KEY)
@@ -75,12 +83,15 @@ export function captureEnvelope(apiUrl: string | null | undefined, currentUserId
 }
 
 const MODE_KEY = "lebanonpos.staff-session-mode.v1"
-/** SPRINT-2: the store's identity mode, as last reported by its server (observe unless enabled). */
-export type StoreIdentityMode = "observe" | "enforce-checkout"
-export const getStoreIdentityMode = (): StoreIdentityMode => (read<{ mode?: string }>(MODE_KEY)?.mode === "enforce-checkout" ? "enforce-checkout" : "observe")
+/** SPRINT-2: the store's identity mode, as last reported by its server (observe unless enabled). "enforce":
+ *  every action is the signed-in person's, checked by the server (kept until the server says otherwise). */
+export type StoreIdentityMode = "observe" | "enforce-checkout" | "enforce"
+export const getStoreIdentityMode = (): StoreIdentityMode => { const m = read<{ mode?: string }>(MODE_KEY)?.mode; return m === "enforce" || m === "enforce-checkout" ? m : "observe" }
+/** The store enforces staff identity at checkout (both enforcing modes). */
+export const checkoutEnforced = () => getStoreIdentityMode() !== "observe"
 /** Returns true when the mode changed. */
 export function setStoreIdentityMode(mode: unknown): boolean {
-  if (mode !== "observe" && mode !== "enforce-checkout") return false
+  if (mode !== "observe" && mode !== "enforce-checkout" && mode !== "enforce") return false
   const changed = getStoreIdentityMode() !== mode
   write(MODE_KEY, { mode, at: new Date().toISOString() })
   return changed

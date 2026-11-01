@@ -25,8 +25,6 @@ type Decision = {
   reviewer: { id: string; name: string }
 }
 
-const OPS = new Set(["inventory.adjust", "inventory.count", "inventory.receive", "customer.create", "customer.update", "debt.create", "debt.payment", "debt.delete", "sale.create", "held-sale.create", "delivery-order.create", "delivery-order.update"])
-
 /**
  * Refused work: operations the server refused (e.g. a manager's stock correction pushed by a till
  * connected with a cashier's account). A manager decides each one — apply it under their own
@@ -73,7 +71,8 @@ export function RefusedWorkPage() {
     setBusy(false)
   }
 
-  const opLabel = (o: RefusedOp) => OPS.has(`${o.entity}.${o.action}`) ? t(`refused.op.${o.entity}.${o.action}`) : `${o.action} ${o.entity}`
+  const opTitle = (entity: string, action: string) => { const k = `refused.op.${entity}.${action}`; const s = t(k); return s === k ? `${action} ${entity}` : s }
+  const opLabel = (o: RefusedOp) => opTitle(o.entity, o.action)
   const limitation = (l: string) => { const k = `refused.lim.${l}`; const s = t(k); return s === k ? l : s }
 
   function effectLines(e: Effect): string[] {
@@ -160,7 +159,7 @@ export function RefusedWorkPage() {
           {decisions.map((d) => (
             <article key={d.opId} className="data-card text-sm space-y-1" style={{ color: "var(--text-secondary)" }}>
               <p className="font-medium" style={{ color: "var(--text-primary)" }}>
-                {d.action} {d.entity} · {d.decision === "apply" ? t("refused.decided_applied") : t(`refused.outcome.${d.outcome}`)}
+                {opTitle(d.entity, d.action)} · {d.decision === "apply" ? t("refused.decided_applied") : t(`refused.outcome.${d.outcome}`)}
               </p>
               <dl className="grid gap-x-6 gap-y-0.5 sm:grid-cols-[max-content_1fr]">
                 <dt className="font-medium">{t("refused.who_actor")}</dt>

@@ -24,7 +24,7 @@ export default function StaffSessionBadge() {
 
   const user = isSessionUnlocked() ? getCurrentUser() : null
   if (!user) return null
-  const enforced = getStoreIdentityMode() === "enforce-checkout"
+  const enforced = getStoreIdentityMode() !== "observe"
   const ev = personEvidence(getApiUrl(), user.id)
   const time = ev.authTime ? new Intl.DateTimeFormat(locale === "ar" ? "ar-LB" : "en-GB", { hour: "2-digit", minute: "2-digit" }).format(new Date(ev.authTime)) : ""
   const enrolled = !!getDeviceEnrollment() && !getDeviceEnrollment()!.revoked

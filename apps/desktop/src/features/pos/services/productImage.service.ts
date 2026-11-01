@@ -1,3 +1,4 @@
+import { deviceHeadersFor } from "../lib/deviceCredentials"
 import { getApiUrl, getAuthToken } from "./sync.service"
 import type { Product } from "../types/product"
 
@@ -21,7 +22,7 @@ export async function generateImageViaApi(
   if (!apiUrl || !token) throw new Error("Connect to the server first (Settings → Devices & Sync).")
   const res = await fetch(`${apiUrl}/api/images/generate`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()) },
     body: JSON.stringify({ name: p.name, category: p.category, barcode: p.barcode ?? undefined }),
   })
   if (!res.ok) return null

@@ -1,3 +1,4 @@
+import { deviceHeadersFor } from "../../features/pos/lib/deviceCredentials"
 import { useEffect, useState } from "react"
 import { Plus, Pencil, Truck } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
@@ -24,7 +25,7 @@ export default function DriversPage() {
 
   function headers() {
     const token = getAuthToken()
-    return { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+    return { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()) } : {}) }
   }
 
   function apiUrl() { return getApiUrl() }

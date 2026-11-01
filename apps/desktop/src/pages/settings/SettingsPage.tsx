@@ -1,3 +1,4 @@
+import { deviceHeadersFor } from "../../features/pos/lib/deviceCredentials"
 import { useEffect, useRef, useState } from "react"
 import DeviceSessionCard from "../../features/pos/components/DeviceSessionCard"
 import { useI18n } from "@lebanonpos/shared"
@@ -208,7 +209,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (activeWorkspace === "Delivery" && getApiUrl() && getAuthToken()) {
       fetch(`${getApiUrl()}/api/delivery/drivers`, {
-        headers: { Authorization: `Bearer ${getAuthToken()}` },
+        headers: { Authorization: `Bearer ${getAuthToken()}`, ...deviceHeadersFor(getApiUrl()) },
       })
         .then(r => r.ok ? r.json() : [])
         .then(setDrivers)
@@ -352,7 +353,7 @@ export default function SettingsPage() {
     if (getApiUrl() && getAuthToken()) {
       fetch(`${getApiUrl()}/api/delivery/settings`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getAuthToken()}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getAuthToken()}`, ...deviceHeadersFor(getApiUrl()) },
         body: JSON.stringify({
           deliveryFee: settings.deliveryFee,
           whatsAppAdmin: settings.whatsAppAdmin,

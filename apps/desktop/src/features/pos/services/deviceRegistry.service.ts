@@ -1,3 +1,4 @@
+import { deviceHeadersFor } from "../lib/deviceCredentials"
 import { getApiUrl, getAuthToken } from "./sync.service"
 import { getDeviceId } from "./sync.service"
 import { rememberEnrollment } from "./deviceSession.service"
@@ -31,7 +32,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(token ? { Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()) } : {}),
       ...(options?.headers ?? {}),
     },
   })

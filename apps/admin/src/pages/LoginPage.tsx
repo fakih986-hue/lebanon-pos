@@ -20,7 +20,8 @@ export function LoginPage() {
     try {
       const res = await api<{ token: string; user: { name: string; tenantId: string; tenantName: string } }>("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ pin, tenantSubdomain: tenantSubdomain.trim() || undefined }),
+        // a person signing in for themselves (the admin app): their own authority
+        body: JSON.stringify({ pin, client: "person", tenantSubdomain: tenantSubdomain.trim() || undefined }),
       })
       setToken(res.token)
       localStorage.setItem("lebanonpos.admin.tenant", res.user.tenantName)

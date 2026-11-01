@@ -203,7 +203,7 @@ export default function LoginScreen() {
         res = await fetch(`${url}/api/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pin: cPin.trim(), tenantSubdomain: cSubdomain.trim() || undefined }),
+          body: JSON.stringify({ pin: cPin.trim(), client: "register", tenantSubdomain: cSubdomain.trim() || undefined }),
         })
       } catch {
         throw new Error(`Can't reach ${url}. Check the URL and your internet.`)

@@ -518,7 +518,7 @@ export async function unlockWithPin(pin: string) {
       const res = await fetch(`${apiUrl}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin: cleanPin, ...(tenantSubdomain ? { tenantSubdomain } : {}) }),
+        body: JSON.stringify({ pin: cleanPin, client: "register", ...(tenantSubdomain ? { tenantSubdomain } : {}) }),
       })
       if (res.ok) {
         const data = await res.json()
