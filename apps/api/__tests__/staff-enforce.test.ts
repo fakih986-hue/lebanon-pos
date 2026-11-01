@@ -158,6 +158,21 @@ describe("activation: every client ever seen, every approved device, hubs by key
     expect([refused.status, refused.body.code]).toEqual([409, "IDENTITY_GATE"])
     expect((await policyLib.storePolicy(GATE))).toMatchObject({ mode: "observe", version: 0 })
   })
+
+  it("a register seen only through a hub without a verified session blocks until the owner retires it (with a note, audited)", async () => {
+    const owner = jwt.sign({ userId: (await cloudPrisma.staffUser.findFirst({ where: { tenantId: GATE } }))!.id, tenantId: GATE, role: "Admin", tokenVersion: 1, use: "person" }, process.env.JWT_SECRET!, { expiresIn: "1h" })
+    const ev = (opId: string, relayed: Record<string, unknown>, receivedAt: Date) => cloudPrisma.operationEvidence.create({ data: { opId, tenantId: GATE, entity: "sale", action: "create", acceptedBy: "cloud", transport: "hub-bridge", credentialKind: "bridge", evidence: "hub-attested", attestation: "valid", relayed: relayed as any, receivedAt } })
+    // the old hub till: its latest forwarded operation had no session; an earlier one did (the latest decides)
+    await ev(randomUUID(), { deviceIdClaimed: "old-hub-till", deviceCheck: "valid", sessionCheck: "valid" }, new Date(Date.now() - 7_200_000))
+    await ev(randomUUID(), { deviceIdClaimed: "old-hub-till", deviceCheck: "absent", sessionCheck: "absent" }, new Date(Date.now() - 3_600_000))
+    await ev(randomUUID(), { enrolledDeviceId: "good-hub-till", deviceCheck: "valid", sessionCheck: "valid" }, new Date())
+    const blockers = async () => ((await call(cloudUrl, "GET", "/api/sync/identity-gate", undefined, { Authorization: `Bearer ${owner}` })).body.enforceBlockers as any[]).filter((b) => b.reason === "hub-register-unverified").map((b) => b.id)
+    expect(await blockers()).toEqual(["old-hub-till"])
+    expect((await call(cloudUrl, "POST", "/api/sync/hub-registers/old-hub-till/retire", { note: "" }, { Authorization: `Bearer ${owner}` })).status).toBe(400)
+    expect((await call(cloudUrl, "POST", "/api/sync/hub-registers/old-hub-till/retire", { note: "replaced by the new front till" }, { Authorization: `Bearer ${owner}` })).status).toBe(200)
+    expect(await blockers()).toEqual([])
+    expect(await cloudPrisma.auditEvent.count({ where: { tenantId: GATE, action: "sync.client_retired", summary: { contains: "old-hub-till" } } })).toBe(1)
+  })
 })
 
 describe("policy: issued at the cloud, adopted by the hub only when newer, never silently lowered", () => {
