@@ -969,6 +969,31 @@ router.get("/refused", staffSync, async (req: AuthRequest, res: ServerResponse) 
   json(res, { operations })
 })
 
+/**
+ * Decisions made about held work (most recent first). Each keeps three people apart: the ACTOR (who the
+ * register named, and the session it arrived on, as checked when it was held), the APPROVER (a manager
+ * approval it carried, as checked then) and the REVIEWER who decided. Same visibility as the queue.
+ */
+router.get("/refused/decisions", staffSync, async (req: AuthRequest, res: ServerResponse) => {
+  const tenantId = req.auth!.tenantId
+  const reviewer = await staffReviewer(req)
+  const viewerPerms = reviewer?.permissions ?? []
+  if (!viewerPerms.includes("reports.view") && !REVIEW_PERMISSIONS.some((p) => viewerPerms.includes(p))) { json(res, { error: "Needs the Reports permission or a manager permission.", code: "FORBIDDEN" }, 403); return }
+  const rows = await prisma.reviewResolution.findMany({ where: { tenantId }, orderBy: { createdAt: "desc" }, take: 50 })
+  const staff = new Map((await prisma.staffUser.findMany({ where: { tenantId }, select: { id: true, name: true } })).map((s) => [s.id, s.name]))
+  json(res, { decisions: rows.map((r) => {
+    const held = (r.originalEvidence ?? {}) as Record<string, any>
+    const approval = held.approval && typeof held.approval === "object" ? held.approval : null
+    return {
+      opId: r.opId, entity: r.entity, action: r.action, decision: r.decision, outcome: r.outcome, category: r.category, decidedAt: r.createdAt,
+      reason: r.originalReason, note: r.note, money: r.money, applyResult: r.applyResult,
+      actor: { named: held.actorNameClaimed ?? null, namedId: held.actorIdClaimed ?? null, session: held.sessionStaffId ? { id: held.sessionStaffId, name: staff.get(held.sessionStaffId) ?? null, check: held.sessionCheck ?? null } : null },
+      approver: approval ? { id: approval.approverId ?? null, name: approval.approverName ?? null, check: approval.check ?? null } : null,
+      reviewer: { id: r.reviewerId, name: r.reviewerName },
+    }
+  }) })
+})
+
 router.post("/refused/:id/resolve", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   const tenantId = req.auth!.tenantId
   if (req.body && typeof req.body === "object" && ("partial" in req.body || "items" in req.body || "quantities" in req.body)) {
@@ -1019,7 +1044,7 @@ router.post("/refused/:id/resolve", staffSync, async (req: AuthRequest, res: Ser
   const refusal = await makeOpAuthorizer(tenantId, reviewer.permissions, reviewer.id)(op)
   if (refusal) { await back(row.error ?? ""); json(res, { error: refusal, code: "FORBIDDEN" }, 403); return }
   try {
-    const outcome = await applyOnce(tenantId, op, reviewApplyCtx(origin.deviceId, reviewer.id, origin.syncSchema), reviewApplyHook(req, tenantId, op, reviewer.id, origin.deviceId))
+    const outcome = await applyOnce(tenantId, op, reviewApplyCtx(origin.deviceId, reviewer.id, origin.syncSchema), reviewApplyHook(req, tenantId, op, reviewer.id, origin.deviceId, row.heldEvidence as Record<string, unknown> | null))
     await record("applied", outcome)
     await audit("sync.refused.applied", `${reviewer.name} applied refused ${row.action} ${row.entity}: ${body.data.note}`, { outcome })
     try { broadcastToTenant(tenantId, "sync:data-changed", {}) } catch { /* no-op */ }
@@ -1034,11 +1059,21 @@ router.post("/refused/:id/resolve", staffSync, async (req: AuthRequest, res: Ser
 /** A manager applying refused work runs as themselves, with the sync schema the till pushed it with. */
 // Refused work was pushed by an account that lacked a permission: its cost figures are not taken.
 const reviewApplyCtx = (deviceId: string | null, userId: string, syncSchema?: number) => ({ deviceId, userId, syncSchema, costTrusted: false })
-/** Evidence for work applied on a manager's review: the reviewer's account applied it; the actor is still only claimed. */
-const reviewApplyHook = (req: AuthRequest, tenantId: string, op: { id: string; entity: string; action: string; payload?: unknown }, reviewerId: string, deviceId: string | null) => async (tx: typeof prisma) => {
+/**
+ * Evidence for work applied on a manager's review. Three people, kept apart: the ACTOR (who the register
+ * says did it, and the session it arrived on, as checked when it was held), the APPROVER (a manager's
+ * approval it carried, as checked then) and the REVIEWER (whose account applied it now: the connection
+ * account here, and ReviewResolution). The actor is still only what was checked when it was held.
+ */
+const reviewApplyHook = (req: AuthRequest, tenantId: string, op: { id: string; entity: string; action: string; payload?: unknown }, reviewerId: string, deviceId: string | null, held: Record<string, unknown> | null = null) => async (tx: typeof prisma) => {
   if (!(tx as any).operationEvidence) return
-  const row = observeEvidence({ opId: op.id, tenantId, entity: op.entity, action: op.action, payload: op.payload, kind: "staff", accountId: reviewerId, deviceId, transport: transportOf(req as any), acceptedBy: ["true", "1"].includes(process.env.IS_LOCAL_SERVER || "") ? "hub" : "cloud", envelope: null })
+  const row: any = observeEvidence({ opId: op.id, tenantId, entity: op.entity, action: op.action, payload: op.payload, kind: "staff", accountId: reviewerId, deviceId, transport: transportOf(req as any), acceptedBy: ["true", "1"].includes(process.env.IS_LOCAL_SERVER || "") ? "hub" : "cloud", envelope: null })
   row.limitations.push("applied-on-manager-review")
+  if (held) {
+    for (const k of ["actorIdClaimed", "actorNameClaimed", "enrolledDeviceId", "deviceCheck", "sessionId", "sessionStaffId", "sessionCheck", "approval", "attestation", "attestationKid"]) if (held[k] !== undefined && held[k] !== null) row[k] = held[k]
+    if (held.sessionAuthTime) row.sessionAuthTime = new Date(String(held.sessionAuthTime))
+    row.limitations.push("identity-as-checked-when-held", "reviewer-is-connection-account")
+  }
   await (tx as any).operationEvidence.createMany({ skipDuplicates: true, data: [row] })
 }
 

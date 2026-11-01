@@ -173,6 +173,13 @@ describe("resolution", () => {
     const devB = await prisma.device.findFirst({ where: { tenantId: T, deviceId: "rq-till-b" } })
     expect(devB).toBeTruthy()
     expect(await stock()).toBe(before - 1)
+    // three people kept apart: the evidence of the applied sale keeps Sami (as checked when it was held);
+    // the reviewer applied it (its connection account) and is recorded as the one who decided
+    const e = (await prisma.operationEvidence.findUnique({ where: { opId: ops.pinReset.id } }))!
+    expect([e.sessionStaffId, e.sessionCheck, e.actorIdClaimed, e.connectionAccountId]).toEqual([SAMI, "staff-revoked", SAMI, OWNER])
+    expect(e.limitations).toEqual(expect.arrayContaining(["applied-on-manager-review", "identity-as-checked-when-held", "reviewer-is-connection-account"]))
+    const decided = (await call("GET", "/api/sync/refused/decisions", undefined, bearer(owner))).body.decisions as any[]
+    expect(decided.find((d) => d.opId === ops.pinReset.id)).toMatchObject({ decision: "apply", actor: { session: { id: SAMI, name: "Sami", check: "staff-revoked" } }, approver: null, reviewer: { id: OWNER, name: "Owner" } })
   })
 
   it("decline: the money outcome is recorded; a manual correction is not proof of recovery; a resend never applies", async () => {

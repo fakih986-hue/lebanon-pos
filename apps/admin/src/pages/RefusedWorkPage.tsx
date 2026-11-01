@@ -17,6 +17,13 @@ type RefusedOp = {
   previewToken?: string
 }
 const OUTCOMES = ["nothing-to-correct", "manual-correction-acknowledged", "money-recovered-attested"] as const
+type Decision = {
+  opId: string; entity: string; action: string; decision: "apply" | "dismiss"; outcome: string; category: string; decidedAt: string; note: string
+  money: { direction: string; amountUsd: number; method: string | null } | null
+  actor: { named: string | null; session: { name: string | null; check: string | null } | null }
+  approver: { name: string | null; check: string | null } | null
+  reviewer: { id: string; name: string }
+}
 
 const OPS = new Set(["inventory.adjust", "inventory.count", "inventory.receive", "customer.create", "customer.update", "debt.create", "debt.payment", "debt.delete", "sale.create", "held-sale.create", "delivery-order.create", "delivery-order.update"])
 
@@ -28,6 +35,7 @@ const OPS = new Set(["inventory.adjust", "inventory.count", "inventory.receive",
 export function RefusedWorkPage() {
   const { t, locale } = useI18n()
   const [ops, setOps] = useState<RefusedOp[]>([])
+  const [decisions, setDecisions] = useState<Decision[]>([])
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState("")
   const [notice, setNotice] = useState("")
@@ -40,7 +48,10 @@ export function RefusedWorkPage() {
 
   async function load() {
     setLoading(true); setErrorMsg("")
-    try { setOps((await api<{ operations: RefusedOp[] }>("/api/sync/refused")).operations) } catch (e) { setErrorMsg(e instanceof Error ? e.message : String(e)) }
+    try {
+      setOps((await api<{ operations: RefusedOp[] }>("/api/sync/refused")).operations)
+      setDecisions((await api<{ decisions: Decision[] }>("/api/sync/refused/decisions")).decisions)
+    } catch (e) { setErrorMsg(e instanceof Error ? e.message : String(e)) }
     setLoading(false)
   }
   useEffect(() => { void load() }, [])
@@ -53,7 +64,12 @@ export function RefusedWorkPage() {
       setNotice(deciding.decision === "apply" ? t("refused.applied_ok") : t("refused.dismissed_ok"))
       setDeciding(null); setNote("")
       await load()
-    } catch (e) { setErrorMsg(e instanceof Error ? e.message : String(e)) }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e)
+      // what the reviewer looked at changed (or someone else decided): show it again, decide again
+      if (/changed since you looked|no longer waiting for review|Someone else is deciding/i.test(message)) { setDeciding(null); setNotice(t("refused.stale")); await load() }
+      else setErrorMsg(message)
+    }
     setBusy(false)
   }
 
@@ -136,6 +152,27 @@ export function RefusedWorkPage() {
             ) : <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("refused.needs", { permissions: o.requiredPermissions.join(", ") })}</p>)}
           </article>
         ))}
+
+      {decisions.length > 0 && (
+        <section aria-labelledby="rw-decided" className="space-y-2">
+          <h2 id="rw-decided" className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>{t("refused.decided")}</h2>
+          {decisions.map((d) => (
+            <article key={d.opId} className="data-card text-sm space-y-1" style={{ color: "var(--text-secondary)" }}>
+              <p className="font-medium" style={{ color: "var(--text-primary)" }}>
+                {d.action} {d.entity} · {d.decision === "apply" ? t("refused.decided_applied") : t(`refused.outcome.${d.outcome}`)}
+              </p>
+              <dl className="grid gap-x-6 gap-y-0.5 sm:grid-cols-[max-content_1fr]">
+                <dt className="font-medium">{t("refused.who_actor")}</dt>
+                <dd>{d.actor.session?.name ? t("refused.session_of", { name: d.actor.session.name }) : (d.actor.named ?? t("refused.not_recorded"))}{d.actor.session?.check ? ` (${d.actor.session.check})` : ""}</dd>
+                <dt className="font-medium">{t("refused.who_approver")}</dt>
+                <dd>{d.approver?.name ? `${d.approver.name} (${d.approver.check ?? ""})` : "—"}</dd>
+                <dt className="font-medium">{t("refused.who_reviewer")}</dt>
+                <dd>{d.reviewer.name} · {fmt(d.decidedAt)} · <bdi>{d.note}</bdi></dd>
+              </dl>
+            </article>
+          ))}
+        </section>
+      )}
 
       {deciding && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.6)" }} onClick={() => !busy && setDeciding(null)}>
