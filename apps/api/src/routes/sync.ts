@@ -21,6 +21,7 @@ import { createHash } from "node:crypto"
 import { localGateBlockers, recordSyncClient, RETIRED_CLIENT_MESSAGE, StockPolicyGateError, POLICY_GATE_WINDOW_DAYS, type GateBlocker } from "../lib/policyGate.js"
 import { LEGACY_REV } from "../lib/stockPolicy.js"
 import { claimedActor, observeEvidence, transportOf } from "../lib/evidence.js"
+import { attestedAttribution, attributionFor, namedActor, personOf, stampAttribution, stripServerAttribution, withoutServerAttribution, type Attribution } from "../lib/attribution.js"
 import { claimedActorOf, describeEffects, actorLimitations, redactSecrets } from "../lib/refusedReview.js"
 import { checkDevice, checkSession, type SessionResult } from "../lib/credentials.js"
 import { identityGateBlockers, isHubServer, enforceGateBlockers } from "../lib/identityGate.js"
@@ -839,11 +840,23 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         continue
       }
 
+      // Operational readiness: who did it, written on the business record itself (lib/attribution.ts)
+      const approverSeen = approvalSeen?.check === "valid" && approvalSeen.approverId ? { id: approvalSeen.approverId, name: approvalSeen.approverName ?? "" }
+        : relayed?.holds && (attested?.srv?.approval as any)?.approverId ? { id: String((attested!.srv!.approval as any).approverId), name: String((attested!.srv!.approval as any).approverName ?? "") } : null
+      const gateBasis = gate && "basis" in gate ? gate.basis : null
+      const signedAttribution = pushKind === "bridge" && attested?.check === "valid" ? attestedAttribution(attested.srv) : null
+      const stamp: Attribution = gateBasis === "review" && enforcedActor
+        // work a manager applied on review at the hub: the actor as the hub recorded it, the reviewer as checked here
+        ? { basis: "reviewed", actor: signedAttribution?.actor ?? null, approver: signedAttribution?.approver ?? approverSeen, reviewer: { id: enforcedActor.id, name: enforcedActor.name } }
+        : enforcedActor && gateBasis && gateBasis !== "review" ? await attributionFor(tenantId, op, { enforced: { actor: { id: enforcedActor.id, name: enforcedActor.name }, basis: gateBasis }, approver: approverSeen })
+        // a hub's signed record of who did it (observe): as it vouched, a claim stays a claim
+        : signedAttribution ?? await attributionFor(tenantId, op, { session: sessionSeen, approver: approverSeen })
+
       const outcome = await applyOnce(tenantId, op, { deviceId: deviceId ?? null, userId: req.auth!.userId, syncSchema: pushSchema, costTrusted: opCostTrusted, resolutionAuthority: enforcesCheckout(storeMode) ? { staffId: enforcedActor?.id ?? null, approved } : undefined }, async (tx) => {
         // SPRINT-2 Phase B (observe): what this server knows about the operation, in the same
         // transaction (never an applied operation without its evidence row, or the reverse).
         if ((tx as any).operationEvidence) {
-          await (tx as any).operationEvidence.createMany({ skipDuplicates: true, data: [observeEvidence({
+          await (tx as any).operationEvidence.createMany({ skipDuplicates: true, data: [{ ...observeEvidence({
             opId: op.id, tenantId, entity: op.entity, action: op.action, payload: op.payload,
             kind: tokenKind(req.auth), accountId: typeof req.auth!.userId === "string" ? req.auth!.userId : null,
             deviceId: deviceId ?? null, transport: transportOf(req as any),
@@ -851,16 +864,13 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
             envelope: (op as any).ev ?? null,
             device: deviceSeen, session: sessionSeen, relayed: (op as any).ev?.relayed ?? null, attestation: attested, approval: approvalSeen, relayedApproval: relayed,
             enforced: !!gate && "basis" in gate && gate.basis === "session",
-          })] })
+          }), attribution: stamp as any }] })
         }
         // the approval is used by this operation only (a concurrent other operation presenting it fails here)
         if (approvalSeen?.check === "valid" && !(await useApproval(tx as any, approvalSeen.id, op.id))) throw new Error("APPROVAL_INVALID: the manager approval was used by another operation")
-        // Enforced: the sale is recorded as made by the session's person (the payload's cashier
-        // fields were written by the register). The stored operation itself is not changed.
-        if (enforcedActor && op.entity === "sale" && op.action === "create") {
-          const saleId = (op.payload as { id?: unknown } | undefined)?.id
-          if (typeof saleId === "string") await (tx as any).sale.updateMany({ where: { tenantId, id: saleId }, data: { cashierId: enforcedActor.id, cashier: enforcedActor.name } })
-        }
+        // The record says who did it (enforced: the session's person; the payload's actor fields were written by
+        // the register and never stand). The stored operation itself is not changed.
+        await stampAttribution(tx as any, tenantId, op, stamp)
       })
 
       results.push({ id: op.id, status: "ok" })
@@ -1202,7 +1212,7 @@ router.post("/refused/:id/resolve", staffSync, async (req: AuthRequest, res: Ser
   const refusal = await makeOpAuthorizer(tenantId, reviewer.permissions, reviewer.id, reviewer.permissions)(op)
   if (refusal) { await back(row.error ?? ""); json(res, { error: refusal, code: "FORBIDDEN" }, 403); return }
   try {
-    const outcome = await applyOnce(tenantId, op, reviewApplyCtx(origin.deviceId, reviewer.id, origin.syncSchema), reviewApplyHook(req, tenantId, op, reviewer.id, origin.deviceId, row.heldEvidence as Record<string, unknown> | null))
+    const outcome = await applyOnce(tenantId, op, reviewApplyCtx(origin.deviceId, reviewer.id, origin.syncSchema), reviewApplyHook(req, tenantId, op, reviewer.id, origin.deviceId, row.heldEvidence as Record<string, unknown> | null, await reviewedAttribution(tenantId, op, row.heldEvidence as Record<string, any> | null, reviewer)))
     await record("applied", outcome)
     await audit("sync.refused.applied", `${reviewer.name} applied refused ${row.action} ${row.entity}: ${body.data.note}`, { outcome })
     try { broadcastToTenant(tenantId, "sync:data-changed", {}) } catch { /* no-op */ }
@@ -1223,7 +1233,18 @@ const reviewApplyCtx = (deviceId: string | null, userId: string, syncSchema?: nu
  * approval it carried, as checked then) and the REVIEWER (whose account applied it now: the connection
  * account here, and ReviewResolution). The actor is still only what was checked when it was held.
  */
-const reviewApplyHook = (req: AuthRequest, tenantId: string, op: { id: string; entity: string; action: string; payload?: unknown }, reviewerId: string, deviceId: string | null, held: Record<string, unknown> | null = null) => async (tx: typeof prisma) => {
+/** Held work a reviewer applies: the actor as checked when it was held (its verified session's person, else whom
+ *  the register named), the approval it carried, and the reviewer — three people, recorded apart. */
+async function reviewedAttribution(tenantId: string, op: { entity: string; action: string; payload?: unknown }, held: Record<string, any> | null, reviewer: { id: string; name: string }): Promise<Attribution> {
+  const named = namedActor(op.entity, op.action, op.payload)
+  const actor = held?.sessionCheck === "valid" && held?.sessionStaffId ? await personOf(tenantId, held.sessionStaffId)
+    : named.id ? await personOf(tenantId, named.id, named.name) : null
+  const approval = held?.approval && typeof held.approval === "object" && held.approval.check === "valid" && held.approval.approverId ? { id: String(held.approval.approverId), name: String(held.approval.approverName ?? "") } : null
+  return { basis: "reviewed", actor, approver: approval, reviewer: { id: reviewer.id, name: reviewer.name } }
+}
+
+const reviewApplyHook = (req: AuthRequest, tenantId: string, op: { id: string; entity: string; action: string; payload?: unknown }, reviewerId: string, deviceId: string | null, held: Record<string, unknown> | null = null, stamp: Attribution | null = null) => async (tx: typeof prisma) => {
+  if (stamp) await stampAttribution(tx as any, tenantId, op, stamp)
   if (!(tx as any).operationEvidence) return
   const row: any = observeEvidence({ opId: op.id, tenantId, entity: op.entity, action: op.action, payload: op.payload, kind: "staff", accountId: reviewerId, deviceId, transport: transportOf(req as any), acceptedBy: ["true", "1"].includes(process.env.IS_LOCAL_SERVER || "") ? "hub" : "cloud", envelope: null })
   row.limitations.push("applied-on-manager-review")
@@ -1232,6 +1253,7 @@ const reviewApplyHook = (req: AuthRequest, tenantId: string, op: { id: string; e
     if (held.sessionAuthTime) row.sessionAuthTime = new Date(String(held.sessionAuthTime))
     row.limitations.push("identity-as-checked-when-held", "reviewer-is-connection-account")
   }
+  if (stamp) row.attribution = stamp
   await (tx as any).operationEvidence.createMany({ skipDuplicates: true, data: [row] })
 }
 
@@ -1804,7 +1826,7 @@ async function dayCloseValuation(db: typeof prisma, tenantId: string, expenses: 
  * action does.
  */
 export function commandDigest(entity: string, action: string, payload: unknown): string {
-  return createHash("sha256").update(canonicalJson(withoutPolicyDecision(withoutClientCost(entity, action, JSON.parse(JSON.stringify(payload ?? {})))))).digest("hex")
+  return createHash("sha256").update(canonicalJson(withoutPolicyDecision(withoutClientCost(entity, action, withoutServerAttribution(JSON.parse(JSON.stringify(payload ?? {}))))))).digest("hex")
 }
 
 /** The device and session checks an enrolled hub recorded and signed for a forwarded operation. */
@@ -1831,7 +1853,8 @@ function canonicalJson(value: unknown): string {
 /** The stored operation and the incoming one are the same change (entity, action, payload). */
 function sameOperation(stored: { entity: string; action: string; payload: unknown }, incoming: { entity: string; action: string; payload?: unknown }) {
   // Valuation the client sent is not part of the operation's identity (it may have been replaced, above).
-  const norm = (payload: unknown) => canonicalJson(withoutPolicyDecision(withoutClientCost(incoming.entity, incoming.action, payload ?? {})))
+  // (nor are the fields only the server writes: a record pulled back by a register carries them)
+  const norm = (payload: unknown) => canonicalJson(withoutPolicyDecision(withoutClientCost(incoming.entity, incoming.action, withoutServerAttribution(payload ?? {}))))
   return stored.entity === incoming.entity && stored.action === incoming.action
     && norm(stored.payload) === norm(JSON.parse(JSON.stringify(incoming.payload ?? {})))
 }
@@ -1922,6 +1945,8 @@ async function processOperation(
      *  verified session's person, or a manager's online approval. A name in the payload is not enough. */
     resolutionAuthority?: { staffId: string | null; approved: string[] } } = {}
 ) {
+  // Fields only this server writes (lib/attribution.ts): never taken from a client, on any create or update path.
+  stripServerAttribution(payload)
   // Cost a client sends is taken only from an account that can see cost (or a hub's link); anyone
   // else was never sent cost, so whatever it sends (0, a stale value, a made-up one) is replaced by
   // the server's own product cost (docs/LEGACY-TILL-COMPAT.md).

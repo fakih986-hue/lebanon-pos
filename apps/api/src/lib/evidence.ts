@@ -75,7 +75,7 @@ export type ObserveInput = {
 }
 
 /** Fields of a hub's own evidence row that are carried to the cloud with a forwarded operation. */
-export const RELAYED_FIELDS = ["approval", "acceptedBy", "receivedAt", "transport", "credentialKind", "connectionAccountId", "deviceIdClaimed", "enrolledDeviceId", "deviceCheck", "sessionId", "sessionStaffId", "sessionAuthTime", "sessionCheck", "actorIdClaimed", "actorNameClaimed", "evidence", "limitations", "claimedAt"] as const
+export const RELAYED_FIELDS = ["approval", "acceptedBy", "receivedAt", "transport", "credentialKind", "connectionAccountId", "deviceIdClaimed", "enrolledDeviceId", "deviceCheck", "sessionId", "sessionStaffId", "sessionAuthTime", "sessionCheck", "actorIdClaimed", "actorNameClaimed", "evidence", "limitations", "claimedAt", "attribution"] as const
 export function pickRelayed(row: unknown): Record<string, unknown> | null {
   if (!row || typeof row !== "object" || Array.isArray(row)) return null
   const out: Record<string, unknown> = {}

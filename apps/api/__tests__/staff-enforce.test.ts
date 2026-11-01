@@ -346,6 +346,12 @@ describe("the cloud enforces too: a hub's forwarded work by its signature", () =
     expect([c.attestation, c.evidence, relayed.sessionStaffId, relayed.enrolledDeviceId, relayed.acceptedBy, (c.approval as any)?.approverId, (c.approval as any)?.check]).toEqual(["valid", "hub-attested", RANA, atHub.enrolledDeviceId, atHub.acceptedBy, MAYA, "valid"])
     expect((await cloudPrisma.syncOperation.findUnique({ where: { id: refund.id } }))?.appliedAt).toBeTruthy()
     expect(await cloudPrisma.saleRefund.count({ where: { tenantId: T, id: (refund.payload as any).id } })).toBe(1)
+    // the business record at the cloud names the same people as at the hub: actor, approver (lib/attribution.ts)
+    const refundId = (refund.payload as any).id
+    const hubRow = await prisma.saleRefund.findFirst({ where: { tenantId: T, id: refundId }, select: { cashierId: true, cashier: true, attribution: true } })
+    const cloudRow = await cloudPrisma.saleRefund.findFirst({ where: { tenantId: T, id: refundId }, select: { cashierId: true, cashier: true, attribution: true } })
+    expect([cloudRow?.cashierId, (cloudRow?.attribution as any)?.basis, (cloudRow?.attribution as any)?.approver?.id]).toEqual([RANA, "verified", MAYA])
+    expect([cloudRow?.cashierId, cloudRow?.cashier]).toEqual([hubRow?.cashierId, hubRow?.cashier])
     // the routine offline sale stays a claim in the cloud
     const offline = (await prisma.operationEvidence.findFirst({ where: { tenantId: T, evidence: "offline-claimed" } }))!
     expect((await evidence(offline.opId, cloudPrisma))?.evidence).toBe("offline-claimed")
@@ -365,6 +371,11 @@ describe("the cloud enforces too: a hub's forwarded work by its signature", () =
     expect(row?.appliedAt).toBeTruthy()
     const e = (await evidence(held.id, cloudPrisma))!
     expect((e.relayed as any)?.connectionAccountId).toBe(OWNER)
+    // the payout is Rana's (as held), the owner reviewed it: both at the hub and in the cloud's record
+    for (const db of [prisma, cloudPrisma]) {
+      const cm = await db.cashMovement.findFirst({ where: { tenantId: T, id: (held.payload as any).id }, select: { recordedById: true, attribution: true } })
+      expect([cm?.recordedById, (cm?.attribution as any)?.basis, (cm?.attribution as any)?.reviewer?.id]).toEqual([RANA, "reviewed", OWNER])
+    }
   })
 
   it("an unattested forward and a revoked key are held; after rotation forwarding is accepted again", async () => {
