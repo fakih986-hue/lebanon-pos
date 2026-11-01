@@ -228,13 +228,13 @@ describe("café menu: selling configured drinks", () => {
     expect((await push(rana, "refund", "create", { id: refundId, refundNumber: `R-CM-${refundId.slice(0, 6)}`, saleId: s.id, saleNumber: s.saleNumber, method: "Cash", reason: "spilled", total: 5, cashier: "Rana", cashierId: RANA,
       items: [{ id: pid[SID.capp], saleLineId: drink.lineId, name: "Cappuccino", quantity: 1, unitPrice: 3, total: 3 }, { id: pid[SID.pepsi], saleLineId: can.lineId, name: "Pepsi", quantity: 2, unitPrice: 1, total: 2 }] })).status).toBe("ok")
     expect(Number((await prisma.saleRefund.findUnique({ where: { id: refundId } }))!.total)).toBe(5)
-    expect([await stock(SID.beans), await stock(SID.milk), await stock(SID.cups), await stock(SID.pepsi)]).toEqual([after[0], after[1], after[2], after[3] + 2])
+    expect([await stock(SID.beans), await stock(SID.milk), await stock(SID.cups), await stock(SID.pepsi), await stock(SID.capp)]).toEqual([after[0], after[1], after[2], after[3] + 2, 0])
     // a void of another drink sale: nothing comes back either
     const v = sale([capp(1, 3, [MEDIUM, WHOLE])])
     expect((await push(rana, "sale", "create", v)).status).toBe("ok")
     const beansBefore = await stock(SID.beans)
     expect((await push(rana, "sale", "void", { id: v.id, saleNumber: v.saleNumber })).status).toBe("ok")
-    expect(await stock(SID.beans)).toBe(beansBefore)
+    expect([await stock(SID.beans), await stock(SID.capp)]).toEqual([beansBefore, 0])
     expect((await prisma.sale.findUnique({ where: { id: v.id } }))!.status).toBe("Voided")
   })
 })
