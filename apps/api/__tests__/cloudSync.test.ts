@@ -507,6 +507,25 @@ describe("cloudSync", () => {
       vi.unstubAllGlobals()
     })
 
+    it("a store whose stock is kept at its hub (topology hub): a full pull never overwrites the hub's stock or lots", async () => {
+      vi.mocked(prisma.tenant.findUnique).mockResolvedValue({ id: "test-tenant-1", name: "Test Store", subdomain: "test", storeTopology: "hub", topologyHubId: "hubi-x", topologyVersion: 1 } as any)
+      vi.mocked(prisma.syncOperation.count).mockResolvedValue(0)
+      vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 5 } as any)
+      vi.mocked(prisma.product.update).mockResolvedValue({} as any)
+      vi.mocked(prisma.inventoryBatch.findUnique).mockResolvedValue({ id: "b1" } as any)
+      vi.mocked(prisma.inventoryBatch.update).mockResolvedValue({} as any)
+      stubPull({
+        products: [{ id: 88, syncId: "STABLE-1", name: "cola", barcode: "C1", price: 2, stock: -6, tenantId: "test-tenant-1" }],
+        batches:  [{ id: "b1", productId: 5, quantityRemaining: 20, status: "Open", tenantId: "test-tenant-1" }],
+      })
+
+      await cloudSync.triggerFullPull() // a register joining the hub
+
+      expect(vi.mocked(prisma.product.update).mock.calls[0][0].data).not.toHaveProperty("stock")
+      expect(vi.mocked(prisma.inventoryBatch.update)).not.toHaveBeenCalled()
+      vi.unstubAllGlobals()
+    })
+
     it("EXPLICIT restore is BLOCKED from overwriting inventory while local stock ops are pending", async () => {
       vi.mocked(prisma.syncOperation.count).mockResolvedValue(3) // pending local stock ops
       vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 5 } as any)

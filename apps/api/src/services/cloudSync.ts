@@ -260,7 +260,11 @@ export async function triggerFullPull(): Promise<void> {
     // Explicit operator-initiated restore — the ONLY path allowed to overwrite
     // existing hub inventory from cloud (still gated on no pending local stock
     // ops inside pullFromCloud).
-    await pullFromCloud({ isRestore: true })
+    // Operational readiness: in a store whose stock is kept at its hub (topology "hub", the owner's choice) the hub
+    // is the stock authority: a full pull — a register joining (its connect flow calls this), a repair — never
+    // overwrites the hub's quantities with the cloud's (a cloud that is behind or wrong would replace the truth).
+    const topo = await storeTopology(CLOUD_TENANT!)
+    await pullFromCloud({ isRestore: topo.mode !== "hub" })
   } finally {
     _syncRunning = false
   }
