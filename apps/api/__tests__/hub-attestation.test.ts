@@ -306,8 +306,12 @@ describe("an approval consumed by the hub, forwarded after its lifetime", () => 
     const approval = await approveAtHub(paid)
     const op = opFor(paid, approval)
     expect((await pushFromRegister(op)).status).toBe("ok")
-    // the hub cannot reach the cloud for longer than the approval's lifetime
-    await prisma.managerApproval.update({ where: { id: approval }, data: { expiresAt: new Date(Date.now() - 60_000) } })
+    // the hub cannot reach the cloud for longer than the approval's lifetime: as if it was approved and used
+    // ten minutes ago (the hub's records of it, and what it signs when it finally forwards)
+    const ago = (min: number) => new Date(Date.now() - min * 60_000)
+    await prisma.managerApproval.update({ where: { id: approval }, data: { createdAt: ago(10), expiresAt: ago(8), usedAt: ago(9.5) } })
+    const recorded = (await prisma.operationEvidence.findUnique({ where: { opId: op.id } }))!
+    await prisma.operationEvidence.update({ where: { opId: op.id }, data: { approval: { ...(recorded.approval as object), issuedAt: ago(10).toISOString(), expiresAt: ago(8).toISOString(), consumedAt: ago(9.5).toISOString() } } })
     // meanwhile the hub's key is rotated
     const kidBefore = att.readHubKey()!.kid
     expect((await hub("POST", "/api/setup/hub-key", { pin: "8201" })).status).toBe(200)
@@ -322,7 +326,9 @@ describe("an approval consumed by the hub, forwarded after its lifetime", () => 
     expect([e.attestation, e.attestationKid]).toEqual(["valid", kidAfter])
     expect(e.approval).toMatchObject({ check: "valid", hubCheck: "valid", id: approval, approverId: OWNER, permissions: ["cash.manage"], requestedById: NOUR })
     const seen = e.approval as Record<string, string>
-    expect(Date.parse(seen.consumedAt) <= Date.parse(seen.issuedAt) + 120_000).toBe(true)
+    // used within its lifetime where it was checked; forwarded long after it ended
+    expect(Date.parse(seen.consumedAt) <= Date.parse(seen.expiresAt)).toBe(true)
+    expect(Date.parse(seen.expiresAt) < Date.now() - 5 * 60_000).toBe(true)
     expect(JSON.stringify(e)).not.toContain("8201")
     expect(await cloudPrisma.cashMovement.count({ where: { tenantId: TENANT, id: paid.id } })).toBe(1)
     // duplicate delivery (the cloud's acknowledgement was lost): acknowledged, applied once, one evidence row

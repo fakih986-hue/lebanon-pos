@@ -193,22 +193,22 @@ describe("substitutions under the same id and the same total are refused", () =>
     // another register of this store (Rana signed in there too)
     let p = payoutOf()
     let id = await approve("cash-movement", "create", p, ["cash.manage"], ranaOnTill2)
-    expect((await push("cash-movement", "create", p, id, rana)).error).toMatch(/is other-device/)
+    expect(String((await push("cash-movement", "create", p, id, rana)).error)).toMatch(/is other-device/)
     // another person on the same register (Sami's session): the approval was for Rana
     p = payoutOf({ recordedById: SAMI, recordedByName: "Sami" })
     id = await approve("cash-movement", "create", p, ["cash.manage"], rana)
-    expect((await push("cash-movement", "create", p, id, sami)).error).toMatch(/is other-actor/)
+    expect(String((await push("cash-movement", "create", p, id, sami)).error)).toMatch(/is other-actor/)
     // another action on the same record id: a void approval cannot carry a refund
     const r = refundOf({ id: saleB })
     id = await approve("sale", "void", { id: saleB, saleNumber: "S-BI-B" }, ["sales.void"])
-    expect((await push("refund", "create", r, id)).error).toMatch(/is other-record/)
+    expect(String((await push("refund", "create", r, id)).error)).toMatch(/is other-record/)
     // another store: an approval of store B presented in store A
     const q = payoutOf()
     const otherId = await call("POST", "/api/approvals", { entity: "cash-movement", action: "create", payload: { ...q, recordedById: OTHER_OWNER }, permission: "cash.manage", pin: PIN.other }, headers(otherStore))
     // (the other store's owner approving in their own store is refused as self-approval; their store has no other staff)
     expect(otherId.body.code).toBe("SELF_APPROVAL")
     const foreign = await prisma.managerApproval.create({ data: { id: randomUUID(), tenantId: OTHER, deviceId: "x", entity: "cash-movement", action: "create", recordId: q.id, materialDigest: "0".repeat(64), material: {}, permission: "cash.manage", permissions: ["cash.manage"], approverId: OTHER_OWNER, approverName: "Other owner", expiresAt: new Date(Date.now() + 60_000) } })
-    expect((await push("cash-movement", "create", q, foreign.id)).error).toMatch(/is other-store/)
+    expect(String((await push("cash-movement", "create", q, foreign.id)).error)).toMatch(/is other-store/)
     expect(await prisma.cashMovement.count({ where: { tenantId: T } })).toBe(0)
   })
 
