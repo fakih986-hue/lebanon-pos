@@ -38,20 +38,31 @@ export function RefusedWorkPage() {
   const [errorMsg, setErrorMsg] = useState("")
   const [notice, setNotice] = useState("")
   const [deciding, setDeciding] = useState<{ op: RefusedOp; decision: "apply" | "dismiss" } | null>(null)
-  // the decision dialog keeps focus while open (keyboard and scanner input stay in it); focus returns after
+  // the decision dialog keeps focus while open (keyboard and scanner input stay in it); focus returns to the
+  // button that opened it, or (once that item is decided and gone) to the next item's first decision button
   const dialogRef = useRef<HTMLDivElement>(null)
+  const openerRef = useRef<HTMLElement | null>(null)
   useEffect(() => {
     if (!deciding) return
-    const back = document.activeElement as HTMLElement | null
+    const back = openerRef.current
     const trap = (e: FocusEvent) => { const box = dialogRef.current; if (box && !box.contains(e.target as Node)) box.querySelector<HTMLElement>("textarea")?.focus() }
     document.addEventListener("focusin", trap)
-    return () => { document.removeEventListener("focusin", trap); if (back && back.isConnected) back.focus() }
+    return () => {
+      document.removeEventListener("focusin", trap)
+      if (back && back.isConnected) back.focus()
+      else document.querySelector<HTMLElement>("main article button")?.focus()
+    }
   }, [deciding])
+  const openDecision = (e: React.MouseEvent<HTMLElement>, op: RefusedOp, decision: "apply" | "dismiss") => { openerRef.current = e.currentTarget; setDeciding({ op, decision }); setNote(""); setOutcome("") }
   const [note, setNote] = useState("")
   const [outcome, setOutcome] = useState<(typeof OUTCOMES)[number] | "">("")
   const [busy, setBusy] = useState(false)
   const fmt = (iso: string) => new Intl.DateTimeFormat(locale === "ar" ? "ar-LB" : "en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(iso))
   const n = (v: unknown) => (v === null || v === undefined ? "—" : String(v))
+  // a server reason may start with its code ("SESSION_REVIEW: …"): the sentence is shown, the code kept beside it for support
+  const reasonCode = (r: string | null | undefined) => r?.match(/^([A-Z][A-Z_]+):s/)?.[1] ?? null
+  const reasonText = (r: string | null | undefined) => (r ? r.replace(/^[A-Z][A-Z_]+:s/, "") : "—")
+  const evidenceLabel = (v: string | null | undefined) => { if (!v) return "—"; const k = `refused.evlabel.${v}`; const s = t(k); return s === k ? v : s }
 
   async function load() {
     setLoading(true); setErrorMsg("")
@@ -118,7 +129,7 @@ export function RefusedWorkPage() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <h2 id={`rw-${o.id}`} className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>{opLabel(o)}</h2>
-                <p className="text-sm" style={{ color: "#dc2626" }}>{t("refused.reason")}: <bdi>{o.reason ?? "—"}</bdi></p>
+                <p className="text-sm" style={{ color: "#dc2626" }}>{t("refused.reason")}: <bdi>{reasonText(o.reason)}</bdi>{reasonCode(o.reason) && <span className="text-xs ms-2" style={{ color: "var(--text-muted)" }}>({reasonCode(o.reason)})</span>}</p>
                 <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{t("refused.when", { time: fmt(o.refusedAt), attempts: o.attempts })}</p>
               </div>
               {o.status === "Resolving" && <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>{t("refused.resolving")}</span>}
@@ -130,7 +141,7 @@ export function RefusedWorkPage() {
               <dt className="font-medium">{t("refused.named_actor")}</dt>
               <dd>{o.claimedActor.knownName ?? o.claimedActor.name ?? t("refused.not_recorded")}</dd>
               {o.category && <><dt className="font-medium">{t("refused.category")}</dt><dd>{(() => { const k = `refused.cat.${o.category}`; const s = t(k); return s === k ? o.category : s })()}</dd></>}
-              {o.evidence && <><dt className="font-medium">{t("refused.evidence")}</dt><dd>{n(o.evidence.label)}{o.evidence.sessionStaff ? ` · ${t("refused.session_of", { name: o.evidence.sessionStaff.name ?? o.evidence.sessionStaff.id })}` : ""}{o.evidence.approval?.approverName ? ` · ${t("refused.approved_by", { name: o.evidence.approval.approverName, check: o.evidence.approval.check ?? "" })}` : ""}</dd></>}
+              {o.evidence && <><dt className="font-medium">{t("refused.evidence")}</dt><dd>{evidenceLabel(o.evidence.label)}{o.evidence.sessionStaff ? ` · ${t("refused.session_of", { name: o.evidence.sessionStaff.name ?? o.evidence.sessionStaff.id })}` : ""}{o.evidence.approval?.approverName ? ` · ${t("refused.approved_by", { name: o.evidence.approval.approverName, check: o.evidence.approval.check ?? "" })}` : ""}</dd></>}
               {o.money && o.money.direction !== "none" && <><dt className="font-medium">{t("refused.money")}</dt><dd>{t(o.money.direction === "collected" ? "refused.money_collected" : "refused.money_paid", { amount: o.money.amountUsd.toFixed(2), method: o.money.method ?? "" })}</dd></>}
             </dl>
 
@@ -155,8 +166,8 @@ export function RefusedWorkPage() {
 
             {o.status === "Refused" && (o.canResolve ? (
               <div className="flex flex-wrap gap-2">
-                <button className="btn-primary text-sm" onClick={() => { setDeciding({ op: o, decision: "apply" }); setNote(""); setOutcome("") }}>{t("refused.apply")}</button>
-                <button className="btn-secondary text-sm" onClick={() => { setDeciding({ op: o, decision: "dismiss" }); setNote(""); setOutcome("") }}>{t("refused.dismiss")}</button>
+                <button className="btn-primary text-sm" onClick={(e) => openDecision(e, o, "apply")}>{t("refused.apply")}</button>
+                <button className="btn-secondary text-sm" onClick={(e) => openDecision(e, o, "dismiss")}>{t("refused.dismiss")}</button>
               </div>
             ) : <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("refused.needs", { permissions: o.requiredPermissions.join(", ") })}</p>)}
           </article>
