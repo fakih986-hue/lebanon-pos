@@ -72,6 +72,8 @@ interface Props {
   hasDiscount: boolean
   canApplyDiscount: boolean
   canOverridePrice?: boolean
+  canSetLinePrice?: boolean
+  approvalHint?: string | null
   onCartOpen?: () => void
   sellAtCost: boolean
   onToggleSellAtCost: () => void
@@ -130,7 +132,7 @@ export default function CartPanel({
   checkoutBlocked,
   hasDiscount,
   canApplyDiscount,
-  canOverridePrice,
+  canOverridePrice, canSetLinePrice, approvalHint,
   sellAtCost,
   onToggleSellAtCost,
   quickMode,
@@ -285,6 +287,8 @@ export default function CartPanel({
         hasDiscount={hasDiscount}
         canApplyDiscount={canApplyDiscount}
         canOverridePrice={canOverridePrice}
+        canSetLinePrice={canSetLinePrice}
+        approvalHint={approvalHint}
         sellAtCost={sellAtCost}
         onToggleSellAtCost={onToggleSellAtCost}
       />

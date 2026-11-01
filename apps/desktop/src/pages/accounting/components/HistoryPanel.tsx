@@ -58,6 +58,12 @@ export default function HistoryPanel({ dailyCloses, maxItems = 20 }: Props) {
                   {dailyClose.registerId && dailyClose.deviceId && <> · </>}
                   {dailyClose.deviceId && <>Dev: {dailyClose.deviceId}</>}
                 </p>
+                {/* a corrected close: the report uses this revision; the earlier one is kept */}
+                {(dailyClose.revision ?? 1) > 1 && (
+                  <p className="mt-0.5 text-[11px] font-semibold" style={{ color: "var(--warning)" }}>
+                    {t("pos.accounting.close_revision", { n: dailyClose.revision ?? 1 })}
+                  </p>
+                )}
               </div>
               {showCost && (
                 <div className="text-end">

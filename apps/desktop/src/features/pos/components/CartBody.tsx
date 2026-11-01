@@ -4,6 +4,7 @@ import {
   BadgePercent,
   ChevronDown,
   MessageSquare,
+  ShieldCheck,
   ShoppingCart,
 } from "lucide-react"
 
@@ -76,6 +77,10 @@ interface Props {
   hasDiscount: boolean
   canApplyDiscount: boolean
   canOverridePrice?: boolean
+  /** A line's price may be changed (with the permission, or with a manager's approval at checkout). */
+  canSetLinePrice?: boolean
+  /** SPRINT-2 E: why this sale needs a manager's approval at checkout (null: it does not). */
+  approvalHint?: string | null
   sellAtCost: boolean
   onToggleSellAtCost: () => void
 }
@@ -93,7 +98,7 @@ export default function CartBody({
   payableLbp = totalLbp, payableUsd = total,
   paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
   cashTenderValid, creditLimitExceeded, checkoutBlocked, hasDiscount, canApplyDiscount,
-  canOverridePrice = true,
+  canOverridePrice = true, canSetLinePrice = canOverridePrice, approvalHint = null,
   sellAtCost, onToggleSellAtCost,
 }: Props) {
   const [discountOpen, setDiscountOpen] = useState(false)
@@ -127,7 +132,7 @@ export default function CartBody({
               onDecrease={() => onDecreaseQty(item.id)}
               onRemove={() => onRemoveItem(item.id)}
               onSetQuantity={(qty) => onSetQuantity(item.id, qty)}
-              onSetPrice={canOverridePrice ? (price) => onSetPrice(item.id, price) : undefined}
+              onSetPrice={canSetLinePrice ? (price) => onSetPrice(item.id, price) : undefined}
             />
           ))}
         </div>
@@ -333,6 +338,8 @@ export default function CartBody({
           onUsdEnter={onTenderEnter ? () => onTenderEnter("usd") : undefined}
           onLbpEnter={onTenderEnter ? () => onTenderEnter("lbp") : undefined}
         />
+
+        {approvalHint && <p className="mg2-cap" role="status" style={{ margin: 0, display: "flex", gap: 6, alignItems: "center", color: "var(--warning)" }}><ShieldCheck size={14} aria-hidden="true" />{approvalHint}</p>}
 
         {/* Checkout button */}
         <button

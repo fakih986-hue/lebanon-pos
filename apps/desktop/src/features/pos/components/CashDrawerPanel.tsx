@@ -82,13 +82,17 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
     const input = { id: createId("cashmv"), type: "OwnerDraw" as const, amountUsd: amount, reason: "Owner draw", note: drawerNote }
     if (!canDraw) {
       // a manager approves this payout (this record and amount); the amount stays typed if cancelled
-      setApproval({ input, request: { entity: "cash-movement", action: "create", payload: cashMovementApprovalPayload(input), permission: "cash.manage" } })
+      // the exact movement that will be recorded (shift, person, amount, reason, note)
+      const payload = cashMovementApprovalPayload(input)
+      if (!payload) { showToast(t("pos.drawer.action_failed", { reason: "no open shift" }), "error"); return }
+      setApproval({ input, request: { entity: "cash-movement", action: "create", payload: payload as unknown as Record<string, unknown> & { id: string }, permission: "cash.manage" } })
       return
     }
     recordDraw(input)
   }
   function recordDraw(input: CreateCashMovementInput & { id: string }, approvedBy?: string) {
-    const result = createCashMovement(input)
+    let result
+    try { result = createCashMovement(input) } catch (err) { showToast(t("pos.drawer.action_failed", { reason: String((err as Error)?.message ?? err).replace(/^APPROVAL_CHANGED: /, "") }), "error"); return }
     if (result) {
       setDrawerNote("")
       showToast(`${approvedBy ? `${t("approval.granted", { name: approvedBy })} ` : ""}${t("pos.drawer.draw_recorded", { amount: formatCurrency(input.amountUsd) })}`)

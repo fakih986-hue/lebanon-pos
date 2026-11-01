@@ -44,8 +44,11 @@ import {
   productMatchesSearch,
   toggleProductFavorite,
 } from "../services/product.service"
-import { buildSale, checkoutLocalSale, getSales, type SaleTender } from "../services/sales.service"
-import { cartFingerprint, checkoutViaHub } from "../services/hubCheckout.service"
+import { buildSale, checkoutLocalSale, getSales, type Sale, type SaleTender } from "../services/sales.service"
+import { cartFingerprint, checkoutViaHub, getPendingHubSale } from "../services/hubCheckout.service"
+import ManagerApprovalDialog from "../../../components/ManagerApprovalDialog"
+import { withdrawManagerApproval, type ApprovalRequest } from "../services/approval.service"
+import { approvalGrantStatus, takeApprovalGrant, type ApprovalGrant } from "../lib/approvalGrants"
 import { checkoutIdentityGate } from "../services/deviceSession.service"
 import PendingHubSaleBanner from "../components/PendingHubSaleBanner"
 import {
@@ -53,10 +56,10 @@ import {
   removeHeldSale,
   type HeldSale,
 } from "../services/heldSale.service"
-import { recordAuditEvent, userCan, getActiveShift, subscribeSecurity } from "../services/security.service"
+import { recordAuditEvent, userCan, getActiveShift, getCurrentUser, subscribeSecurity, type Permission } from "../services/security.service"
 import { showToast } from "../services/toast.service"
 import { consumeInventoryBatches } from "../services/inventoryBatch.service"
-import { getConnectionMode, pullFromServer, nextDocumentReference, getSyncStatus, serverSupportsMadeToOrder } from "../services/sync.service"
+import { getApiUrl, getConnectionMode, pullFromServer, nextDocumentReference, getSyncStatus, serverSupportsMadeToOrder } from "../services/sync.service"
 import { createId } from "../lib/storage"
 
 import type { Product } from "../types/product"
@@ -131,6 +134,13 @@ export default function POSPage() {
   // completeSale is ignored, so the same cart cannot be paid twice.
   const checkoutLock = useRef(false)
   const [checkingOut, setCheckingOut] = useState(false)
+  // SPRINT-2 E: a sale with a discount or a price below list by someone without that permission is
+  // approved online by a manager, at checkout, for exactly this sale (lib/approvalGrants). The sale is
+  // built once and kept with what it was built from: the same sale is approved and sent; any change to
+  // the cart, the discount, a price, the tender, the customer or the payment drops the approval.
+  const [checkoutApproval, setCheckoutApproval] = useState<{ request: Omit<ApprovalRequest, "pin" | "approverId">; summary: string } | null>(null)
+  const approvedSale = useRef<{ fingerprint: string; sale: Sale } | null>(null)
+  const canAskApproval = Boolean(getApiUrl())
   const [hasShift, setHasShift] = useState(() => Boolean(getActiveShift()))
   useEffect(() => subscribeSecurity(() => setHasShift(Boolean(getActiveShift()))), [])
 
@@ -275,7 +285,7 @@ export default function POSPage() {
     (sum, item) => sum + item.price * item.quantity, 0
   ))
   const parsedDiscountValue = parseMoney(discountValue)
-  const discountTotal = canApplyDiscount
+  const discountTotal = canApplyDiscount || canAskApproval
     ? roundMoney(Math.min(
         grossSubtotal,
         discountMode === "Percent"
@@ -326,6 +336,41 @@ export default function POSPage() {
     (paymentMethod === "Cash" && !cashTenderValid) ||
     (paymentMethod === "Debt" && (!selectedCustomer || creditLimitExceeded))
 
+  // SPRINT-2 E: the permissions this sale needs that the person signed in does not hold (the server's
+  // rules: any discount; a line below its catalogue price, the wholesale price for a named customer,
+  // or a sale at cost). Selling at cost shows cost: offered with approval to cost-visible staff only.
+  const canSellAtCost = canOverridePrice || (canAskApproval && userCan("reports.cost"))
+  const canSetLinePrice = canOverridePrice || canAskApproval
+  const listFloor = (item: { id: number; price: number }) => {
+    const p = products.find((x) => x.id === item.id)
+    if (!p) return item.price
+    const wholesale = Number(p.wholesalePrice ?? 0)
+    return wholesale > 0 && selectedCustomer ? Math.min(p.price, wholesale) : p.price
+  }
+  const approvalNeeded: Permission[] = [
+    ...(discountTotal > 0 && !canApplyDiscount ? ["sales.discount" as const] : []),
+    ...(!canOverridePrice && (sellAtCost || items.some((item) => item.price < listFloor(item) - 0.005)) ? ["sales.price_override" as const] : []),
+  ]
+  const approvalHint = approvalNeeded.length ? t("approval.needed") : null
+  // what an approval at checkout is for: lines, prices, discount, tender, customer, payment
+  const checkoutFingerprint = JSON.stringify({
+    items: items.map((item) => [item.id, item.quantity, item.price]), discountTotal, subtotal, tax, total, sellAtCost,
+    paymentMethod, customer: selectedCustomer?.id ?? null, paidUsd: paidUsdAmount, paidLbp: paidLbpAmount,
+  })
+  useEffect(() => {
+    const kept = approvedSale.current
+    if (!kept || kept.fingerprint === checkoutFingerprint) return
+    // the sale changed: an approval for the earlier one cannot be used for this one
+    approvedSale.current = null
+    const userId = getCurrentUser()?.id ?? null
+    let dropped: ApprovalGrant | null = null
+    for (const p of ["sales.discount", "sales.price_override"]) {
+      const s = approvalGrantStatus("sale", "create", kept.sale.id, p, userId)
+      if (s.status === "ok") { dropped = s.grant; break }
+    }
+    if (dropped) { withdrawManagerApproval(dropped); setScannerStatus(t("approval.cleared")) }
+  }, [checkoutFingerprint])
+
   // --- Cart operations ---
   // SPRINT-1: the stock limit applies to tracked items only (made-to-order items have none).
   const stockLimit = (p: { stock: number; stockPolicy?: string }) => p.stockPolicy === "untracked" ? Number.POSITIVE_INFINITY : p.stock
@@ -351,7 +396,7 @@ export default function POSPage() {
   }
 
   function toggleSellAtCost() {
-    if (!userCan("sales.price_override")) { playErrorBuzz(); setScannerStatus(t("pos.err.price_override_needed")); return }
+    if (!canSellAtCost) { playErrorBuzz(); setScannerStatus(t("pos.err.price_override_needed")); return }
     setSellAtCost((prev) => {
       const next = !prev
       setItems((currentItems) =>
@@ -796,7 +841,39 @@ export default function POSPage() {
         payableLbp: paymentMethod === "Cash" ? payableLbp : undefined,
         items: saleItems,
       }
-      const sale = buildSale(saleInput, saleId) // throws if no open shift
+      let sale: Sale = buildSale(saleInput, saleId) // throws if no open shift
+      const hubFingerprint = cartFingerprint({ items: items.map((item) => ({ id: item.id, quantity: item.quantity, unitPrice: item.price })), paymentMethod, customerId: selectedCustomer?.id, total })
+
+      // -- SPRINT-2 E: a manager's online approval for exactly this sale --
+      let approvalId: string | undefined
+      let approvedBy: string | undefined
+      if (approvalNeeded.length) {
+        const pending = writeThrough ? getPendingHubSale() : null
+        if (pending && pending.fingerprint === hubFingerprint && pending.approvalId) {
+          // sent before with its approval (the confirmation was lost): resent exactly, with the same one
+          sale = pending.sale
+          approvalId = pending.approvalId
+        } else {
+          if (pending && pending.fingerprint === hubFingerprint) sale = pending.sale
+          else if (approvedSale.current?.fingerprint === checkoutFingerprint) sale = approvedSale.current.sale
+          const userId = getCurrentUser()?.id ?? null
+          const status = approvalGrantStatus("sale", "create", sale.id, approvalNeeded[0], userId, sale)
+          const grant = status.status === "ok" && approvalNeeded.every((p) => (status.grant.permissions ?? [status.grant.permission]).includes(p)) ? status.grant : null
+          if (!grant) {
+            // ask a manager for THIS sale; the cart, the tender and the person signed in stay as they are
+            approvedSale.current = { fingerprint: checkoutFingerprint, sale }
+            setShowReview(false)
+            const reasons = approvalNeeded.map((p) => p === "sales.discount" ? t("approval.reason_discount", { amount: formatCurrency(discountTotal) }) : t("approval.reason_price"))
+            setCheckoutApproval({
+              request: { entity: "sale", action: "create", payload: sale as unknown as Record<string, unknown> & { id: string }, permission: approvalNeeded[0], permissions: approvalNeeded },
+              summary: t("approval.checkout_summary", { sale: sale.saleNumber, total: formatCurrency(total), reasons: reasons.join(" · ") }),
+            })
+            return
+          }
+          approvalId = grant.approvalId
+          approvedBy = grant.approverName
+        }
+      }
 
       // ── Gate: server-authoritative commit (both STORE_HUB and CONNECT_TO_HUB) ──
       // The server commits the sale + stock/batch decrement atomically and we
@@ -816,12 +893,13 @@ export default function POSPage() {
         let outcome
         try {
           outcome = await checkoutViaHub({
-            fingerprint: cartFingerprint({ items: items.map((item) => ({ id: item.id, quantity: item.quantity, unitPrice: item.price })), paymentMethod, customerId: selectedCustomer?.id, total }),
+            fingerprint: hubFingerprint,
             build: () => sale,
+            approvalId,
             lots: cartInputs,
             stock: stockLines,
             debt: paymentMethod === "Debt" && selectedCustomer
-              ? { customerId: selectedCustomer.id, saleNumber, subtotal, discountTotal, tax, total, items: saleItems }
+              ? { customerId: selectedCustomer.id, saleNumber: sale.saleNumber, subtotal, discountTotal, tax, total, items: saleItems }
               : undefined,
           })
         } finally { setIsValidatingStock(false) }
@@ -860,17 +938,20 @@ export default function POSPage() {
           lots: cartInputs,
           stock: stockLines,
           debt: paymentMethod === "Debt" && selectedCustomer
-            ? { customerId: selectedCustomer.id, saleNumber, subtotal, discountTotal, tax, total, items: saleItems }
+            ? { customerId: selectedCustomer.id, saleNumber: sale.saleNumber, subtotal, discountTotal, tax, total, items: saleItems }
             : undefined,
         })
         if (result.status === "blocked") needsAttention = result.detail
       }
 
+      // the approval went with this sale (write-through) or was attached to its queued operation
+      takeApprovalGrant("sale", "create", committedSale.id)
+      approvedSale.current = null
       if (discountTotal > 0) {
         recordAuditEvent({
           action: "sale.discount", entity: "sale",
-          summary: `${saleNumber} received a ${formatCurrency(discountTotal)} discount.`,
-          metadata: { saleNumber, grossSubtotal, discountMode, discountValue, discountTotal },
+          summary: `${committedSale.saleNumber} received a ${formatCurrency(discountTotal)} discount${approvedBy ? ` (approved by ${approvedBy})` : ""}.`,
+          metadata: { saleNumber: committedSale.saleNumber, grossSubtotal, discountMode, discountValue, discountTotal, ...(approvalId ? { approvalId } : {}) },
         })
       }
 
@@ -891,7 +972,7 @@ export default function POSPage() {
       setSearch("")
       setSaleNote("")
       setIsCartOpen(false)
-      setScannerStatus(needsAttention ? t("pos.status.sale_needs_attention") : t("pos.status.sale_completed"))
+      setScannerStatus(needsAttention ? t("pos.status.sale_needs_attention") : `${approvedBy ? `${t("approval.granted", { name: approvedBy })} ` : ""}${t("pos.status.sale_completed")}`)
       window.requestAnimationFrame(() => scanInputRef.current?.focus())
       // Reconcile local stock/batches with the hub's authoritative numbers.
       if (writeThrough) pullFromServer().catch(() => {})
@@ -965,7 +1046,9 @@ export default function POSPage() {
                 totalLbp={totalLbp}
                 payableLbp={payableLbp}
                 payableUsd={payableUsd}
-                canOverridePrice={canOverridePrice}
+                canOverridePrice={canSellAtCost}
+          canSetLinePrice={canSetLinePrice}
+          approvalHint={approvalHint}
                 exchangeRate={exchangeRate}
                 paymentMethod={paymentMethod}
                 onSelectPayment={setPaymentMethod}
@@ -1007,7 +1090,7 @@ export default function POSPage() {
                 onDiscountModeChange={setDiscountMode}
                 onDiscountValueChange={setDiscountValue}
                 hasDiscount={hasDiscount}
-                canApplyDiscount={canApplyDiscount}
+                canApplyDiscount={canApplyDiscount || canAskApproval}
                 discountTotal={discountTotal}
                 grossSubtotal={grossSubtotal}
               />
@@ -1106,7 +1189,9 @@ export default function POSPage() {
         {/* ── Right: Persistent cart rail (desktop only) ── */}
         <CartPanel
           quickMode={quickMode}
-          canOverridePrice={canOverridePrice}
+          canOverridePrice={canSellAtCost}
+          canSetLinePrice={canSetLinePrice}
+          approvalHint={approvalHint}
           items={items}
           onIncreaseQty={increaseQuantity}
           onDecreaseQty={decreaseQuantity}
@@ -1157,7 +1242,7 @@ export default function POSPage() {
           creditLimitExceeded={creditLimitExceeded}
           checkoutBlocked={checkoutBlocked}
           hasDiscount={hasDiscount}
-          canApplyDiscount={canApplyDiscount}
+          canApplyDiscount={canApplyDiscount || canAskApproval}
           sellAtCost={sellAtCost}
           onToggleSellAtCost={toggleSellAtCost}
         />
@@ -1168,7 +1253,9 @@ export default function POSPage() {
         <CartDrawer
           isOpen={isCartOpen}
           onClose={() => setIsCartOpen(false)}
-          canOverridePrice={canOverridePrice}
+          canOverridePrice={canSellAtCost}
+          canSetLinePrice={canSetLinePrice}
+          approvalHint={approvalHint}
           items={items}
           onIncreaseQty={increaseQuantity}
           onDecreaseQty={decreaseQuantity}
@@ -1219,7 +1306,7 @@ export default function POSPage() {
           creditLimitExceeded={creditLimitExceeded}
           checkoutBlocked={checkoutBlocked}
           hasDiscount={hasDiscount}
-          canApplyDiscount={canApplyDiscount}
+          canApplyDiscount={canApplyDiscount || canAskApproval}
           sellAtCost={sellAtCost}
           onToggleSellAtCost={toggleSellAtCost}
         />
@@ -1251,6 +1338,11 @@ export default function POSPage() {
       ) : null}
 
       <KeyboardShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+
+      <ManagerApprovalDialog open={!!checkoutApproval} request={checkoutApproval?.request ?? null}
+        summary={<p style={{ fontWeight: 600, color: "var(--text)" }}>{checkoutApproval?.summary}</p>}
+        onApproved={() => { setCheckoutApproval(null); void completeSale() }}
+        onCancel={() => { setCheckoutApproval(null); setScannerStatus(t("approval.checkout_cancelled")); window.requestAnimationFrame(() => scanInputRef.current?.focus()) }} />
 
       {showReview && (
         <PaymentReviewDialog

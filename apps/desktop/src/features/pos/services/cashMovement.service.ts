@@ -1,9 +1,10 @@
 import { assertCanWrite, commitStagedSyncOperation, getSyncQueue, getDeviceId, settleStagedSyncOperation, stageSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
-import { getCurrentUser, getActiveShift, recordAuditEvent, userCan } from "./security.service"
+import { getCurrentUser, getActiveShift, PermissionError, recordAuditEvent, userCan } from "./security.service"
 import { getRegisterId } from "./settings.service"
-import { approvalGrantFor } from "../lib/approvalGrants"
+import { approvalGrantStatus } from "../lib/approvalGrants"
+
 
 const MOVEMENTS_KEY = "lebanonpos.cash-movements.v1"
 const MOVEMENTS_EVENT = "lebanonpos-cash-movements-changed"
@@ -50,9 +51,37 @@ export interface CreateCashMovementInput {
   id?: string
 }
 
-/** SPRINT-2 E: the movement a manager is asked to approve (its record id and material values). */
+/**
+ * The movement this register records for `input` — the ONE builder for both the operation and the
+ * command a manager is asked to approve (SPRINT-2 E): the shift, register, person, direction, amount,
+ * reason and note are what is approved. null: no open shift (a movement needs one).
+ */
+export function buildCashMovement(input: CreateCashMovementInput): CashMovement | null {
+  const user = getCurrentUser()
+  const shift = getActiveShift()
+  if (!shift) return null
+  return {
+    id: input.id ?? createId("cashmv"),
+    shiftId: shift.id,
+    shiftNumber: shift.shiftNumber,
+    registerId: getRegisterId(),
+    deviceId: getDeviceId(),
+    type: input.type,
+    direction: input.direction ?? TYPE_DIRECTION[input.type] ?? "Out",
+    amountUsd: input.amountUsd,
+    reason: input.reason.trim(),
+    note: input.note?.trim() ?? "",
+    referenceEntity: input.referenceEntity,
+    referenceId: input.referenceId,
+    recordedById: user?.id,
+    recordedByName: user?.name ?? "Unknown",
+    createdAt: new Date().toISOString(),
+  }
+}
+
+/** SPRINT-2 E: the movement a manager is asked to approve (exactly what createCashMovement records). */
 export function cashMovementApprovalPayload(input: CreateCashMovementInput & { id: string }) {
-  return { id: input.id, type: input.type, direction: input.direction ?? TYPE_DIRECTION[input.type] ?? "Out", amountUsd: input.amountUsd, reason: input.reason.trim() }
+  return buildCashMovement(input)
 }
 
 export function getCashMovements(): CashMovement[] {
@@ -66,38 +95,23 @@ export function getCashMovements(): CashMovement[] {
 export function createCashMovement(input: CreateCashMovementInput): CashMovement | null {
   assertCanWrite("create cash movement")
 
-  // Permission: cash in/out (drawer) — POS-PERMISSIONS-1 split from accounting. A manager's online
-  // approval for this movement (SPRINT-2 E, input.id chosen before it) stands in; the server checks it.
-  if (!userCan("cash.manage") && !approvalGrantFor("cash-movement", "create", input.id, "cash.manage", getCurrentUser()?.id ?? null)) return null
-
   // Validation
   if (input.amountUsd <= 0) return null
   if (!input.reason.trim()) return null
 
-  const user = getCurrentUser()
-  const shift = getActiveShift()
-
   // Shift gate — cash movements require an open shift
-  if (!shift) return null
+  const movement = buildCashMovement(input)
+  if (!movement) return null
+  const shift = getActiveShift()
+  const direction = movement.direction
 
-  const direction = input.direction ?? TYPE_DIRECTION[input.type] ?? "Out"
-
-  const movement: CashMovement = {
-    id: input.id ?? createId("cashmv"),
-    shiftId: shift.id,
-    shiftNumber: shift.shiftNumber,
-    registerId: getRegisterId(),
-    deviceId: getDeviceId(),
-    type: input.type,
-    direction,
-    amountUsd: input.amountUsd,
-    reason: input.reason.trim(),
-    note: input.note?.trim() ?? "",
-    referenceEntity: input.referenceEntity,
-    referenceId: input.referenceId,
-    recordedById: user?.id,
-    recordedByName: user?.name ?? "Unknown",
-    createdAt: new Date().toISOString(),
+  // Permission: cash in/out (drawer) — POS-PERMISSIONS-1 split from accounting. A manager's online
+  // approval for exactly this movement (SPRINT-2 E, input.id chosen before it) stands in; the server
+  // checks it again. A movement changed since the approval (amount, shift, person...) needs a new one.
+  if (!userCan("cash.manage")) {
+    const grant = approvalGrantStatus("cash-movement", "create", input.id, "cash.manage", getCurrentUser()?.id ?? null, movement)
+    if (grant.status === "changed") throw new PermissionError("APPROVAL_CHANGED: this payout changed after the manager approved it. Ask for approval again.")
+    if (grant.status !== "ok") return null
   }
 
   // Durability: the sync operation is saved before the movement (SyncStorageError -> nothing written).

@@ -1,4 +1,4 @@
-import { getCurrentUser, recordAuditEvent, requireCurrentUser } from "./security.service"
+import { getActiveShift, recordAuditEvent, requireCurrentUser } from "./security.service"
 import { enqueueSyncOperation, assertCanWrite, getDeviceId } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
@@ -30,13 +30,24 @@ export type DailyClose = {
   closedBy: string
   registerId?: string
   deviceId?: string
+  /** The shift open on this register when it closed the day (absent: none was open). */
+  shiftId?: string
   unsyncedCountAtClose?: number
   createdAt: string
+  /** Which close this is (server: lib/dailyClose.ts). One per register and shift; a correction is a new
+   *  revision that names the close it corrects, which is kept (supersededById). Absent on older rows. */
+  scope?: string
+  revision?: number
+  revisionOf?: string | null
+  correction?: "correction" | "re-close" | null
+  supersededById?: string | null
+  /** The close this one corrects, as sent (the server refuses a correction of a close since corrected). */
+  correctsId?: string
 }
 
 export type CloseBusinessDayInput = Omit<
   DailyClose,
-  "id" | "closedBy" | "createdAt" | "costStatus"
+  "id" | "closedBy" | "createdAt" | "costStatus" | "scope" | "revision" | "revisionOf" | "correction" | "supersededById" | "correctsId" | "shiftId"
 > & {
   /** The sales and refunds the close counted: the server values the day from its own records of them. */
   saleIds: string[]
@@ -86,33 +97,58 @@ export function getDailyCloses() {
   return readDailyCloses()
 }
 
+/** The scope a close of this register is recorded under (the server derives the same). */
+export function closeScopeOf(c: Pick<DailyClose, "registerId" | "deviceId" | "shiftId" | "scope">): string {
+  if (c.scope) return c.scope
+  const register = c.registerId || c.deviceId
+  return register ? `register:${register}${c.shiftId ? `|shift:${c.shiftId}` : ""}` : "store"
+}
+
+/** The closes reports use: the current revision of each register and shift (corrected closes are kept). */
+export function currentDailyCloses(closes: DailyClose[] = readDailyCloses()): DailyClose[] {
+  return closes.filter((c) => !c.supersededById)
+}
+
+/** This register's current close of a date in its present scope (closing again corrects it), if any. */
+export function currentCloseOf(dateKey: string, closes: DailyClose[] = readDailyCloses()): DailyClose | undefined {
+  const scope = closeScopeOf({ registerId: getRegisterId(), deviceId: getDeviceId(), shiftId: getActiveShift()?.id })
+  return currentDailyCloses(closes).find((c) => c.dateKey === dateKey && closeScopeOf(c) === scope)
+}
+
 export function closeBusinessDay({ saleIds, refundIds, ...input }: CloseBusinessDayInput) {
   assertCanWrite("close business day")
   const user = requireCurrentUser()
   const known = [input.costOfGoods, input.returnedCost, input.grossMargin, input.netProfit].every((v) => typeof v === "number" && Number.isFinite(v))
+  // Another register, or another shift, closes separately; closing this register's date again in the
+  // same shift corrects its current close (named here; the corrected close is kept, not replaced).
+  const shiftId = getActiveShift()?.id
+  const corrected = currentCloseOf(input.dateKey)
+  const id = createId()
   const close: DailyClose = {
     ...input,
     costStatus: known ? "complete" : "incomplete",
-    id: createId(),
+    id,
     registerId: getRegisterId(),
     deviceId: getDeviceId(),
+    ...(shiftId ? { shiftId } : {}),
     note: input.note.trim(),
     closedBy: user.name,
     createdAt: new Date().toISOString(),
+    revision: corrected ? (corrected.revision ?? 1) + 1 : 1,
+    ...(corrected ? { revisionOf: corrected.id, correction: "correction" as const, correctsId: corrected.id } : {}),
   }
-  const previousCloses = getDailyCloses().filter(
-    (dailyClose) => dailyClose.dateKey !== close.dateKey
-  )
+  close.scope = closeScopeOf(close)
 
-  writeDailyCloses([close, ...previousCloses])
+  writeDailyCloses([close, ...getDailyCloses().map((c) => (corrected && c.id === corrected.id ? { ...c, supersededById: id } : c))])
   recordAuditEvent({
     action: "day.close",
     entity: "accounting",
-    summary: close.netProfit === undefined
+    summary: (corrected ? `${close.dateKey} close corrected (revision ${close.revision}). ` : "") + (close.netProfit === undefined
       ? `${close.dateKey} closed (net profit not available).`
-      : `${close.dateKey} closed with ${close.netProfit.toFixed(2)} net profit.`,
+      : `${close.dateKey} closed with ${close.netProfit.toFixed(2)} net profit.`),
     metadata: {
       dateKey: close.dateKey,
+      ...(corrected ? { corrects: corrected.id, revision: close.revision } : {}),
       netSales: close.netSales,
       expenses: close.expenses,
       netProfit: close.netProfit,
@@ -122,7 +158,8 @@ export function closeBusinessDay({ saleIds, refundIds, ...input }: CloseBusiness
     entity: "daily-close",
     action: "close",
     summary: `${close.dateKey} daily close queued for sync.`,
-    payload: { ...close, saleIds, refundIds },
+    // scope, revision and links are the server's to decide: the register says only what it corrects
+    payload: (({ scope: _s, revision: _r, revisionOf: _o, correction: _c, supersededById: _x, ...sent }) => ({ ...sent, saleIds, refundIds }))(close),
   })
 
   return close

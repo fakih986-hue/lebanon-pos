@@ -15,7 +15,7 @@ import {
 import { getSettings } from "./settings.service"
 import { canUseStorage, createId } from "../lib/storage"
 import { isCostAvailable, sumAvailable } from "../lib/cost"
-import { approvalGrantFor } from "../lib/approvalGrants"
+import { approvalGrantFor, approvalGrantStatus } from "../lib/approvalGrants"
 import {
   getActiveShift,
   getCurrentUser,
@@ -725,15 +725,58 @@ export const refundFaults: { afterStep?: (step: "lots" | "stock" | "commit") => 
  * Throws a RefundRuleError (code-prefixed message) when the request is not allowed.
  */
 /**
- * SPRINT-2 E: the refund a manager is asked to approve: its record id and material values, built from
- * the same preview processRefund records (the server binds the approval to these values).
+ * SPRINT-2 E: the refund a manager is asked to approve: exactly the refund processRefund records
+ * (buildRefund, the one builder for both): source sale, lines, quantities, prices, lots, method, amount,
+ * shift and register, as the operation sends it (refundWirePayload). The server binds the approval to these values.
  */
 export function refundApprovalPayload(input: ProcessRefundInput & { id: string }) {
-  const { sale, planned, total, method, itemFor } = previewRefund(input)
-  return {
-    id: input.id, saleId: sale.id, saleNumber: sale.saleNumber, method, total,
-    items: planned.map((line) => ({ id: line.productId, saleLineId: line.key, name: itemFor(line.key)!.name, quantity: line.quantity, unitPrice: itemFor(line.key)!.unitPrice })),
+  return refundWirePayload(buildRefund(input).refund)
+}
+
+/** The refund this register records for `input` now (no side effects). Throws when it is not allowed. */
+export function buildRefund(input: ProcessRefundInput) {
+  const currentUser = requireCurrentUser()
+  const activeShift = getActiveShift()
+  // Pilot policy: all refunds require an open shift.
+  if (!activeShift) {
+    throw new Error("No open shift. Please open a shift before processing a refund.")
   }
+  const preview = previewRefund(input)
+  const { sale, planned, total, rate, method, itemFor } = preview
+  const refund: SaleRefund = {
+    id: input.id ?? createId(),
+    refundNumber: `R-${getDeviceTag()}-${Date.now().toString(36).toUpperCase().slice(-6)}`,
+    saleId: sale.id,
+    saleNumber: sale.saleNumber,
+    customerId: sale.customerId,
+    customerName: sale.customerName,
+    method,
+    reason: input.reason.trim() || "Customer return",
+    total,
+    items: planned.map((line) => {
+      const saleItem = itemFor(line.key)!
+      return {
+        id: line.productId,
+        name: saleItem.name,
+        barcode: saleItem.barcode,
+        quantity: line.quantity,
+        unitPrice: saleItem.unitPrice,
+        cost: saleItem.cost,
+        total: roundQty(saleItem.unitPrice * line.quantity),
+        saleLineId: line.key,
+        ...(line.allocations ? { batchAllocations: line.allocations } : {}),
+      }
+    }),
+    cashier: currentUser.name,
+    shiftId: activeShift.id,
+    shiftNumber: activeShift.shiftNumber,
+    registerId: getRegisterId(),
+    deviceId: getDeviceId(),
+    createdAt: new Date().toISOString(),
+    exchangeRate: rate.exchangeRate,
+    rateSource: rate.rateSource,
+  }
+  return { ...preview, refund }
 }
 
 /** SPRINT-2 E: the void a manager is asked to approve (the same payload voidSale sends). */
@@ -773,47 +816,13 @@ export function processRefund(input: ProcessRefundInput): SaleRefund {
   assertCanWrite("record refund")
   // The service is the boundary, not the button: the Sales page hides it, this refuses it. A manager's
   // online approval for this refund record (SPRINT-2 E) stands in for the permission; the server checks it.
-  if (!userCan("sales.refund") && !approvalGrantFor("refund", "create", input.id, "sales.refund", getCurrentUser()?.id ?? null)) throw new PermissionError("Refunds need the Refunds permission.")
-  const currentUser = requireCurrentUser()
-  const activeShift = getActiveShift()
-  // Pilot policy: all refunds require an open shift.
-  if (!activeShift) {
-    throw new Error("No open shift. Please open a shift before processing a refund.")
-  }
-  const { sale, planned, total, rate, method, itemFor } = previewRefund(input)
-
-  const refund: SaleRefund = {
-    id: input.id ?? createId(),
-    refundNumber: `R-${getDeviceTag()}-${Date.now().toString(36).toUpperCase().slice(-6)}`,
-    saleId: sale.id,
-    saleNumber: sale.saleNumber,
-    customerId: sale.customerId,
-    customerName: sale.customerName,
-    method,
-    reason: input.reason.trim() || "Customer return",
-    total,
-    items: planned.map((line) => {
-      const saleItem = itemFor(line.key)!
-      return {
-        id: line.productId,
-        name: saleItem.name,
-        barcode: saleItem.barcode,
-        quantity: line.quantity,
-        unitPrice: saleItem.unitPrice,
-        cost: saleItem.cost,
-        total: roundQty(saleItem.unitPrice * line.quantity),
-        saleLineId: line.key,
-        ...(line.allocations ? { batchAllocations: line.allocations } : {}),
-      }
-    }),
-    cashier: currentUser.name,
-    shiftId: activeShift.id,
-    shiftNumber: activeShift.shiftNumber,
-    registerId: getRegisterId(),
-    deviceId: getDeviceId(),
-    createdAt: new Date().toISOString(),
-    exchangeRate: rate.exchangeRate,
-    rateSource: rate.rateSource,
+  if (!userCan("sales.refund") && approvalGrantStatus("refund", "create", input.id, "sales.refund", getCurrentUser()?.id ?? null).status === "none") throw new PermissionError("Refunds need the Refunds permission.")
+  const { sale, planned, total, itemFor, refund } = buildRefund(input)
+  // a manager's approval is for exactly this refund: lines, lots, amount, rate, shift (commit-time stamps aside)
+  if (!userCan("sales.refund")) {
+    const grant = approvalGrantStatus("refund", "create", input.id, "sales.refund", getCurrentUser()?.id ?? null, refundWirePayload(refund))
+    if (grant.status === "changed") throw new PermissionError("APPROVAL_CHANGED: this refund changed after the manager approved it (another refund, a new rate or another shift). Ask for approval again.")
+    if (grant.status !== "ok") throw new PermissionError("Refunds need the Refunds permission.")
   }
 
   const entry: RefundJournalEntry = {
@@ -909,9 +918,13 @@ export function recoverRefundJournal(): { rolledBack: number; completed: number 
  */
 export function voidSale(saleId: string, restoreStock = true) {
   assertCanWrite("void sale")
-  if (!userCan("sales.void") && !approvalGrantFor("sale", "void", saleId, "sales.void", getCurrentUser()?.id ?? null)) throw new PermissionError("Voiding needs the Void permission.")
   const sales = readSales()
   const sale = sales.find((item) => item.id === saleId)
+  if (!userCan("sales.void")) {
+    const grant = approvalGrantStatus("sale", "void", saleId, "sales.void", getCurrentUser()?.id ?? null, sale ? voidApprovalPayload(sale) : undefined)
+    if (grant.status === "changed") throw new PermissionError("APPROVAL_CHANGED: this void changed after the manager approved it. Ask for approval again.")
+    if (grant.status !== "ok") throw new PermissionError("Voiding needs the Void permission.")
+  }
   if (!sale) return
 
   // Guard: already voided — do nothing (prevents double-restock)
@@ -933,7 +946,7 @@ export function voidSale(saleId: string, restoreStock = true) {
       { stock: stockSnapshot(stock.map((l) => l.productId)), lots: lotQuantities(slices.map((s) => s.batchId)) }, [opId])
   } catch (error) { throw new SyncStorageError(opId, error) }
   try {
-    stageSyncOperation({ id: opId, entity: "sale", action: "void", summary: `${sale.saleNumber} void queued for sync.`, payload: { id: saleId, saleNumber: sale.saleNumber } })
+    stageSyncOperation({ id: opId, entity: "sale", action: "void", summary: `${sale.saleNumber} void queued for sync.`, payload: voidApprovalPayload(sale) })
   } catch (error) { closeJournalEntry(entry); throw error }
 
   try {
@@ -1031,7 +1044,8 @@ export function checkoutLocalSale(input: LocalCheckoutInput): LocalCheckoutResul
     if (untracked.size) input = { ...input, lots: input.lots.filter((l) => !untracked.has(l.productId)), stock: input.stock.filter((l) => !untracked.has(l.productId)) }
   }
   // SPRINT-0: selling at cost is a price override (the server enforces the same rule).
-  if (input.sale.soldAtCost && !userCan("sales.price_override")) throw new PermissionError("Selling at cost needs the Price override permission.")
+  // A manager's online approval of exactly this sale (SPRINT-2 E) stands in; the server checks it again.
+  if (input.sale.soldAtCost && !userCan("sales.price_override") && !approvalGrantFor("sale", "create", input.sale.id, "sales.price_override", getCurrentUser()?.id ?? null, input.sale)) throw new PermissionError("Selling at cost needs the Price override permission.")
   const sale = input.sale
   const slices = lotSlices(sale.items.flatMap((item) => item.batchAllocations ?? []))
   const lotIds = slices.map((s) => s.batchId)

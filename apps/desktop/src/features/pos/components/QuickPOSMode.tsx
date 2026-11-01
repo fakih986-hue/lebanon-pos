@@ -13,6 +13,7 @@ import {
   Minus,
   Plus,
   Scan,
+  ShieldCheck,
   ShoppingCart,
   Trash2,
   Zap,
@@ -55,6 +56,10 @@ type Props = {
   payableUsd?: number
   /** sales.price_override — gates sell-at-cost (it was shown to everyone). */
   canOverridePrice?: boolean
+  /** SPRINT-2 E: why this sale needs a manager's approval at checkout (null: it does not). */
+  approvalHint?: string | null
+  /** Line prices are set in the full register only. */
+  canSetLinePrice?: boolean
   exchangeRate: number
   paymentMethod: PaymentMethod
   onSelectPayment: (method: PaymentMethod) => void
@@ -113,7 +118,7 @@ export default function QuickPOSMode({
   saleNote, onSaleNoteChange,
   discountMode, discountValue, onDiscountModeChange, onDiscountValueChange,
   hasDiscount, canApplyDiscount, discountTotal, grossSubtotal,
-  payableLbp = totalLbp, payableUsd = total, canOverridePrice = false,
+  payableLbp = totalLbp, payableUsd = total, canOverridePrice = false, approvalHint = null,
 }: Props) {
   const { t, dir } = useI18n()
   const usdRef = useRef<HTMLInputElement>(null)
@@ -420,6 +425,8 @@ export default function QuickPOSMode({
               </div>
             </div>
           )}
+
+          {approvalHint && <p className="text-[15px] font-semibold" role="status" style={{ margin: 0, display: "flex", gap: 8, alignItems: "center", color: "var(--warning)" }}><ShieldCheck size={16} aria-hidden="true" />{approvalHint}</p>}
 
           <TenderPanel
             density="quick"

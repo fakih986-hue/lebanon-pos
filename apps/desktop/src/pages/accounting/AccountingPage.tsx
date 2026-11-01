@@ -4,7 +4,7 @@ import { useI18n } from "@lebanonpos/shared"
 import { getSales, subscribeSales, getRefunds, subscribeRefunds } from "../../features/pos/services/sales.service"
 import { getExpenses, subscribeExpenses } from "../../features/pos/services/expense.service"
 import { getSupplierPayments, subscribeSuppliers } from "../../features/pos/services/supplier.service"
-import { getDailyCloses, subscribeDailyCloses } from "../../features/pos/services/dailyClose.service"
+import { currentCloseOf, currentDailyCloses, getDailyCloses, subscribeDailyCloses } from "../../features/pos/services/dailyClose.service"
 import { subscribeSecurity, userCan } from "../../features/pos/services/security.service"
 import { closeBusinessDay } from "../../features/pos/services/dailyClose.service"
 import { getSyncStatus, getUnsyncedCount, subscribeSync } from "../../features/pos/services/sync.service"
@@ -100,9 +100,10 @@ export default function AccountingPage() {
     isToday(expense.createdAt, summary.dateKey)
   )
   const recentExpenses = expenses.slice(0, 8)
-  const todayClose = dailyCloses.find(
-    (dailyClose) => dailyClose.dateKey === summary.dateKey
-  )
+  // this register's close of today in its present shift: closing again corrects it (other registers'
+  // and shifts' closes of today are separate closes)
+  const todayClose = currentCloseOf(summary.dateKey, dailyCloses)
+  const reportedCloses = currentDailyCloses(dailyCloses)
   const registerSummaries = useMemo(
     () => getRegisterShiftSummaries(summary.dateKey),
     [cashOpsVersion, dailyCloses, expenses, refunds, sales, supplierPayments, summary.dateKey]
@@ -212,7 +213,7 @@ export default function AccountingPage() {
             { label: "Close day", count: todayClose ? 1 : 0 },
             { label: "Expenses", count: todayExpenses.length },
             { label: "Cash flow" },
-            { label: "History", count: dailyCloses.length },
+            { label: "History", count: reportedCloses.length },
             // POS-UX-IA-1B: shift Open/Close in a Manager-reachable daily-ops context (gated by shifts.manage)
             ...(canManageShifts ? [{ label: "Shift" as const }] : []),
           ]}
@@ -255,7 +256,7 @@ export default function AccountingPage() {
             ) : null}
 
             {activeWorkspace === "History" ? (
-              <HistoryPanel dailyCloses={dailyCloses} maxItems={20} />
+              <HistoryPanel dailyCloses={reportedCloses} maxItems={20} />
             ) : null}
 
             {activeWorkspace === "Expenses" || activeWorkspace === "Cash flow" ? (
@@ -270,7 +271,7 @@ export default function AccountingPage() {
                 {activeWorkspace === "Close day" ? (
                   <RegisterReconciliationPanel summaries={registerSummaries} totals={registerTotals} />
                 ) : null}
-                <HistoryPanel dailyCloses={dailyCloses} maxItems={5} />
+                <HistoryPanel dailyCloses={reportedCloses} maxItems={5} />
               </>
             ) : null}
           </aside>

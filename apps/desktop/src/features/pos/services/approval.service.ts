@@ -11,9 +11,11 @@ import { getCurrentUser, type Permission } from "./security.service"
 export type ApprovalRequest = {
   entity: string
   action: string
-  /** The record as it will be sent (its id and material values: amounts, lines, method). */
+  /** The command exactly as it will be sent: built by the same function that builds the operation. */
   payload: Record<string, unknown> & { id: string }
   permission: Permission
+  /** Several permissions in one approval (a sale with a discount and a price below list). */
+  permissions?: Permission[]
   pin: string
   /** Chosen when one PIN belongs to several people. */
   approverId?: string
@@ -44,7 +46,7 @@ export async function requestManagerApproval(req: ApprovalRequest, opts: { signa
   const signal = opts.signal ? AbortSignal.any([opts.signal, timeout]) : timeout
   let res: Response
   try {
-    res = await fetch(`${apiUrl}/api/approvals`, { method: "POST", headers, signal, body: JSON.stringify({ entity: req.entity, action: req.action, payload: req.payload, permission: req.permission, pin: req.pin, ...(req.approverId ? { approverId: req.approverId } : {}) }) })
+    res = await fetch(`${apiUrl}/api/approvals`, { method: "POST", headers, signal, body: JSON.stringify({ entity: req.entity, action: req.action, payload: req.payload, ...(req.permissions?.length ? { permissions: req.permissions } : { permission: req.permission }), pin: req.pin, ...(req.approverId ? { approverId: req.approverId } : {}) }) })
   } catch (error) {
     if (timeout.aborted) return { ok: false, code: "TIMEOUT", message: "The server did not answer in time." }
     return { ok: false, code: "OFFLINE", message: error instanceof Error ? error.message : "The server could not be reached." }
@@ -56,7 +58,10 @@ export async function requestManagerApproval(req: ApprovalRequest, opts: { signa
   }
   const grant: ApprovalGrant = {
     approvalId: body.approvalId, entity: req.entity, action: req.action, recordId: req.payload.id, permission: req.permission,
+    permissions: req.permissions?.length ? req.permissions : [req.permission],
     approverName: String(body.approver?.name ?? ""), expiresAt: String(body.expiresAt), userId,
+    // the approved command: the register refuses to commit a different one under this approval
+    command: JSON.parse(JSON.stringify(req.payload)),
   }
   addApprovalGrant(grant)
   return { ok: true, grant }

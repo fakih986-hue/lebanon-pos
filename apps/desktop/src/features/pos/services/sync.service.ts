@@ -79,7 +79,8 @@ async function isServerReachable(): Promise<boolean> {
 // 3: stockPolicy on products and sale lines (SPRINT-1). 4: sends its device credential and the staff
 // session each operation was made under (SPRINT-2) — the enforcement activation gate requires it.
 // x-titan-unknown-cost: this till keeps a daily close's unknown cost as unknown (null), not 0.
-const SYNC_SCHEMA_HEADERS = { "x-titan-sync-schema": "4", "x-titan-unknown-cost": "1" }
+// x-titan-close-revisions: this till keeps several closes per date (register, shift) and their revisions.
+const SYNC_SCHEMA_HEADERS = { "x-titan-sync-schema": "4", "x-titan-unknown-cost": "1", "x-titan-close-revisions": "1" }
 
 /**
  * A rejected refund (or void) is a money conflict: the customer may already
@@ -1996,13 +1997,15 @@ export async function saleCommittedOnHub(saleId: string): Promise<boolean | null
  * — so a committed-but-unacked sale is reported as committed (finalize it),
  * never duplicated.
  */
-export async function commitSaleToHub(sale: { id: string } & Record<string, unknown>): Promise<SaleCommitResult> {
+export async function commitSaleToHub(sale: { id: string } & Record<string, unknown>, approvalId?: string): Promise<SaleCommitResult> {
   const apiUrl = getApiUrl()
   const token = getAuthToken()
   if (!apiUrl || !token) return { status: "unreachable" }
   if (getStoreMismatch()) return { status: "rejected", error: STORE_MISMATCH_MESSAGE }
 
-  const ev = captureEnvelope(apiUrl)
+  // SPRINT-2 E: a sale a manager approved carries the approval (an exact resend: the same one)
+  const captured = captureEnvelope(apiUrl)
+  const ev = approvalId ? { ...(captured ?? { v: 1 as const }), approval: approvalId } : captured
   const op = { id: `wt-${sale.id}`, entity: "sale", action: "create", payload: sale, ...(ev ? { ev } : {}) }
   const body = JSON.stringify({ deviceId: getDeviceId(), operations: [op] })
   const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...SYNC_SCHEMA_HEADERS, ...deviceHeadersFor(apiUrl) }

@@ -28,6 +28,8 @@ export type PendingHubSale = {
   stock: Array<{ productId: number; quantity: number }>
   debt: Omit<RecordDebtSaleInput, "saleId"> | null
   at: string
+  /** SPRINT-2 E: the manager approval this sale was sent with: an exact resend carries the same one. */
+  approvalId?: string
 }
 export type HubCheckoutOutcome =
   /** Committed by the hub and finalized here. */
@@ -112,6 +114,8 @@ export async function checkoutViaHub(input: {
   lots: ConsumeBatchInput[]
   stock: Array<{ productId: number; quantity: number }>
   debt?: Omit<RecordDebtSaleInput, "saleId">
+  /** A manager's approval of the sale `build` returns (SPRINT-2 E). */
+  approvalId?: string
 }, deps: { commit?: typeof commitSaleToHub; cancel?: typeof cancelHubCheckoutAttempt } = {}): Promise<HubCheckoutOutcome> {
   const commit = deps.commit ?? commitSaleToHub
   const pending = getPendingHubSale()
@@ -127,11 +131,11 @@ export async function checkoutViaHub(input: {
   if (reused) {
     current = pending!
   } else {
-    current = { sale: input.build(), fingerprint: input.fingerprint, lots: input.lots, stock: input.stock, debt: input.debt ?? null, at: new Date().toISOString() }
+    current = { sale: input.build(), fingerprint: input.fingerprint, lots: input.lots, stock: input.stock, debt: input.debt ?? null, at: new Date().toISOString(), ...(input.approvalId ? { approvalId: input.approvalId } : {}) }
     try { writePending(current) } catch (error) { throw new SyncStorageError(`wt-${current.sale.id}`, error) } // nothing sent yet
   }
 
-  const result = await commit(current.sale as unknown as { id: string } & Record<string, unknown>)
+  const result = await commit(current.sale as unknown as { id: string } & Record<string, unknown>, current.approvalId)
   if (result.status === "committed") {
     // The hub owns this sale now. A local finalize that fails (storage) does not undo that: the
     // sale is reported as committed and this till's copy is refreshed from the hub.
