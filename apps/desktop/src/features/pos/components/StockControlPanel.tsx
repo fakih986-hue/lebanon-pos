@@ -303,9 +303,11 @@ export default function StockControlPanel({
                   {t("pos.stock.net_variance", { variance: formatNumber(activeStockCount.totalVariance) })}
                 </span>
               </div>
-              <p className="mt-1 font-medium" style={{ color: "var(--info-text)" }}>
-                {t("pos.stock.value_impact", { impact: formatCost(activeStockCount.totalValueImpact, t("pos.not_available")) })}
-              </p>
+              {userCan("reports.cost") && (
+                <p className="mt-1 font-medium" style={{ color: "var(--info-text)" }}>
+                  {t("pos.stock.value_impact", { impact: formatCost(activeStockCount.totalValueImpact, t("pos.not_available")) })}
+                </p>
+              )}
             </div>
 
             <label className="mt-4 block text-sm font-bold" style={{ color: "var(--text-2)" }}>

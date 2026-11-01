@@ -54,6 +54,20 @@ function clientSyncSchema(req: { headers?: Record<string, unknown> }): number {
   const value = Number(req.headers?.[SYNC_SCHEMA_HEADER])
   return Number.isFinite(value) ? value : 1
 }
+/** Clients that understand an unknown (null) daily-close cost and its costStatus send this header. */
+export const UNKNOWN_COST_HEADER = "x-titan-unknown-cost"
+/**
+ * Older hubs and tills store a pulled daily close as it comes (non-null cost columns; history
+ * printed with toFixed): they get no costStatus and no unknown figures (their own default applies).
+ */
+export function shapeDailyClosesForClient(rows: any[], req: { headers?: Record<string, unknown> }): any[] {
+  if (req.headers?.[UNKNOWN_COST_HEADER] === "1") return rows
+  return rows.map((row) => {
+    const { costStatus: _s, ...rest } = row
+    for (const k of ["costOfGoods", "returnedCost", "grossMargin", "netProfit"]) if (rest[k] === null) delete rest[k]
+    return rest
+  })
+}
 /**
  * SPRINT-1 (schema 3): Product.stockPolicy and SaleItem.stockPolicy reach only clients that send
  * x-titan-sync-schema >= 3. Older hubs insert pulled rows verbatim and have no such column.
@@ -1075,7 +1089,7 @@ router.get("/sale-committed/:saleId", staffSync, async (req: AuthRequest, res: S
 // unlockWithPin), so withholding server hashes does not change what works offline.
 /** SPRINT-0: cost data a caller without reports.cost does not receive through sync (selling prices,
  *  including the wholesale price the till needs, stay). */
-const SYNC_COST_KEYS = new Set(["cost", "profit", "margin", "marginPct", "totalCost", "unitCost", "fallbackUnitCost", "valueImpact", "totalValueImpact", "costTotal"])
+const SYNC_COST_KEYS = new Set(["cost", "profit", "margin", "marginPct", "totalCost", "unitCost", "fallbackUnitCost", "valueImpact", "totalValueImpact", "costTotal", "costOfGoods", "returnedCost", "grossMargin", "netProfit", "costStatus"])
 export function withoutCost<T>(value: T): T {
   if (Array.isArray(value)) return value.map(withoutCost) as T
   if (value && typeof value === "object" && !(value instanceof Date) && !("toNumber" in (value as object))) {
@@ -1246,7 +1260,7 @@ router.get("/pull", staffSync, async (req: AuthRequest, res: ServerResponse) => 
     products: shapeProductsForSchema(products, clientSyncSchema(req as any)), sales: shapeSalesForSchema(sales, clientSyncSchema(req as any)), refunds: shapeRefundsForSchema(refunds, clientSyncSchema(req as any)), customers: redactVerifiers(customers, req), debtSales: shapeDebtSalesForSchema(debtSales, clientSyncSchema(req as any)), debtPayments,
     suppliers, purchaseOrders, supplierPayments, users: redactVerifiers(users, req, true), shifts,
     auditEvents, settings: settings ? [settings] : [], expenses, batches,
-    adjustments, stockCounts: counts, dailyCloses, deliveryOrders,
+    adjustments, stockCounts: counts, dailyCloses: shapeDailyClosesForClient(dailyCloses, req as any), deliveryOrders,
     deletions: deletions.map((op) => ({
       entity: op.entity,
       id: (op.payload as any)?.id,
@@ -1388,6 +1402,7 @@ router.get("/pull/full/:entity", staffSync, async (req: AuthRequest, res: Server
         : entity === "products" ? shapeProductsForSchema(items, clientSyncSchema(req as any))
         : entity === "refunds" ? shapeRefundsForSchema(items, clientSyncSchema(req as any))
         : entity === "debt-sales" ? shapeDebtSalesForSchema(items, clientSyncSchema(req as any))
+        : entity === "daily-closes" ? shapeDailyClosesForClient(items, req as any)
         : entity === "users" || entity === "customers" ? redactVerifiers(items, req, entity === "users")
         : items),
       hasMore,
@@ -1449,6 +1464,41 @@ export function purchasePrice(value: unknown): number | undefined {
   return n
 }
 
+/** A daily close's cost figures: valuation (the server's when it can compute them). */
+const DAY_COST_KEYS = ["costOfGoods", "returnedCost", "grossMargin", "netProfit"] as const
+
+/**
+ * A day's cost figures from this server's own records of the sales and refunds a close counted
+ * (the till's accounting summary, recomputed): null when the close names none, or when any of them
+ * is not here yet or has no recorded cost (the figures would be incomplete).
+ */
+async function dayCloseValuation(db: typeof prisma, tenantId: string, expenses: number, saleIds: unknown, refundIds: unknown) {
+  if (!Array.isArray(saleIds) || !Array.isArray(refundIds)) return null
+  const ids = (list: unknown[]) => [...new Set(list.filter((v): v is string => typeof v === "string" && v.length > 0))]
+  const sIds = ids(saleIds), rIds = ids(refundIds)
+  const sales = await db.sale.findMany({ where: { tenantId, id: { in: sIds } }, select: { id: true, profit: true, items: { select: { cost: true, quantity: true } } } })
+  const refunds = await db.saleRefund.findMany({ where: { tenantId, id: { in: rIds } }, select: { saleId: true, total: true, items: { select: { cost: true, quantity: true, unitPrice: true } } } })
+  if (sales.length !== sIds.length || refunds.length !== rIds.length) return null
+  const known = (v: unknown) => v !== null && v !== undefined && Number.isFinite(Number(v))
+  if (sales.some((sale) => !known(sale.profit) || sale.items.some((i) => !known(i.cost)))) return null
+  if (refunds.some((r) => r.items.some((i) => !known(i.cost)))) return null
+  const refundedSales = await db.sale.findMany({ where: { tenantId, id: { in: [...new Set(refunds.map((r) => r.saleId).filter(Boolean))] as string[] } }, select: { id: true, subtotal: true, items: { select: { total: true } } } })
+  const soldCost = sales.reduce((sum, sale) => sum + sale.items.reduce((s, i) => s + Number(i.cost) * Number(i.quantity), 0), 0)
+  let returnedCost = 0, refundMargin = 0
+  for (const r of refunds) {
+    const cost = r.items.reduce((s, i) => s + Number(i.cost) * Number(i.quantity), 0)
+    const sale = refundedSales.find((x) => x.id === r.saleId)
+    const gross = sale ? sale.items.reduce((s, i) => s + Number(i.total), 0) : 0
+    const refundGross = r.items.reduce((s, i) => s + Number(i.unitPrice) * Number(i.quantity), 0)
+    const preTax = sale && gross > 0 ? refundGross * (Number(sale.subtotal) / gross) : Number(r.total)
+    returnedCost += cost
+    refundMargin += preTax - cost
+  }
+  const round = (n: number) => Math.round(n * 10000) / 10000
+  const grossMargin = sales.reduce((sum, sale) => sum + Number(sale.profit), 0) - refundMargin
+  return { costOfGoods: round(Math.max(0, soldCost - returnedCost)), returnedCost: round(returnedCost), grossMargin: round(grossMargin), netProfit: round(grossMargin - expenses) }
+}
+
 /** Key-order-independent JSON (Postgres jsonb does not keep key order). */
 function canonicalJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`
@@ -1507,7 +1557,7 @@ export async function withServerCost(tenantId: string, entity: string, action: s
 
 /**
  * The valuation figures a client puts in an operation (docs/LEGACY-TILL-COMPAT.md): sale and line cost
- * and profit, lot-slice cost, adjustment and count value. Without them the server (hub or cloud) values
+ * and profit, lot-slice cost, adjustment and count value, a daily close's cost figures. Without them the server (hub or cloud) values
  * the operation itself. A receive's unit cost (the purchase price) is business input, not valuation:
  * it stays, and is part of the operation's identity.
  */
@@ -1521,6 +1571,7 @@ export function withoutClientCost(entity: string, action: string, payload: unkno
   }
   if (entity === "inventory" && action === "adjust") return { ...omit(p, ["valueImpact"]), ...("batchAllocations" in p ? { batchAllocations: slices(p.batchAllocations) } : {}) }
   if (entity === "inventory" && action === "count") return { ...omit(p, ["totalValueImpact"]), ...(Array.isArray(p.lines) ? { lines: p.lines.map((l: any) => omit(l, ["valueImpact"])) } : {}) }
+  if (entity === "daily-close" && action === "close") return omit(p, [...DAY_COST_KEYS, "costStatus"])
   return payload
 }
 /**
@@ -2608,10 +2659,21 @@ async function processOperation(
     }
     case "daily-close": {
       if (action === "close") {
+        // saleIds/refundIds: what the till counted (not columns). The cost figures are the server's
+        // when it holds all of them; a cost-visible till's when it does not; otherwise unknown (null,
+        // never 0). Written back so a hub forwards what it recorded.
+        const { saleIds, refundIds, ...close } = (payload ?? {}) as any
+        const valued = await dayCloseValuation(db, tenantId, Number(close.expenses) || 0, saleIds, refundIds)
+        const stated = DAY_COST_KEYS.every((k) => close[k] !== null && close[k] !== undefined && close[k] !== "" && Number.isFinite(Number(close[k])))
+        const figures = valued ? { ...valued, costStatus: "server" }
+          : costTrusted && stated ? { costStatus: close.costStatus === "server" && source.userId === "cloud-bridge" ? "server" : "complete" }
+          : { costOfGoods: null, returnedCost: null, grossMargin: null, netProfit: null, costStatus: "incomplete" }
+        Object.assign(close, figures)
+        if (submitted && typeof submitted === "object") for (const k of [...DAY_COST_KEYS, "costStatus"]) submitted[k] = close[k]
         await db.dailyClose.upsert({
-          where: { id: payload?.id as string },
-          update: payload as any,
-          create: { ...payload, tenantId } as any,
+          where: { id: close.id as string },
+          update: close,
+          create: { ...close, tenantId } as any,
         })
       }
       break

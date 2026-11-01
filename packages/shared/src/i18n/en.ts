@@ -489,6 +489,7 @@ export const en = {
   "pos.loading": "Loading...",
   "pos.no_results": "No results",
   "pos.not_available": "Not available",
+  "pos.accounting.valuation_incomplete": "Valuation incomplete",
 
   /* POS - Payment Methods */
   "pos.payment.cash": "Cash",

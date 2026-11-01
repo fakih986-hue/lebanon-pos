@@ -87,6 +87,6 @@ describe("POS-FIRST-SETUP-CATALOG-1F — buildOpeningInventoryReport", () => {
   it("returns an empty report when there are no opening movements", () => {
     const report = buildOpeningInventoryReport([mv({ type: "Receive" })], [], [])
     expect(report.rows).toHaveLength(0)
-    expect(report.summary).toEqual({ products: 0, units: 0, value: 0 })
+    expect(report.summary).toEqual({ products: 0, units: 0, value: 0, unvalued: 0 })
   })
 })

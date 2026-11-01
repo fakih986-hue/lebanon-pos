@@ -489,6 +489,7 @@ export const ar = {
   "pos.loading": "جاري التحميل...",
   "pos.no_results": "لا توجد نتائج",
   "pos.not_available": "غير متوفر",
+  "pos.accounting.valuation_incomplete": "التقييم غير مكتمل",
 
   /* POS - Payment Methods */
   "pos.payment.cash": "نقداً",

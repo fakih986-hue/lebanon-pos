@@ -1,5 +1,6 @@
 import type { StockMovement, InventoryBatch } from "../services/inventoryBatch.service"
 import type { Product } from "../types/product"
+import { isCostAvailable, sumAvailable } from "./cost"
 
 // POS-FIRST-SETUP-CATALOG-1F: opening-inventory report. Pure derivation over the
 // existing stock-movement ledger + batches + catalog — no mutation. Keyed on
@@ -12,15 +13,18 @@ export type OpeningReportRow = {
   barcode: string
   category: string
   quantity: number
-  unitCost: number
-  value: number
+  /** The opening lot's own unit cost (0 is a real cost). Undefined: not known (no lot, or a lot
+   *  received without cost visible here): never guessed from the product or as 0. */
+  unitCost: number | undefined
+  value: number | undefined
   batchNumber: string
   date: string
 }
 
 export type OpeningReport = {
   rows: OpeningReportRow[]
-  summary: { products: number; units: number; value: number }
+  /** value: undefined when any row's cost is unknown (incomplete valuation); unvalued: those rows. */
+  summary: { products: number; units: number; value: number | undefined; unvalued: number }
   categories: string[]
 }
 
@@ -48,7 +52,7 @@ export function buildOpeningInventoryReport(
     .map((m) => {
       const batch = batchByNumber.get(m.reference)
       const product = productById.get(m.productId)
-      const unitCost = batch?.unitCost ?? product?.cost ?? 0
+      const unitCost = isCostAvailable(batch?.unitCost) ? batch!.unitCost : undefined
       const quantity = m.quantity
       return {
         productId: m.productId,
@@ -57,7 +61,7 @@ export function buildOpeningInventoryReport(
         category: product?.category || "",
         quantity,
         unitCost,
-        value: quantity * unitCost,
+        value: unitCost === undefined ? undefined : quantity * unitCost,
         batchNumber: m.reference || (batch?.batchNumber ?? ""),
         date: m.createdAt,
       }
@@ -75,7 +79,8 @@ export function buildOpeningInventoryReport(
   const summary = {
     products: new Set(rows.map((r) => r.productId)).size,
     units: rows.reduce((n, r) => n + r.quantity, 0),
-    value: rows.reduce((n, r) => n + r.value, 0),
+    value: sumAvailable(rows.map((r) => r.value)),
+    unvalued: rows.filter((r) => r.value === undefined).length,
   }
 
   return { rows, summary, categories }
@@ -88,7 +93,7 @@ export function openingReportToCsv(report: OpeningReport): string {
   const esc = (v: unknown) => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s }
   const rows = report.rows.map((r) => [
     r.date.slice(0, 10), r.productName, r.barcode, r.category,
-    r.quantity, r.unitCost, r.value.toFixed(2), r.batchNumber,
+    r.quantity, r.unitCost ?? "", r.value === undefined ? "" : r.value.toFixed(2), r.batchNumber,
   ].map(esc).join(","))
   return [OPENING_REPORT_HEADERS.join(","), ...rows].join("\n")
 }

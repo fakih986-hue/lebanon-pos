@@ -37020,6 +37020,7 @@ export namespace Prisma {
     expenses: Decimal | null
     supplierPayments: Decimal | null
     netProfit: Decimal | null
+    costStatus: string | null
     cashIn: Decimal | null
     cashOut: Decimal | null
     note: string | null
@@ -37041,6 +37042,7 @@ export namespace Prisma {
     expenses: Decimal | null
     supplierPayments: Decimal | null
     netProfit: Decimal | null
+    costStatus: string | null
     cashIn: Decimal | null
     cashOut: Decimal | null
     note: string | null
@@ -37062,6 +37064,7 @@ export namespace Prisma {
     expenses: number
     supplierPayments: number
     netProfit: number
+    costStatus: number
     cashIn: number
     cashOut: number
     note: number
@@ -37115,6 +37118,7 @@ export namespace Prisma {
     expenses?: true
     supplierPayments?: true
     netProfit?: true
+    costStatus?: true
     cashIn?: true
     cashOut?: true
     note?: true
@@ -37136,6 +37140,7 @@ export namespace Prisma {
     expenses?: true
     supplierPayments?: true
     netProfit?: true
+    costStatus?: true
     cashIn?: true
     cashOut?: true
     note?: true
@@ -37157,6 +37162,7 @@ export namespace Prisma {
     expenses?: true
     supplierPayments?: true
     netProfit?: true
+    costStatus?: true
     cashIn?: true
     cashOut?: true
     note?: true
@@ -37259,12 +37265,13 @@ export namespace Prisma {
     grossSales: Decimal
     refunds: Decimal
     netSales: Decimal
-    costOfGoods: Decimal
-    returnedCost: Decimal
-    grossMargin: Decimal
+    costOfGoods: Decimal | null
+    returnedCost: Decimal | null
+    grossMargin: Decimal | null
     expenses: Decimal
     supplierPayments: Decimal | null
-    netProfit: Decimal
+    netProfit: Decimal | null
+    costStatus: string | null
     cashIn: Decimal
     cashOut: Decimal
     note: string
@@ -37305,6 +37312,7 @@ export namespace Prisma {
     expenses?: boolean
     supplierPayments?: boolean
     netProfit?: boolean
+    costStatus?: boolean
     cashIn?: boolean
     cashOut?: boolean
     note?: boolean
@@ -37327,6 +37335,7 @@ export namespace Prisma {
     expenses?: boolean
     supplierPayments?: boolean
     netProfit?: boolean
+    costStatus?: boolean
     cashIn?: boolean
     cashOut?: boolean
     note?: boolean
@@ -37349,6 +37358,7 @@ export namespace Prisma {
     expenses?: boolean
     supplierPayments?: boolean
     netProfit?: boolean
+    costStatus?: boolean
     cashIn?: boolean
     cashOut?: boolean
     note?: boolean
@@ -37371,6 +37381,7 @@ export namespace Prisma {
     expenses?: boolean
     supplierPayments?: boolean
     netProfit?: boolean
+    costStatus?: boolean
     cashIn?: boolean
     cashOut?: boolean
     note?: boolean
@@ -37379,7 +37390,7 @@ export namespace Prisma {
     createdAt?: boolean
   }
 
-  export type DailyCloseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "dateKey" | "grossSales" | "refunds" | "netSales" | "costOfGoods" | "returnedCost" | "grossMargin" | "expenses" | "supplierPayments" | "netProfit" | "cashIn" | "cashOut" | "note" | "closedBy" | "unsyncedCountAtClose" | "createdAt", ExtArgs["result"]["dailyClose"]>
+  export type DailyCloseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "dateKey" | "grossSales" | "refunds" | "netSales" | "costOfGoods" | "returnedCost" | "grossMargin" | "expenses" | "supplierPayments" | "netProfit" | "costStatus" | "cashIn" | "cashOut" | "note" | "closedBy" | "unsyncedCountAtClose" | "createdAt", ExtArgs["result"]["dailyClose"]>
   export type DailyCloseInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }
@@ -37402,12 +37413,18 @@ export namespace Prisma {
       grossSales: Prisma.Decimal
       refunds: Prisma.Decimal
       netSales: Prisma.Decimal
-      costOfGoods: Prisma.Decimal
-      returnedCost: Prisma.Decimal
-      grossMargin: Prisma.Decimal
+      /**
+       * Cost figures: null = unknown (never stored as 0). costStatus says where they come from:
+       * "server" (computed here from the sales and refunds the close counted), "complete" (stated by a
+       * cost-visible till), "incomplete" (not known). Null costStatus: recorded before it existed.
+       */
+      costOfGoods: Prisma.Decimal | null
+      returnedCost: Prisma.Decimal | null
+      grossMargin: Prisma.Decimal | null
       expenses: Prisma.Decimal
       supplierPayments: Prisma.Decimal | null
-      netProfit: Prisma.Decimal
+      netProfit: Prisma.Decimal | null
+      costStatus: string | null
       cashIn: Prisma.Decimal
       cashOut: Prisma.Decimal
       note: string
@@ -37850,6 +37867,7 @@ export namespace Prisma {
     readonly expenses: FieldRef<"DailyClose", 'Decimal'>
     readonly supplierPayments: FieldRef<"DailyClose", 'Decimal'>
     readonly netProfit: FieldRef<"DailyClose", 'Decimal'>
+    readonly costStatus: FieldRef<"DailyClose", 'String'>
     readonly cashIn: FieldRef<"DailyClose", 'Decimal'>
     readonly cashOut: FieldRef<"DailyClose", 'Decimal'>
     readonly note: FieldRef<"DailyClose", 'String'>
@@ -49159,6 +49177,7 @@ export namespace Prisma {
     expenses: 'expenses',
     supplierPayments: 'supplierPayments',
     netProfit: 'netProfit',
+    costStatus: 'costStatus',
     cashIn: 'cashIn',
     cashOut: 'cashOut',
     note: 'note',
@@ -52448,12 +52467,13 @@ export namespace Prisma {
     grossSales?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     refunds?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     netSales?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
-    costOfGoods?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
-    returnedCost?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
-    grossMargin?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    costOfGoods?: DecimalNullableFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
+    returnedCost?: DecimalNullableFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
+    grossMargin?: DecimalNullableFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
     expenses?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     supplierPayments?: DecimalNullableFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
-    netProfit?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    netProfit?: DecimalNullableFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
+    costStatus?: StringNullableFilter<"DailyClose"> | string | null
     cashIn?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     cashOut?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     note?: StringFilter<"DailyClose"> | string
@@ -52470,12 +52490,13 @@ export namespace Prisma {
     grossSales?: SortOrder
     refunds?: SortOrder
     netSales?: SortOrder
-    costOfGoods?: SortOrder
-    returnedCost?: SortOrder
-    grossMargin?: SortOrder
+    costOfGoods?: SortOrderInput | SortOrder
+    returnedCost?: SortOrderInput | SortOrder
+    grossMargin?: SortOrderInput | SortOrder
     expenses?: SortOrder
     supplierPayments?: SortOrderInput | SortOrder
-    netProfit?: SortOrder
+    netProfit?: SortOrderInput | SortOrder
+    costStatus?: SortOrderInput | SortOrder
     cashIn?: SortOrder
     cashOut?: SortOrder
     note?: SortOrder
@@ -52496,12 +52517,13 @@ export namespace Prisma {
     grossSales?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     refunds?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     netSales?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
-    costOfGoods?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
-    returnedCost?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
-    grossMargin?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    costOfGoods?: DecimalNullableFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
+    returnedCost?: DecimalNullableFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
+    grossMargin?: DecimalNullableFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
     expenses?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     supplierPayments?: DecimalNullableFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
-    netProfit?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    netProfit?: DecimalNullableFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
+    costStatus?: StringNullableFilter<"DailyClose"> | string | null
     cashIn?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     cashOut?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     note?: StringFilter<"DailyClose"> | string
@@ -52518,12 +52540,13 @@ export namespace Prisma {
     grossSales?: SortOrder
     refunds?: SortOrder
     netSales?: SortOrder
-    costOfGoods?: SortOrder
-    returnedCost?: SortOrder
-    grossMargin?: SortOrder
+    costOfGoods?: SortOrderInput | SortOrder
+    returnedCost?: SortOrderInput | SortOrder
+    grossMargin?: SortOrderInput | SortOrder
     expenses?: SortOrder
     supplierPayments?: SortOrderInput | SortOrder
-    netProfit?: SortOrder
+    netProfit?: SortOrderInput | SortOrder
+    costStatus?: SortOrderInput | SortOrder
     cashIn?: SortOrder
     cashOut?: SortOrder
     note?: SortOrder
@@ -52547,12 +52570,13 @@ export namespace Prisma {
     grossSales?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     refunds?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     netSales?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
-    costOfGoods?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
-    returnedCost?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
-    grossMargin?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    costOfGoods?: DecimalNullableWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
+    returnedCost?: DecimalNullableWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
+    grossMargin?: DecimalNullableWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
     expenses?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     supplierPayments?: DecimalNullableWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
-    netProfit?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    netProfit?: DecimalNullableWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
+    costStatus?: StringNullableWithAggregatesFilter<"DailyClose"> | string | null
     cashIn?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     cashOut?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     note?: StringWithAggregatesFilter<"DailyClose"> | string
@@ -56617,12 +56641,13 @@ export namespace Prisma {
     grossSales: Decimal | DecimalJsLike | number | string
     refunds?: Decimal | DecimalJsLike | number | string
     netSales: Decimal | DecimalJsLike | number | string
-    costOfGoods?: Decimal | DecimalJsLike | number | string
-    returnedCost?: Decimal | DecimalJsLike | number | string
-    grossMargin?: Decimal | DecimalJsLike | number | string
+    costOfGoods?: Decimal | DecimalJsLike | number | string | null
+    returnedCost?: Decimal | DecimalJsLike | number | string | null
+    grossMargin?: Decimal | DecimalJsLike | number | string | null
     expenses?: Decimal | DecimalJsLike | number | string
     supplierPayments?: Decimal | DecimalJsLike | number | string | null
-    netProfit?: Decimal | DecimalJsLike | number | string
+    netProfit?: Decimal | DecimalJsLike | number | string | null
+    costStatus?: string | null
     cashIn?: Decimal | DecimalJsLike | number | string
     cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
@@ -56639,12 +56664,13 @@ export namespace Prisma {
     grossSales: Decimal | DecimalJsLike | number | string
     refunds?: Decimal | DecimalJsLike | number | string
     netSales: Decimal | DecimalJsLike | number | string
-    costOfGoods?: Decimal | DecimalJsLike | number | string
-    returnedCost?: Decimal | DecimalJsLike | number | string
-    grossMargin?: Decimal | DecimalJsLike | number | string
+    costOfGoods?: Decimal | DecimalJsLike | number | string | null
+    returnedCost?: Decimal | DecimalJsLike | number | string | null
+    grossMargin?: Decimal | DecimalJsLike | number | string | null
     expenses?: Decimal | DecimalJsLike | number | string
     supplierPayments?: Decimal | DecimalJsLike | number | string | null
-    netProfit?: Decimal | DecimalJsLike | number | string
+    netProfit?: Decimal | DecimalJsLike | number | string | null
+    costStatus?: string | null
     cashIn?: Decimal | DecimalJsLike | number | string
     cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
@@ -56659,12 +56685,13 @@ export namespace Prisma {
     grossSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     refunds?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     netSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    costOfGoods?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    returnedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    grossMargin?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    costOfGoods?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    returnedCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    grossMargin?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     expenses?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierPayments?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    netProfit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netProfit?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    costStatus?: NullableStringFieldUpdateOperationsInput | string | null
     cashIn?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
@@ -56681,12 +56708,13 @@ export namespace Prisma {
     grossSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     refunds?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     netSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    costOfGoods?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    returnedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    grossMargin?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    costOfGoods?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    returnedCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    grossMargin?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     expenses?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierPayments?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    netProfit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netProfit?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    costStatus?: NullableStringFieldUpdateOperationsInput | string | null
     cashIn?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
@@ -56702,12 +56730,13 @@ export namespace Prisma {
     grossSales: Decimal | DecimalJsLike | number | string
     refunds?: Decimal | DecimalJsLike | number | string
     netSales: Decimal | DecimalJsLike | number | string
-    costOfGoods?: Decimal | DecimalJsLike | number | string
-    returnedCost?: Decimal | DecimalJsLike | number | string
-    grossMargin?: Decimal | DecimalJsLike | number | string
+    costOfGoods?: Decimal | DecimalJsLike | number | string | null
+    returnedCost?: Decimal | DecimalJsLike | number | string | null
+    grossMargin?: Decimal | DecimalJsLike | number | string | null
     expenses?: Decimal | DecimalJsLike | number | string
     supplierPayments?: Decimal | DecimalJsLike | number | string | null
-    netProfit?: Decimal | DecimalJsLike | number | string
+    netProfit?: Decimal | DecimalJsLike | number | string | null
+    costStatus?: string | null
     cashIn?: Decimal | DecimalJsLike | number | string
     cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
@@ -56722,12 +56751,13 @@ export namespace Prisma {
     grossSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     refunds?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     netSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    costOfGoods?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    returnedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    grossMargin?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    costOfGoods?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    returnedCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    grossMargin?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     expenses?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierPayments?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    netProfit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netProfit?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    costStatus?: NullableStringFieldUpdateOperationsInput | string | null
     cashIn?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
@@ -56743,12 +56773,13 @@ export namespace Prisma {
     grossSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     refunds?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     netSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    costOfGoods?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    returnedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    grossMargin?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    costOfGoods?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    returnedCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    grossMargin?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     expenses?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierPayments?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    netProfit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netProfit?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    costStatus?: NullableStringFieldUpdateOperationsInput | string | null
     cashIn?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
@@ -60326,6 +60357,7 @@ export namespace Prisma {
     expenses?: SortOrder
     supplierPayments?: SortOrder
     netProfit?: SortOrder
+    costStatus?: SortOrder
     cashIn?: SortOrder
     cashOut?: SortOrder
     note?: SortOrder
@@ -60362,6 +60394,7 @@ export namespace Prisma {
     expenses?: SortOrder
     supplierPayments?: SortOrder
     netProfit?: SortOrder
+    costStatus?: SortOrder
     cashIn?: SortOrder
     cashOut?: SortOrder
     note?: SortOrder
@@ -60383,6 +60416,7 @@ export namespace Prisma {
     expenses?: SortOrder
     supplierPayments?: SortOrder
     netProfit?: SortOrder
+    costStatus?: SortOrder
     cashIn?: SortOrder
     cashOut?: SortOrder
     note?: SortOrder
@@ -64988,12 +65022,13 @@ export namespace Prisma {
     grossSales: Decimal | DecimalJsLike | number | string
     refunds?: Decimal | DecimalJsLike | number | string
     netSales: Decimal | DecimalJsLike | number | string
-    costOfGoods?: Decimal | DecimalJsLike | number | string
-    returnedCost?: Decimal | DecimalJsLike | number | string
-    grossMargin?: Decimal | DecimalJsLike | number | string
+    costOfGoods?: Decimal | DecimalJsLike | number | string | null
+    returnedCost?: Decimal | DecimalJsLike | number | string | null
+    grossMargin?: Decimal | DecimalJsLike | number | string | null
     expenses?: Decimal | DecimalJsLike | number | string
     supplierPayments?: Decimal | DecimalJsLike | number | string | null
-    netProfit?: Decimal | DecimalJsLike | number | string
+    netProfit?: Decimal | DecimalJsLike | number | string | null
+    costStatus?: string | null
     cashIn?: Decimal | DecimalJsLike | number | string
     cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
@@ -65008,12 +65043,13 @@ export namespace Prisma {
     grossSales: Decimal | DecimalJsLike | number | string
     refunds?: Decimal | DecimalJsLike | number | string
     netSales: Decimal | DecimalJsLike | number | string
-    costOfGoods?: Decimal | DecimalJsLike | number | string
-    returnedCost?: Decimal | DecimalJsLike | number | string
-    grossMargin?: Decimal | DecimalJsLike | number | string
+    costOfGoods?: Decimal | DecimalJsLike | number | string | null
+    returnedCost?: Decimal | DecimalJsLike | number | string | null
+    grossMargin?: Decimal | DecimalJsLike | number | string | null
     expenses?: Decimal | DecimalJsLike | number | string
     supplierPayments?: Decimal | DecimalJsLike | number | string | null
-    netProfit?: Decimal | DecimalJsLike | number | string
+    netProfit?: Decimal | DecimalJsLike | number | string | null
+    costStatus?: string | null
     cashIn?: Decimal | DecimalJsLike | number | string
     cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
@@ -65990,12 +66026,13 @@ export namespace Prisma {
     grossSales?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     refunds?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     netSales?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
-    costOfGoods?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
-    returnedCost?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
-    grossMargin?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    costOfGoods?: DecimalNullableFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
+    returnedCost?: DecimalNullableFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
+    grossMargin?: DecimalNullableFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
     expenses?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     supplierPayments?: DecimalNullableFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
-    netProfit?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    netProfit?: DecimalNullableFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
+    costStatus?: StringNullableFilter<"DailyClose"> | string | null
     cashIn?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     cashOut?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     note?: StringFilter<"DailyClose"> | string
@@ -75773,12 +75810,13 @@ export namespace Prisma {
     grossSales: Decimal | DecimalJsLike | number | string
     refunds?: Decimal | DecimalJsLike | number | string
     netSales: Decimal | DecimalJsLike | number | string
-    costOfGoods?: Decimal | DecimalJsLike | number | string
-    returnedCost?: Decimal | DecimalJsLike | number | string
-    grossMargin?: Decimal | DecimalJsLike | number | string
+    costOfGoods?: Decimal | DecimalJsLike | number | string | null
+    returnedCost?: Decimal | DecimalJsLike | number | string | null
+    grossMargin?: Decimal | DecimalJsLike | number | string | null
     expenses?: Decimal | DecimalJsLike | number | string
     supplierPayments?: Decimal | DecimalJsLike | number | string | null
-    netProfit?: Decimal | DecimalJsLike | number | string
+    netProfit?: Decimal | DecimalJsLike | number | string | null
+    costStatus?: string | null
     cashIn?: Decimal | DecimalJsLike | number | string
     cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
@@ -76766,12 +76804,13 @@ export namespace Prisma {
     grossSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     refunds?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     netSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    costOfGoods?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    returnedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    grossMargin?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    costOfGoods?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    returnedCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    grossMargin?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     expenses?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierPayments?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    netProfit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netProfit?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    costStatus?: NullableStringFieldUpdateOperationsInput | string | null
     cashIn?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
@@ -76786,12 +76825,13 @@ export namespace Prisma {
     grossSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     refunds?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     netSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    costOfGoods?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    returnedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    grossMargin?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    costOfGoods?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    returnedCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    grossMargin?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     expenses?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierPayments?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    netProfit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netProfit?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    costStatus?: NullableStringFieldUpdateOperationsInput | string | null
     cashIn?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
@@ -76806,12 +76846,13 @@ export namespace Prisma {
     grossSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     refunds?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     netSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    costOfGoods?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    returnedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    grossMargin?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    costOfGoods?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    returnedCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    grossMargin?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     expenses?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierPayments?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    netProfit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netProfit?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    costStatus?: NullableStringFieldUpdateOperationsInput | string | null
     cashIn?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string

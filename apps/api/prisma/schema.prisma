@@ -716,12 +716,16 @@ model DailyClose {
   grossSales      Decimal   @db.Decimal(18, 4)
   refunds         Decimal   @default(0) @db.Decimal(18, 4)
   netSales        Decimal   @db.Decimal(18, 4)
-  costOfGoods     Decimal   @default(0) @db.Decimal(18, 4)
-  returnedCost    Decimal   @default(0) @db.Decimal(18, 4)
-  grossMargin     Decimal   @default(0) @db.Decimal(18, 4)
+  /// Cost figures: null = unknown (never stored as 0). costStatus says where they come from:
+  /// "server" (computed here from the sales and refunds the close counted), "complete" (stated by a
+  /// cost-visible till), "incomplete" (not known). Null costStatus: recorded before it existed.
+  costOfGoods     Decimal?  @db.Decimal(18, 4)
+  returnedCost    Decimal?  @db.Decimal(18, 4)
+  grossMargin     Decimal?  @db.Decimal(18, 4)
   expenses        Decimal   @default(0) @db.Decimal(18, 4)
   supplierPayments Decimal? @db.Decimal(18, 4)
-  netProfit       Decimal   @default(0) @db.Decimal(18, 4)
+  netProfit       Decimal?  @db.Decimal(18, 4)
+  costStatus      String?
   cashIn          Decimal   @default(0) @db.Decimal(18, 4)
   cashOut         Decimal   @default(0) @db.Decimal(18, 4)
   note            String   @default("")

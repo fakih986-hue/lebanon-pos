@@ -575,6 +575,7 @@ exports.Prisma.DailyCloseScalarFieldEnum = {
   expenses: 'expenses',
   supplierPayments: 'supplierPayments',
   netProfit: 'netProfit',
+  costStatus: 'costStatus',
   cashIn: 'cashIn',
   cashOut: 'cashOut',
   note: 'note',

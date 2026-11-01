@@ -121,6 +121,7 @@ afterAll(async () => {
     await db.purchaseOrder.deleteMany({ where }).catch(() => undefined)
     await db.supplier.deleteMany({ where }).catch(() => undefined)
     await (db as any).operationEvidence?.deleteMany({ where }).catch(() => undefined)
+    await db.dailyClose.deleteMany({ where }).catch(() => undefined)
     await db.syncOperation.deleteMany({ where })
     await db.syncClient?.deleteMany({ where }).catch(() => undefined)
     await db.auditEvent.deleteMany({ where }).catch(() => undefined)
@@ -266,6 +267,87 @@ describe("purchase price is business input; valuation is the server's", () => {
     expect(r.error).toMatch(/OPERATION_ID_REUSED/)
     expect(await hubStock()).toBe(stock)
     expect(Number((await lotOf(prisma, op.payload[0].id))?.unitCost)).toBe(7)
+  })
+})
+
+describe("daily close: the server's figures, or unknown — never a made-up zero", () => {
+  const closeOp = (dateKey: string, extra: Record<string, unknown>): Op => ({ id: randomUUID(), entity: "daily-close", action: "close", payload: {
+    id: randomUUID(), dateKey, grossSales: 30, refunds: 10, netSales: 20, expenses: 4, cashIn: 30, cashOut: 10, note: "", closedBy: "IT", createdAt: new Date().toISOString(), ...extra } })
+  const closeOf = async (db: typeof prisma, id: string) => {
+    const c = await db.dailyClose.findFirst({ where: { tenantId: TENANT, id } })
+    const n = (v: unknown) => (v === null || v === undefined ? null : Number(v))
+    return c && { costOfGoods: n(c.costOfGoods), returnedCost: n(c.returnedCost), grossMargin: n(c.grossMargin), netProfit: n(c.netProfit), costStatus: c.costStatus }
+  }
+  // Closing the day needs accounting.manage (which sees cost). A close made on a cost-hidden till is
+  // refused under its connection account and applied by a manager on review: valued as untrusted.
+  const closeOnCostHiddenTill = async (op: Op) => {
+    expect((await asClerk(op)).error).toMatch(/permission/i)
+    const res = await fetch(`${hubUrl}/api/sync/refused/${op.id}/resolve`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}` }, body: JSON.stringify({ decision: "apply", note: "closed on the clerk's till" }) })
+    expect(res.status).toBe(200)
+  }
+  let saleIds: string[] = []
+  let refundIds: string[] = []
+
+  it("a cost-hidden close naming its sales and refunds is valued by the hub, then by the cloud", async () => {
+    await prisma.product.update({ where: { id: productId }, data: { cost: 2 } })
+    await cloudPrisma.product.update({ where: { id: cloudProductId }, data: { cost: 2 } })
+    const lot = receiveOp(7)
+    expect((await asClerk(lot)).status).toBe("ok")
+    const a = saleOp(2, 999, 10)
+    a.payload.items[0].batchAllocations = [{ batchId: lot.payload[0].id, batchNumber: lot.payload[0].batchNumber, quantity: 2, unitCost: 999 }]
+    const b = saleOp(1, 999, 10)
+    for (const op of [a, b]) expect((await asClerk(op)).status).toBe("ok")
+    const refund = { id: randomUUID(), entity: "refund", action: "create", payload: { id: randomUUID(), refundNumber: `R-DC-${a.id.slice(0, 6)}`, saleId: a.payload.id, saleNumber: a.payload.saleNumber, method: "Cash", reason: "IT", total: 10, cashier: "IT", items: [{ id: productId, saleLineId: a.payload.items[0].lineId, name: "Valued widget", quantity: 1, unitPrice: 10, total: 10 }] } }
+    expect((await asManager(refund)).status).toBe("ok")
+    saleIds = [a.payload.id, b.payload.id]
+    refundIds = [refund.payload.id]
+    // the till could not see cost: it sends no figures (an old till would send zeros), only what it counted
+    const close = closeOp("2026-10-01", { saleIds, refundIds, costOfGoods: 0, grossMargin: 0, netProfit: 0, returnedCost: 0 })
+    await closeOnCostHiddenTill(close)
+    // sold 2 x 7 + 1 x 2 = 16, returned 7: cost of goods 9; margin (6 + 8) - (10 - 7) = 11; net 11 - 4
+    const expected = { costOfGoods: 9, returnedCost: 7, grossMargin: 11, netProfit: 7, costStatus: "server" }
+    expect(await closeOf(prisma, close.payload.id)).toEqual(expected)
+    await bridge.pushToCloudOnce()
+    expect((await opRow(close.id))?.status).toBe("Synced")
+    expect(await closeOf(cloudPrisma, close.payload.id)).toEqual(expected)
+  })
+
+  it("an old till's close without what it counted: unknown (null, incomplete), never its zeros", async () => {
+    const close = closeOp("2026-10-02", { costOfGoods: 0, returnedCost: 0, grossMargin: 0, netProfit: 0 })
+    await closeOnCostHiddenTill(close)
+    const unknown = { costOfGoods: null, returnedCost: null, grossMargin: null, netProfit: null, costStatus: "incomplete" }
+    expect(await closeOf(prisma, close.payload.id)).toEqual(unknown)
+    await bridge.pushToCloudOnce()
+    expect(await closeOf(cloudPrisma, close.payload.id)).toEqual(unknown)
+    // the same close relayed by an older hub (unmarked): unknown in the cloud too
+    const relayed = closeOp("2026-10-03", { costOfGoods: 0, returnedCost: 0, grossMargin: 0, netProfit: 0 })
+    expect((await asOlderHub(relayed)).status).toBe("ok")
+    expect(await closeOf(cloudPrisma, relayed.payload.id)).toEqual(unknown)
+  })
+
+  it("a cost-visible close is kept as stated (a true zero stays zero); a sale the server lacks makes it incomplete otherwise", async () => {
+    const zero = closeOp("2026-10-04", { costOfGoods: 0, returnedCost: 0, grossMargin: 0, netProfit: -4 })
+    expect((await asManager(zero)).status).toBe("ok")
+    expect(await closeOf(prisma, zero.payload.id)).toEqual({ costOfGoods: 0, returnedCost: 0, grossMargin: 0, netProfit: -4, costStatus: "complete" })
+    const missing = closeOp("2026-10-05", { saleIds: [randomUUID()], refundIds: [] })
+    await closeOnCostHiddenTill(missing)
+    expect((await closeOf(prisma, missing.payload.id))?.costStatus).toBe("incomplete")
+  })
+
+  it("pull: cost figures only with reports.cost; unknown and costStatus only to clients that understand them", async () => {
+    const pull = async (token: string, caps: boolean) => {
+      const res = await fetch(`${hubUrl}/api/sync/pull`, { headers: { Authorization: `Bearer ${token}`, "x-titan-sync-schema": "4", ...(caps ? { "x-titan-unknown-cost": "1" } : {}) } })
+      return ((await res.json()) as { dailyCloses: any[] }).dailyCloses.filter((c) => c.dateKey === "2026-10-01" || c.dateKey === "2026-10-02")
+    }
+    for (const c of await pull(clerkToken, true)) for (const k of ["costOfGoods", "returnedCost", "grossMargin", "netProfit", "costStatus"]) expect(c).not.toHaveProperty(k)
+    const current = await pull(adminToken, true)
+    expect(current.find((c) => c.dateKey === "2026-10-01")).toMatchObject({ costOfGoods: 9, netProfit: 7, costStatus: "server" })
+    expect(current.find((c) => c.dateKey === "2026-10-02")).toMatchObject({ costOfGoods: null, netProfit: null, costStatus: "incomplete" })
+    const older = await pull(adminToken, false)
+    const unknownForOld = older.find((c) => c.dateKey === "2026-10-02")
+    expect(unknownForOld).not.toHaveProperty("costStatus")
+    expect(unknownForOld).not.toHaveProperty("netProfit")
+    expect(older.find((c) => c.dateKey === "2026-10-01")).toMatchObject({ costOfGoods: 9, netProfit: 7 })
   })
 })
 

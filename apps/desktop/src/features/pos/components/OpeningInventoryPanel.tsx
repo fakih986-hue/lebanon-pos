@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Download, PackageOpen } from "lucide-react"
+import { useI18n } from "@lebanonpos/shared"
+import { userCan } from "../services/security.service"
 
 import { getStockMovements, getInventoryBatches, subscribeInventoryBatches } from "../services/inventoryBatch.service"
 import { getProductsSync } from "../services/product.service"
@@ -39,7 +41,11 @@ export default function OpeningInventoryPanel() {
     [filters, tick],
   )
 
-  const money = (n: number) => n.toFixed(2)
+  const { t } = useI18n()
+  // Cost is internal data (reports.cost); an unknown cost is shown as such, never as 0.
+  const seeCost = userCan("reports.cost")
+  const money = (n: number | undefined) => (n === undefined ? t("pos.not_available") : n.toFixed(2))
+  const exportRows = seeCost ? report : { ...report, rows: report.rows.map((r) => ({ ...r, unitCost: undefined, value: undefined })) }
 
   return (
     <section className="card mt-5 overflow-hidden">
@@ -53,7 +59,7 @@ export default function OpeningInventoryPanel() {
             </p>
           </div>
         </div>
-        <button type="button" onClick={() => download(`titan-opening-inventory-${new Date().toISOString().slice(0, 10)}.csv`, openingReportToCsv(report))}
+        <button type="button" onClick={() => download(`titan-opening-inventory-${new Date().toISOString().slice(0, 10)}.csv`, openingReportToCsv(exportRows))}
           disabled={report.rows.length === 0}
           className="btn btn-default btn-sm gap-1.5 disabled:opacity-40"><Download size={14} /> Export CSV</button>
       </div>
@@ -63,7 +69,7 @@ export default function OpeningInventoryPanel() {
         {[
           ["Products", String(report.summary.products)],
           ["Opening units", String(report.summary.units)],
-          ["Opening value", money(report.summary.value)],
+          ...(seeCost ? [["Opening value", money(report.summary.value)]] : []),
         ].map(([label, val]) => (
           <div key={label} className="rounded-xl border p-3" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
             <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>{label}</p>
@@ -71,6 +77,11 @@ export default function OpeningInventoryPanel() {
           </div>
         ))}
       </div>
+      {seeCost && report.summary.unvalued > 0 && (
+        <p className="px-5 pb-3 text-[12px] font-semibold" style={{ color: "var(--text-3)" }}>
+          {t("pos.accounting.valuation_incomplete")}: {report.summary.unvalued}
+        </p>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-3 px-5 pb-4">
@@ -99,7 +110,7 @@ export default function OpeningInventoryPanel() {
           <table className="min-w-full border-separate border-spacing-0 text-[13px]">
             <thead>
               <tr>
-                {["Date", "Product", "Barcode", "Category", "Qty", "Unit cost", "Value", "Batch"].map((h) => (
+                {["Date", "Product", "Barcode", "Category", "Qty", ...(seeCost ? ["Unit cost", "Value"] : []), "Batch"].map((h) => (
                   <th key={h} className="border-b px-4 py-3 text-start text-[10px] font-bold uppercase tracking-[0.14em]"
                     style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>{h}</th>
                 ))}
@@ -113,8 +124,8 @@ export default function OpeningInventoryPanel() {
                   <td className="border-b px-4 py-2.5 font-mono text-[12px]" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>{r.barcode || "—"}</td>
                   <td className="border-b px-4 py-2.5" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>{r.category || "—"}</td>
                   <td className="border-b px-4 py-2.5 font-semibold" style={{ borderColor: "var(--border)", color: "var(--text)" }}>{r.quantity}</td>
-                  <td className="border-b px-4 py-2.5" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>{money(r.unitCost)}</td>
-                  <td className="border-b px-4 py-2.5" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>{money(r.value)}</td>
+                  {seeCost && <td className="border-b px-4 py-2.5" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>{money(r.unitCost)}</td>}
+                  {seeCost && <td className="border-b px-4 py-2.5" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>{money(r.value)}</td>}
                   <td className="border-b px-4 py-2.5 font-mono text-[11px]" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>{r.batchNumber}</td>
                 </tr>
               ))}

@@ -35,6 +35,9 @@ export type AccountingSummary = {
   cashIn: number
   cashOut: number
   cashNet: number
+  /** The sales and refunds counted (sent with a close: the server values the day from them). */
+  saleIds: string[]
+  refundIds: string[]
 }
 
 export type AccountingWorkspace = "Close day" | "Expenses" | "Cash flow" | "History" | "Shift"
@@ -154,5 +157,7 @@ export function getAccountingSummary(
     cashIn,
     cashOut: cashRefunds + cashExpenses + cashSupplierPayments,
     cashNet: cashIn - cashRefunds - cashExpenses - cashSupplierPayments,
+    saleIds: todaySales.map((sale) => sale.id),
+    refundIds: todayRefunds.map((refund) => refund.id),
   }
 }

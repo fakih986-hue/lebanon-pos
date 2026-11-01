@@ -66,8 +66,27 @@ equals typed digits. The server refuses to store it, or any other `$2…` that i
     quantity × the server's product cost (any submitted value is ignored, from any client), and so is
     the cost of a lot a positive adjustment creates;
   - refused work a manager applies on review is valued by the server, never the till.
-- *Hidden cost data* — output: cost, profit, margin and lot cost are sent only to accounts with
-  `reports.cost` (above). Entering a purchase price does not make cost visible.
+- *Hidden cost data* — output: cost, profit, margin, lot cost, count value and a daily close's cost
+  figures are sent only to accounts with `reports.cost` (above). Entering a purchase price does not
+  make cost visible: the receiving screen lets a receiver type the delivery's price and see the total
+  of what they typed, but never pre-fills or compares against the product's stored cost without
+  `reports.cost`. Count value, the sales list's profit, close history and exports follow the same rule.
+
+**Daily close.** Cost of goods, returned cost, gross margin and net profit are valuation:
+
+- A current till sends the ids of the sales and refunds it counted. When the server holds all of them
+  with their costs, it computes the four figures itself (`costStatus = "server"`), from its own sale
+  and refund records; a hub forwards what it computed, and the cloud computes again.
+- Otherwise a cost-visible account's figures are kept as stated (`"complete"`; a true zero stays zero).
+- Otherwise (a cost-hidden close applied on review, an older till's close, one an older hub relays,
+  or one naming a sale the server lacks) the figures are unknown: stored as null with
+  `"incomplete"`, never as 0. Closing the day needs `accounting.manage` (which sees cost), so a
+  cost-hidden close only arrives refused and applied by a manager on review.
+- Closes recorded before this have `costStatus` null and keep their figures unchanged.
+- Unknown figures and `costStatus` are sent only to clients that send `x-titan-unknown-cost: 1`
+  (current tills and hubs). Older tills and hubs store pulled closes as they come (non-null columns,
+  history printed with `toFixed`): they get the close without the unknown figures, so they show their
+  own default (0) for it — the same old-till screen defect as limit 7.
 
 A forged sale cost is therefore replaced (the server computes it from lots), while a receiver's
 invoice price is kept. A cost-visible account's own sale-line cost is still taken as sent.
@@ -146,7 +165,8 @@ hub link trusted) its two older-hub tests fail.
    1.0.50/1.0.51 till. Do not work around it by connecting old tills with a shared manager or owner
    account: that hands cost visibility, and everything else that account may do, to every person
    using the till. The server never sends made-up costs to hide the defect. Current tills show "Not
-   available" where cost is not available to them.
+   available" where cost is not available to them, and "Valuation incomplete" for a close or an
+   opening-inventory report whose cost is not known (a real 0 is shown as 0).
 8. **A 1.0.50/1.0.51 till behind a 1.0.50/1.0.51 hub (any cloud).** Those tills full-pull
    `cash-movements` last; those hubs answer 400, so the full pull fails before it restores the offline
    verifiers: offline login is lost after every full pull until the next online sign-in. The deployed

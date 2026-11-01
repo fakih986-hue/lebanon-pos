@@ -77,7 +77,8 @@ async function isServerReachable(): Promise<boolean> {
 // allocations and refund rates; servers omit them for older clients.
 // 3: stockPolicy on products and sale lines (SPRINT-1). 4: sends its device credential and the staff
 // session each operation was made under (SPRINT-2) — the enforcement activation gate requires it.
-const SYNC_SCHEMA_HEADERS = { "x-titan-sync-schema": "4" }
+// x-titan-unknown-cost: this till keeps a daily close's unknown cost as unknown (null), not 0.
+const SYNC_SCHEMA_HEADERS = { "x-titan-sync-schema": "4", "x-titan-unknown-cost": "1" }
 
 /**
  * A rejected refund (or void) is a money conflict: the customer may already
@@ -2462,6 +2463,13 @@ let wsReconnectAttempts = 0
 const WS_MAX_RETRIES = 30
 const WS_RETRY_BASE_MS = 5000
 
+/** The startup reconcile (flush, then a full pull) the last setupBackgroundSync started. */
+let startupReconcile: Promise<void> = Promise.resolve()
+/** Settles when that reconcile has finished: lets a test (or shutdown) wait for it instead of racing it. */
+export function backgroundSyncSettled(): Promise<void> {
+  return startupReconcile
+}
+
 export function setupBackgroundSync() {
   if (typeof window === "undefined") return
   stopBackgroundSync()
@@ -2476,7 +2484,7 @@ export function setupBackgroundSync() {
   // stock/archived state. Runs after flushing pending local work so nothing
   // unsynced is clobbered.
   if (isBrowserOnline() && getApiUrl() && getAuthToken() && !isSuspended()) {
-    flushSyncQueue()
+    startupReconcile = flushSyncQueue()
       .then(() => pullFromServer(true))
       .catch((e) => console.error("[sync] startup reconcile failed:", e))
   }

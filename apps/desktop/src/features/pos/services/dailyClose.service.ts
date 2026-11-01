@@ -20,6 +20,10 @@ export type DailyClose = {
   expenses: number
   supplierPayments?: number
   netProfit?: number
+  /** Where the cost figures come from: "server" (computed by the server from the sales and refunds
+   *  this close counted), "complete" (stated by this till), "incomplete" (not known). Absent on
+   *  closes recorded before it existed. */
+  costStatus?: "server" | "complete" | "incomplete"
   cashIn: number
   cashOut: number
   note: string
@@ -32,8 +36,12 @@ export type DailyClose = {
 
 export type CloseBusinessDayInput = Omit<
   DailyClose,
-  "id" | "closedBy" | "createdAt"
->
+  "id" | "closedBy" | "createdAt" | "costStatus"
+> & {
+  /** The sales and refunds the close counted: the server values the day from its own records of them. */
+  saleIds: string[]
+  refundIds: string[]
+}
 
 
 export function getLocalDateKey(date = new Date()) {
@@ -78,11 +86,13 @@ export function getDailyCloses() {
   return readDailyCloses()
 }
 
-export function closeBusinessDay(input: CloseBusinessDayInput) {
+export function closeBusinessDay({ saleIds, refundIds, ...input }: CloseBusinessDayInput) {
   assertCanWrite("close business day")
   const user = requireCurrentUser()
+  const known = [input.costOfGoods, input.returnedCost, input.grossMargin, input.netProfit].every((v) => typeof v === "number" && Number.isFinite(v))
   const close: DailyClose = {
     ...input,
+    costStatus: known ? "complete" : "incomplete",
     id: createId(),
     registerId: getRegisterId(),
     deviceId: getDeviceId(),
@@ -112,7 +122,7 @@ export function closeBusinessDay(input: CloseBusinessDayInput) {
     entity: "daily-close",
     action: "close",
     summary: `${close.dateKey} daily close queued for sync.`,
-    payload: close,
+    payload: { ...close, saleIds, refundIds },
   })
 
   return close

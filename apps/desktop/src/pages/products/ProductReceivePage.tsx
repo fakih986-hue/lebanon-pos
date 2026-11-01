@@ -31,7 +31,7 @@ import {
   findProductByBarcode, findProductsByExactName, generateProductBarcode, getProducts, parseSpreadsheetPaste, productMatchesSearch,
   subscribeProducts,
 } from "../../features/pos/services/product.service"
-import { recordAuditEvent } from "../../features/pos/services/security.service"
+import { recordAuditEvent, userCan } from "../../features/pos/services/security.service"
 import { getSettings } from "../../features/pos/services/settings.service"
 import {
   getSupplierLedger, receiveAndRecord, subscribeSuppliers, type PurchasePaymentMethod, type ReceivingSummary, type SupplierLedger,
@@ -149,8 +149,12 @@ export default function ProductReceivePage() {
     return () => window.clearTimeout(id)
   }, [rows, supplierId, invoice, payment, note, pending])
 
-  const byId = (id?: number) => (id == null ? undefined : products.find((p) => p.id === id))
-  const productFor = (r: BatchRow) => (r.mode === "matched" ? findProductByBarcode(r.barcode) ?? undefined : r.mode === "alias" ? byId(r.targetProductId) : undefined)
+  // The unit cost typed here is this delivery's purchase price (inventory.receive). The product's
+  // stored cost is internal data: without reports.cost it is never pre-filled or compared against.
+  const seeCost = userCan("reports.cost")
+  const visible = (p: Product | null | undefined): Product | undefined => (!p ? undefined : seeCost ? p : { ...p, cost: undefined as unknown as number })
+  const byId = (id?: number) => (id == null ? undefined : visible(products.find((p) => p.id === id)))
+  const productFor = (r: BatchRow) => (r.mode === "matched" ? visible(findProductByBarcode(r.barcode)) : r.mode === "alias" ? byId(r.targetProductId) : undefined)
   const started = rows.filter((r) => !isBlankRow(r))
   const supplier = suppliers.find((s) => s.id === supplierId)
   // With a supplier a purchase order is recorded: every line needs its unit cost.
@@ -179,7 +183,7 @@ export default function ProductReceivePage() {
   function scanCode(raw: string) {
     const code = normalizeCode(raw)
     if (!code) return
-    const product = findProductByBarcode(code) ?? undefined
+    const product = visible(findProductByBarcode(code))
     const res = addScan(rows, code, product)
     setRows(res.rows)
     setActiveRowId(res.rowId)
@@ -196,7 +200,7 @@ export default function ProductReceivePage() {
   // Typing or scanning into a row's own barcode field keeps the previous row behaviour.
   function rowBarcode(row: BatchRow, value: string) {
     const clean = normalizeCode(value)
-    const product = clean ? findProductByBarcode(clean) : undefined
+    const product = clean ? visible(findProductByBarcode(clean)) : undefined
     setRows((rs) => rs.map((r) => {
       if (r.id !== row.id) return r
       if (product) return { ...fillRowFromBarcode(r, clean, product), quantity: r.quantity, saveError: undefined }
@@ -234,7 +238,7 @@ export default function ProductReceivePage() {
     setRows((rs) => rs.map((r) => {
       if (r.id !== id) return r
       const alias = normalizeCode(r.scannedBarcode || r.barcode)
-      return { ...r, mode: "alias", targetProductId: target.id, decisionConfirmed: true, scannedBarcode: alias, barcode: alias, name: target.name, category: target.category, price: target.price, cost: r.cost ?? costOrEmpty(target.cost), accent: target.accent, saveError: undefined }
+      return { ...r, mode: "alias", targetProductId: target.id, decisionConfirmed: true, scannedBarcode: alias, barcode: alias, name: target.name, category: target.category, price: target.price, cost: r.cost ?? (seeCost ? costOrEmpty(target.cost) : undefined), accent: target.accent, saveError: undefined }
     }))
     setPickerRowId(null); setPickerQuery("")
   }
@@ -266,7 +270,7 @@ export default function ProductReceivePage() {
   }
   function addPasted() {
     const added = pasteResult.rows.map((p) => {
-      const product = findProductByBarcode(p.barcode)
+      const product = visible(findProductByBarcode(p.barcode))
       return product
         ? { ...fillRowFromBarcode(createRow(), p.barcode, product), quantity: p.quantity, cost: p.cost || costOrEmpty(product.cost), price: p.price || product.price }
         : createRow({ name: p.name, barcode: p.barcode, scannedBarcode: p.barcode, category: p.category, quantity: p.quantity, cost: p.cost || undefined, price: p.price, decisionConfirmed: true })

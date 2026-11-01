@@ -182,6 +182,8 @@ export default function AccountingPage() {
       cashOut: summary.cashOut,
       unsyncedCountAtClose: getUnsyncedCount(),
       note: resolvedNote,
+      saleIds: summary.saleIds,
+      refundIds: summary.refundIds,
     })
     setShowCloseConfirm(false)
     setOverrideReason("")

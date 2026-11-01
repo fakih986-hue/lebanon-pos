@@ -62,9 +62,10 @@ export default function StockPage() {
     go("Control")
   }
   function exportLots() {
+    const seeCost = userCan("reports.cost")
     downloadCsv(`lots-${new Date().toISOString().slice(0, 10)}.csv`,
       ["Lot", "Product", "Barcode", "Received", "Supplier", "PO", "Received qty", "Remaining", "Expiry", "Unit cost", "Value"],
-      getInventoryBatches().map((b) => [b.batchNumber, b.productName, b.barcode, b.receivedAt.slice(0, 10), b.supplierName ?? "", b.purchaseOrderNumber ?? "", b.initialQuantity, b.quantityRemaining, b.expiryDate ?? "", isCostAvailable(b.unitCost) ? b.unitCost : "", isCostAvailable(b.unitCost) ? Math.round(b.quantityRemaining * b.unitCost * 100) / 100 : ""]))
+      getInventoryBatches().map((b) => [b.batchNumber, b.productName, b.barcode, b.receivedAt.slice(0, 10), b.supplierName ?? "", b.purchaseOrderNumber ?? "", b.initialQuantity, b.quantityRemaining, b.expiryDate ?? "", seeCost && isCostAvailable(b.unitCost) ? b.unitCost : "", seeCost && isCostAvailable(b.unitCost) ? Math.round(b.quantityRemaining * b.unitCost * 100) / 100 : ""]))
   }
   const tab = (v: StockView, label: string) => (
     <Link to={v === "Lots" ? "/stock" : `/stock?view=${v}`} aria-current={view === v ? "page" : undefined}>{label}</Link>

@@ -1,6 +1,7 @@
 import { CheckCircle2 } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 import { formatCost } from "../../../features/pos/lib/cost"
+import { userCan } from "../../../features/pos/services/security.service"
 import { formatDateKey } from "../accounting.helpers"
 import type { DailyClose } from "../../../features/pos/services/dailyClose.service"
 
@@ -14,6 +15,7 @@ export default function HistoryPanel({ dailyCloses, maxItems = 20 }: Props) {
   const items = dailyCloses.slice(0, maxItems)
   // Absent when a cost was unavailable at close; pulled rows carry decimals as strings.
   const netProfitOf = (c: DailyClose) => (c.netProfit == null ? undefined : Number(c.netProfit))
+  const showCost = userCan("reports.cost")
 
   return (
     <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
@@ -57,11 +59,19 @@ export default function HistoryPanel({ dailyCloses, maxItems = 20 }: Props) {
                   {dailyClose.deviceId && <>Dev: {dailyClose.deviceId}</>}
                 </p>
               </div>
-              <strong
-                style={{ color: netProfitOf(dailyClose) === undefined ? "var(--text-3)" : netProfitOf(dailyClose)! >= 0 ? "var(--success)" : "var(--rose)" }}
-              >
-                {formatCost(netProfitOf(dailyClose), t("pos.not_available"))}
-              </strong>
+              {showCost && (
+                <div className="text-end">
+                  <strong
+                    style={{ color: netProfitOf(dailyClose) === undefined ? "var(--text-3)" : netProfitOf(dailyClose)! >= 0 ? "var(--success)" : "var(--rose)" }}
+                  >
+                    {formatCost(netProfitOf(dailyClose), t("pos.not_available"))}
+                  </strong>
+                  {/* unknown, not zero: the server could not value every sale and refund of the day */}
+                  {dailyClose.costStatus === "incomplete" && (
+                    <p className="mt-0.5 text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>{t("pos.accounting.valuation_incomplete")}</p>
+                  )}
+                </div>
+              )}
             </div>
           </article>
         ))}
