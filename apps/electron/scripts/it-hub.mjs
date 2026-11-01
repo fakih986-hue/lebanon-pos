@@ -41,11 +41,36 @@ const netLog = path.join(userData, "it-hub-network.log")
 const log = (m) => { const line = `${new Date().toISOString()} ${m}`; console.log(line); fs.appendFileSync(netLog, line + "\n") }
 
 const ps = (script) => execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
-// Windows PowerShell 5.1's ConvertTo-Json leaves control characters in strings unescaped (some
-// processes' command lines carry them), which JSON.parse rejects: they are replaced before parsing.
-const psJson = (script) => JSON.parse((ps(script) || "[]").replace(/[\u0000-\u001f]/g, " "))
+// Process and connection lists are read as plain lines of numbers and base64, never as JSON: Windows
+// PowerShell 5.1's ConvertTo-Json produced unparseable output for some process's command line, and the
+// watchdog (failing closed) stopped the hub mid-run. Every line must parse, or the read fails (and is
+// retried, then the hub is stopped): a row that cannot be read could hide one of the hub's processes.
+const TAB = "[char]9"
+const b64 = (expr) => `[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes([string](${expr})))`
+const unb64 = (s) => Buffer.from(s, "base64").toString("utf8")
+function readLines(script, fields, what) {
+  // a row starts with a number and a tab; anything else PowerShell printed (a warning) is not a row
+  const lines = (ps(script) ?? "").split(/\r?\n/).filter((l) => /^\d+\t/.test(l))
+  // (the process list is never empty; a hub may have no connections)
+  if (!lines.length && what === "process list") throw new Error(`${what}: no rows`)
+  return lines.map((line, i) => {
+    const parts = line.split("\t")
+    if (parts.length !== fields) throw new Error(`${what}: line ${i + 1} has ${parts.length} fields, expected ${fields}`)
+    return parts
+  })
+}
+const int = (v, what) => { if (!/^\d+$/.test(v)) throw new Error(`${what}: not a number: ${JSON.stringify(v).slice(0, 40)}`); return Number(v) }
+export function processes() {
+  return readLines(`Get-CimInstance Win32_Process | ForEach-Object { @([string]$_.ProcessId, [string]$_.ParentProcessId, ${b64("$_.ExecutablePath")}, ${b64("$_.CommandLine")}) -join ${TAB} }`, 4, "process list")
+    .map(([pid, ppid, exe, cmd]) => ({ ProcessId: int(pid, "process id"), ParentProcessId: int(ppid, "parent id"), ExecutablePath: unb64(exe), CommandLine: unb64(cmd) }))
+}
+export function connections(pids) {
+  if (!pids.size) return []
+  return readLines(`@(Get-NetTCPConnection -ErrorAction SilentlyContinue | Where-Object { @(${[...pids].join(",")}) -contains $_.OwningProcess }) | ForEach-Object { @([string]$_.OwningProcess, [string]$_.RemoteAddress, [string]$_.RemotePort, [string]$_.State) -join ${TAB} }`, 4, "connection list")
+    .map(([pid, addr, port, st]) => ({ OwningProcess: int(pid, "owning process"), RemoteAddress: addr, RemotePort: int(port, "remote port"), State: st }))
+}
 function tree(rootPid) {
-  const rows = psJson("Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,ExecutablePath,CommandLine | ConvertTo-Json -Compress")
+  const rows = processes()
   const pids = new Set([rootPid])
   for (let grew = true; grew;) { grew = false; for (const r of rows) if (pids.has(r.ParentProcessId) && !pids.has(r.ProcessId)) { pids.add(r.ProcessId); grew = true } }
   return { pids, rows }
@@ -68,12 +93,30 @@ function stopHub(state, why) {
 }
 function alive(pid) { try { process.kill(pid, 0); return true } catch { return false } }
 
+// selftest: one read of each list, and a process with a hostile command line (quotes, backslashes,
+// control characters, Arabic) found intact in it. No hub is started.
+if (cmd === "selftest") {
+  const hostile = 'x"y\\z\u0001\u001f\u0007 «عربي» \\"end\\'
+  const probe = spawn(process.execPath, ["-e", "setTimeout(() => {}, 15000)", hostile], { stdio: "ignore" })
+  await new Promise((r) => setTimeout(r, 800))
+  try {
+    const rows = processes()
+    const mine = rows.find((r) => r.ProcessId === probe.pid)
+    const own = connections(new Set([process.pid]))
+    // Windows passes the argument quoted; what matters is that every row parsed and this one is whole
+    const intact = !!mine && mine.CommandLine.includes("«عربي»") && mine.CommandLine.includes("end")
+    console.log(JSON.stringify({ processes: rows.length, probeFound: !!mine, probeCommandLineIntact: intact, ownConnections: own.length }))
+    process.exitCode = intact ? 0 : 1
+  } finally { probe.kill() }
+  process.exit(process.exitCode ?? 1)
+}
+
 if (cmd === "stop") {
   if (!fs.existsSync(stateFile)) fail("no it-hub.json in that user-data dir (not started by this launcher)")
   stopHub(JSON.parse(fs.readFileSync(stateFile, "utf8")), "stop requested")
   process.exit(0)
 }
-if (cmd !== "start") fail("usage: start|stop")
+if (cmd !== "start") fail("usage: start|stop|selftest")
 
 const exe = opt.exe && path.resolve(opt.exe)
 if (!exe || !fs.existsSync(exe)) fail("--exe must point at a Titan POS.exe")
@@ -119,7 +162,7 @@ while (alive(state.pid)) {
     for (let attempt = 1; ; attempt++) {
       try {
         pids = tree(state.pid).pids
-        conns = psJson(`@(Get-NetTCPConnection -ErrorAction SilentlyContinue | Where-Object { @(${[...pids].join(",")}) -contains $_.OwningProcess } | Select-Object OwningProcess,RemoteAddress,RemotePort,State) | ConvertTo-Json -Compress`)
+        conns = connections(pids)
         break
       } catch (e) {
         if (attempt >= 3) throw e
