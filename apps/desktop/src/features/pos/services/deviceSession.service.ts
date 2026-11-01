@@ -76,17 +76,51 @@ export async function startStaffSession(pin: string, staffId: string): Promise<b
  */
 export function endStaffSession(): void {
   const s = getStaffSession()
-  clearPersonEvidence()
+  // signed out here at once, whatever storage does (the session is forgotten in memory too)
+  try { clearPersonEvidence() } catch { /* storage unavailable: getStaffSession no longer returns it */ }
   const e = getDeviceEnrollment()
   if (!s || !e || e.revoked) return
-  void (async () => {
-    await deliverSessionWork(s.session).catch(() => undefined)
-    await fetch(`${s.apiUrl}/api/auth/staff-session/end`, {
+  // if the app closes before the server hears of it, the next start tells it (resumeSessionEnds)
+  rememberSessionEnd(s.session, s.apiUrl)
+  void finishSessionEnd(s.session, s.apiUrl, e.credential)
+}
+
+/** How long a staff switch waits for the outgoing person's queued work before ending their session. */
+export const sessionEndTiming = { boundMs: 8_000 }
+
+/** Bounded: the outgoing person's queued work first (it keeps its own session either way), then the end. */
+async function finishSessionEnd(session: string, apiUrl: string, credential: string): Promise<void> {
+  await deliverSessionWork(session, sessionEndTiming.boundMs).catch(() => undefined)
+  try {
+    const res = await fetch(`${apiUrl}/api/auth/staff-session/end`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-device-credential": e.credential },
-      body: JSON.stringify({ session: s.session }),
+      headers: { "Content-Type": "application/json", "x-device-credential": credential },
+      body: JSON.stringify({ session }),
+      signal: AbortSignal.timeout(5_000),
     })
-  })().catch(() => undefined)
+    // ended now, already ended, or unknown to the server: nothing more to tell it
+    if (res.ok || res.status === 404 || res.status === 401 || res.status === 409) forgetSessionEnd(session)
+  } catch { /* unreachable: told on the next start or the next sign-in (and the server ends it when the next person signs in) */ }
+}
+
+const PENDING_ENDS_KEY = "lebanonpos.staff-session-ends.v1"
+type PendingEnd = { session: string; apiUrl: string; at: string }
+function readPendingEnds(): PendingEnd[] {
+  try { const raw = localStorage.getItem(PENDING_ENDS_KEY); const v = raw ? JSON.parse(raw) : []; return Array.isArray(v) ? v : [] } catch { return [] }
+}
+function writePendingEnds(list: PendingEnd[]) {
+  try { if (list.length) localStorage.setItem(PENDING_ENDS_KEY, JSON.stringify(list.slice(-20))); else localStorage.removeItem(PENDING_ENDS_KEY) } catch { /* storage unavailable */ }
+}
+function rememberSessionEnd(session: string, apiUrl: string) { writePendingEnds([...readPendingEnds().filter((p) => p.session !== session), { session, apiUrl, at: new Date().toISOString() }]) }
+function forgetSessionEnd(session: string) { writePendingEnds(readPendingEnds().filter((p) => p.session !== session)) }
+
+/** At start: sessions whose end the server may not have heard (the app closed during a staff switch). */
+export async function resumeSessionEnds(): Promise<number> {
+  const e = getDeviceEnrollment()
+  const pending = readPendingEnds()
+  if (!e || e.revoked) return 0
+  await Promise.all(pending.map((p) => finishSessionEnd(p.session, p.apiUrl, e.credential)))
+  return pending.length
 }
 
 export type CheckoutIdentityProblem = "not-enrolled" | "sign-in-again"

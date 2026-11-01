@@ -1771,10 +1771,13 @@ function queuedUnderSession(session: string) {
  */
 export async function deliverSessionWork(session: string, ms = 8_000): Promise<void> {
   const deadline = Date.now() + ms
+  // never longer than the bound: a hanging server response does not hold the sign-out (the flush itself
+  // carries on in the background; whatever it does not deliver stays queued with its own session)
+  const untilDeadline = <T,>(p: Promise<T>) => Promise.race([p, new Promise<"timeout">((r) => setTimeout(() => r("timeout"), Math.max(0, deadline - Date.now())))])
   while (queuedUnderSession(session) > 0 && Date.now() < deadline) {
     if (_flushing) { await new Promise((r) => setTimeout(r, 150)); continue }
     const before = queuedUnderSession(session)
-    await flushSyncQueue()
+    if ((await untilDeadline(flushSyncQueue().catch(() => undefined))) === "timeout") return
     if (queuedUnderSession(session) >= before) return
   }
 }

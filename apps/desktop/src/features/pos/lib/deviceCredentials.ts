@@ -55,8 +55,14 @@ export function deviceHeadersFor(apiUrl: string | null | undefined): Record<stri
   return s && who && s.staffId === who && apiUrl && norm(s.apiUrl) === norm(apiUrl) ? { "x-device-credential": c, "x-staff-session": s.session } : { "x-device-credential": c }
 }
 
-export const getStaffSession = () => read<StaffSessionRecord>(SESSION_KEY)
-export const setStaffSession = (s: StaffSessionRecord | null) => write(SESSION_KEY, s)
+// Sessions ended on this register since it started: never used again, even when storage could not forget them.
+const endedSessions = new Set<string>()
+export const getStaffSession = () => { const s = read<StaffSessionRecord>(SESSION_KEY); return s && !endedSessions.has(s.session) ? s : null }
+export const setStaffSession = (s: StaffSessionRecord | null) => {
+  if (s === null) { const old = read<StaffSessionRecord>(SESSION_KEY); if (old) endedSessions.add(old.session) }
+  else endedSessions.delete(s.session)
+  write(SESSION_KEY, s)
+}
 export const getUnlockEvidence = () => read<UnlockEvidence>(UNLOCK_KEY)
 export const setUnlockEvidence = (u: UnlockEvidence | null) => write(UNLOCK_KEY, u)
 

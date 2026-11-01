@@ -179,6 +179,95 @@ describe("operations keep the evidence they were created under", () => {
     expect(kept?.status).not.toBe("Rejected")
   })
 
+  it("a hanging server response: Rana is signed out at once, her session is ended within the bound, her work stays queued with her session", async () => {
+    const calls: Call[] = []
+    let push: "down" | "hang" = "down" // unreachable while her payout is queued; then it accepts and never answers
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init: RequestInit = {}) => {
+      const body = init.body ? JSON.parse(String(init.body)) : null
+      calls.push({ url: String(url), headers: Object.fromEntries(new Headers(init.headers ?? {}).entries()), body })
+      if (String(url).endsWith("/api/sync/push")) { if (push === "down") throw new TypeError("Failed to fetch"); return new Promise<Response>(() => undefined) }
+      return new Response(JSON.stringify({ ok: true }), { status: 200 })
+    }))
+    const { sec, sync, cred } = await fresh()
+    const ds = await import("../features/pos/services/deviceSession.service")
+    ds.sessionEndTiming.boundMs = 300
+    enroll(cred)
+    cred.setStaffSession({ session: "S-rana-hang", sessionId: "sid", staffId: "rana", staffName: "Rana", authTime: "2026-10-31T08:00:00.000Z", expiresAt: "2026-10-31T20:00:00.000Z", apiUrl: API })
+    cred.setUnlockEvidence({ userId: "rana", by: "server", at: "2026-10-31T08:00:00.000Z" })
+    localStorage.setItem("lebanonpos.current-user.v1", "rana")
+    const op = await sync.enqueueSyncOperation({ entity: "cash-movement", action: "create", summary: "Rana's payout", payload: { id: "m-hang" } })
+    await new Promise((r) => setTimeout(r, 50))
+    localStorage.setItem("lebanonpos.sync-queue.v1", JSON.stringify(sync.getSyncQueue().map((o: any) => ({ ...o, lastAttemptAt: "2000-01-01T00:00:00.000Z" }))))
+    push = "hang"
+    const t0 = Date.now()
+    sec.lockSession()
+    expect(cred.getStaffSession()).toBeNull()
+    for (let i = 0; i < 100 && !calls.some((c) => c.url.endsWith("/api/auth/staff-session/end")); i++) await new Promise((r) => setTimeout(r, 20))
+    const end = calls.find((c) => c.url.endsWith("/api/auth/staff-session/end"))
+    expect(end?.body).toEqual({ session: "S-rana-hang" })
+    expect(Date.now() - t0).toBeLessThan(1_500)
+    const kept = sync.getSyncQueue().find((o) => o.id === op!.id)
+    expect([kept?.status === "Synced", kept?.ev?.session]).toEqual([false, "S-rana-hang"])
+  })
+
+  it("storage failing at sign-out: the session is still gone here, and the next person's work never carries it", async () => {
+    server()
+    const { sec, sync, cred } = await fresh()
+    enroll(cred)
+    await sec.unlockWithPin("2222")
+    const ranaSession = cred.getStaffSession()!.session
+    const realRemove = localStorage.removeItem.bind(localStorage)
+    const spy = vi.spyOn(Storage.prototype, "removeItem").mockImplementation(function (this: Storage, k: string) { if (k === "lebanonpos.staff-session.v1") throw new Error("QuotaExceededError"); realRemove(k) })
+    sec.lockSession()
+    expect(localStorage.getItem("lebanonpos.staff-session.v1")).toContain(ranaSession) // storage could not forget it
+    expect(cred.getStaffSession()).toBeNull() // the register did
+    spy.mockRestore()
+    await sec.unlockWithPin("3333")
+    const op = await sync.enqueueSyncOperation({ entity: "cash-movement", action: "create", summary: "Sami's payout", payload: { id: "m-sami" } })
+    expect(op?.ev?.session).not.toBe(ranaSession)
+    expect(op?.ev?.session).toMatch(/^S-sami-/)
+  })
+
+  it("the app closes in the middle of a switch: at the next start Rana's queued work is sent with her session, then her session is ended", async () => {
+    server({ down: true })
+    let { sec, sync, cred } = await fresh()
+    enroll(cred)
+    cred.setStaffSession({ session: "S-rana-crash", sessionId: "sid", staffId: "rana", staffName: "Rana", authTime: "2026-10-31T08:00:00.000Z", expiresAt: "2026-10-31T20:00:00.000Z", apiUrl: API })
+    cred.setUnlockEvidence({ userId: "rana", by: "server", at: "2026-10-31T08:00:00.000Z" })
+    localStorage.setItem("lebanonpos.current-user.v1", "rana")
+    const op = await sync.enqueueSyncOperation({ entity: "cash-movement", action: "create", summary: "Rana's payout", payload: { id: "m-crash" } })
+    sec.lockSession()
+    await new Promise((r) => setTimeout(r, 50))
+    expect(localStorage.getItem("lebanonpos.staff-session-ends.v1")).toContain("S-rana-crash")
+    // the app restarts with the network back (some time later: past the retry wait)
+    localStorage.setItem("lebanonpos.sync-queue.v1", JSON.stringify(sync.getSyncQueue().map((o: any) => ({ ...o, lastAttemptAt: "2000-01-01T00:00:00.000Z" }))))
+    vi.unstubAllGlobals()
+    const calls = server()
+    ;({ sec, sync, cred } = await fresh())
+    const ds = await import("../features/pos/services/deviceSession.service")
+    expect(cred.getStaffSession()).toBeNull()
+    expect(await ds.resumeSessionEnds()).toBe(1)
+    const pushAt = calls.findIndex((c) => c.url.endsWith("/api/sync/push") && (c.body.operations as any[]).some((o) => o.id === op!.id && o.ev?.session === "S-rana-crash"))
+    const endAt = calls.findIndex((c) => c.url.endsWith("/api/auth/staff-session/end") && c.body.session === "S-rana-crash")
+    expect(pushAt).toBeGreaterThanOrEqual(0)
+    expect(endAt).toBeGreaterThan(pushAt)
+    expect(localStorage.getItem("lebanonpos.staff-session-ends.v1")).toBeNull()
+  })
+
+  it("a manager's approval for Rana does not survive the switch: the next person never inherits it", async () => {
+    server()
+    const { sec, cred } = await fresh()
+    const grants = await import("../features/pos/lib/approvalGrants")
+    enroll(cred)
+    await sec.unlockWithPin("2222")
+    grants.addApprovalGrant({ approvalId: "ap-1", entity: "cash-movement", action: "create", recordId: "m9", permission: "cash.manage", approverName: "Sami", expiresAt: new Date(Date.now() + 60_000).toISOString(), userId: "rana" })
+    expect(grants.approvalGrantFor("cash-movement", "create", "m9", "cash.manage", "rana")).not.toBeNull()
+    sec.lockSession()
+    await sec.unlockWithPin("1111")
+    expect(grants.approvalGrantFor("cash-movement", "create", "m9", "cash.manage", "rana")).toBeNull()
+    expect(grants.approvalGrantFor("cash-movement", "create", "m9", "cash.manage", "owner")).toBeNull()
+  })
+
   it("the device credential is only sent to the server that issued it", async () => {
     const calls = server()
     const { sec, sync, cred } = await fresh()

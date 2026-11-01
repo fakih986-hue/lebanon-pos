@@ -39,6 +39,7 @@ import SettingsPage from "../pages/settings/SettingsPage"
 import SuppliersPage from "../pages/suppliers/SuppliersPage"
 import DeliveryPage from "../pages/delivery/DeliveryPage"
 import DriversPage from "../pages/drivers/DriversPage"
+import { resumeSessionEnds } from "../features/pos/services/deviceSession.service"
 
 const AUTO_LOCK_MS = 10 * 60 * 1000
 const MotionDiv = motion.div as any
@@ -86,6 +87,8 @@ function Shell({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => { setupBackgroundSync(); return stopBackgroundSync }, [])
+  // a staff switch the app closed in the middle of: deliver that person's queued work and end their session
+  useEffect(() => { void resumeSessionEnds().catch(() => undefined) }, [])
 
   useEffect(
     () => subscribeSecurity(() => setSecurityVersion((version) => version + 1)),
