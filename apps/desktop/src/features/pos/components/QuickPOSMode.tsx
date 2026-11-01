@@ -314,9 +314,10 @@ export default function QuickPOSMode({
             </button>
           )}
 
-          {/* Sale note + Discount — side by side */}
+          {/* Sale note + Discount — side by side; stacked on a phone (the discount amount and its quick
+              amounts need the full width) */}
           {items.length > 0 && (
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               {/* Sale note */}
               <div className="flex-1 rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
                 <button
