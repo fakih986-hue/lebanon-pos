@@ -129,6 +129,37 @@ Defects found and fixed during validation (each in a later build, then the final
 
 Observe-mode scope (S4): see the threat model §3a — observed in the packaged run: a cashier's held close was applied when the register re-sent it under the owner's connection.
 
+## Batch: hub staff enforcement and controlled café pilot (2026-11-01; final dev candidate `dev-89ca7f8`, never published)
+
+Design and limits: [STAFF-ENFORCEMENT.md](STAFF-ENFORCEMENT.md). Tested commit `89ca7f86be545be8a0054898159ebd2b4a7ff234`
+(fresh worktree, clean before and after). Production stores stay in observe; enforce was enabled only on disposable
+stores in scratch schemas, at a loopback test cloud.
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Hub-local enforcement: session person, never the connection; REST and sync; hub screen | `staff-enforce.test.ts` (16), `staff-workflows.test.ts` (4); packaged `enforce-roles` 7/7 (owner connection carries nothing; Rana's café order, refund, void, payout on Maya's approval are Rana's at hub and cloud; Maya after a staff switch; Rana's own connection; Noor refused; hub screen needs enrollment and a session) | pass |
+| Policy issued at the cloud, versioned, adopted only when newer, kept through outage and restart, lowered explicitly | `staff-enforce.test.ts`; packaged `enforce-observe` (v1 adopted in ~5 s; hub cannot issue), `enforce-outage`, `enforce-restart` (still v1, cloud down), `enforce-lower` (v2 observe adopted) | pass |
+| Cloud verification of forwarded work; delayed delivery; rotation; revocation; duplicates; offline claims kept apart | `staff-enforce.test.ts`, `hub-attestation.test.ts`; packaged `enforce-resume` (LAN-only sale and approved payout reached the cloud once, attestation valid, actor Rana, approver Maya) | pass |
+| Activation over every client ever seen; old, retired, unseen, long-offline and hub-only registers | gate tests (old, 90-day-quiet, never-synced, account-only, superseded hub link, hub-only register retired with a note); packaged legacy register blocked activation until retired; released 1.0.51 till refused after enforcement, sale kept on the till and held | pass |
+| S4 as two expectations | `cafe-audit.test.ts` (observe = claimed); `staff-enforce.test.ts` and packaged (enforced: cashier rewritten to the session person, owner's authority not obtained) | pass |
+| Legacy closes; same label; corrections; retries; hub/cloud agreement | `hub-valuation.test.ts`; packaged `close` 6/6 and `close-oldclient` (1.0.51) on the final build; a second register's close: current client sees both, a schema-2 client one combined close "2 closes combined" (2.00 + 3.50 = 5.50); hub and cloud closes and stock equal | pass |
+| Review UX: titles, errors, actor/approver/reviewer, EN/AR desktop, tablet, phone, keyboard | final build's admin: translated titles, Done by / Approved by / Decided by, RTL, no overflow (phone with the sidebar collapsed), dialog fits 343 px, focus trapped, Escape returns focus to the opener, keyboard-only decline recorded with reviewer; `public-error.test.ts` | pass, with follow-ups below |
+| Suites and typechecks | API 674 passed / 5 packaged-only skipped, exit 0; desktop 489, exit 0; API, desktop, admin, shared typechecks exit 0 | pass |
+| Negative controls | 13, each failing on its business assertion: `D:\TitanPOS-it\batch57\negctl-final.out` | pass |
+
+Defects found on the packages and fixed (each followed by a new build, then a full revalidation): a staff switch
+ended the session before the outgoing person's queued refund/void/payout was sent, so it was held as
+`SESSION_REVIEW` (dev-8748382); a reviewed operation the register had resent five times was never forwarded to
+the cloud (dev-d99bb75); a resent held operation's reason was overwritten by the latest delivery (dev-d99bb75);
+the review dialog lost focus on close (dev-28ba196). Also fixed: a test that read a PIN inside a random id.
+
+Follow-ups (not fixed in the candidate): the reason/code split added to the review list has a broken pattern and
+shows the reason as before; after a completed decision focus goes to the page, not the next item; Shift+Tab from
+the first dialog field does not wrap; the admin sidebar starts expanded on phones; the staff-session evidence
+label repeats "server-checked"; server-composed reasons stay English in Arabic; activation has no owner screen;
+a store with a hub must not also have registers connected straight to the cloud (stock diverged by the 2 units
+such a register sold).
+
 ## Plan by phase (to be filled with evidence as implemented)
 - **B — observe mode:** token kinds (`typ/iss/aud`) on new tokens with old tokens still accepted; `requireCloudKeyOrJwt` refuses non-staff tokens; envelope parsing; derived `actorId`; claimed-vs-derived mismatch audited; evidence labels; no behaviour change for legacy clients (mixed-version tests).
 - **C — devices and sessions:** enrollment with single-use manager-created code; cross-tenant enrollment refused; device credential can't enroll/approve another device; staff session bound to device (use on another device refused); actor substitution refused; staff switch issues a new session and clears approvals; revocation of staff and device; storage deletion and credential recovery on the till.
