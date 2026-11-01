@@ -153,7 +153,7 @@ describe("activation: every client ever seen, every approved device, hubs by key
     const gate = await call(cloudUrl, "GET", "/api/sync/identity-gate", undefined, { Authorization: `Bearer ${owner}` })
     expect(gate.status, JSON.stringify(gate.body)).toBe(200)
     const reasons = Object.fromEntries((gate.body.enforceBlockers as any[]).map((b) => [b.label, b.reason]))
-    expect(reasons).toEqual({ "device:old-till": "upgrade-needed", "device:quiet-till": "no-identity-evidence", "user:legacy-account": "no-device-id", "hub-bridge@5": "hub-not-enrolled", "Spare till": "device-not-enrolled" })
+    expect(reasons).toEqual({ "device:old-till": "upgrade-needed", "device:quiet-till": "no-identity-evidence", "user:legacy-account": "no-device-id", "hub-bridge@5": "hub-not-enrolled", "Spare till": "device-not-enrolled", "Store setup": "topology-unset" })
     const refused = await call(cloudUrl, "POST", "/api/sync/identity-mode", { mode: "enforce", note: "pilot" }, { Authorization: `Bearer ${owner}` })
     expect([refused.status, refused.body.code]).toEqual([409, "IDENTITY_GATE"])
     expect((await policyLib.storePolicy(GATE))).toMatchObject({ mode: "observe", version: 0 })
@@ -187,13 +187,18 @@ describe("policy: issued at the cloud, adopted by the hub only when newer, never
   })
 
   it("the cloud issues enforce (version 1); a hub cannot issue it; the hub adopts it from its pull", async () => {
+    // operational readiness: the store chose its topology (registers behind this hub; store-topology.test.ts)
+    await cloudPrisma.tenant.update({ where: { id: T }, data: { storeTopology: "hub", topologyHubId: (await import("../src/lib/topology.js")).hubIdentity().hubId, topologyVersion: 1 } })
+    // (this in-process hub mostly answers without hub mode, so it would apply the topology rules of a cloud: its own
+    // copy is pinned at a higher version so it does not adopt the cloud's; hub adoption is tested in store-topology)
+    await prisma.tenant.update({ where: { id: T }, data: { topologyVersion: 1000 } })
     process.env.IS_LOCAL_SERVER = "true"
     const atHub = await hub("POST", "/api/sync/identity-mode", { mode: "observe", note: "local try" }, { Authorization: `Bearer ${ownerPerson}` })
     delete process.env.IS_LOCAL_SERVER
     expect([atHub.status, atHub.body.code]).toEqual([409, "HUB_SERVER"])
     // a connection token is not the owner signing in for themselves
     const viaTransport = await call(cloudUrl, "POST", "/api/sync/identity-mode", { mode: "enforce", note: "pilot" }, { Authorization: `Bearer ${await login(cloudUrl, PIN.owner)}` })
-    expect(viaTransport.status).toBe(200) // observe store: an older token still acts as its person
+    expect(viaTransport.status, JSON.stringify(viaTransport.body)).toBe(200) // observe store: an older token still acts as its person
     const v = (await policyLib.storePolicy(T))
     expect(v.mode).toBe("observe") // the hub has not pulled yet
     const cloudPolicy = await call(cloudUrl, "GET", "/api/sync/identity-gate", undefined, { Authorization: `Bearer ${cloudOwnerPerson}` })

@@ -23,6 +23,7 @@ process.env.TITAN_DATA_DIR = dataDir
 const TENANT = randomUUID(), OTHER = randomUUID()
 const OWNER = randomUUID(), CASHIER = randomUUID(), OTHER_OWNER = randomUUID()
 const CLOUD_KEY = `ck-${randomUUID()}`, OTHER_KEY = `ck-${randomUUID()}`
+const OTHER_HUB = `hubi-${randomUUID()}`
 const hubDbUrl = process.env.DATABASE_URL!
 const cloudDbUrl = (() => { const u = new URL(hubDbUrl); u.searchParams.set("schema", "cloud_it"); return u.toString() })()
 
@@ -119,9 +120,9 @@ describe("enrollment: owner-authorized, never by sync alone", () => {
     const kid = `hub-${randomUUID()}`
     const link = { "x-cloud-key": CLOUD_KEY, "x-tenant-id": TENANT }
     expect((await call(cloudUrl, "POST", "/api/hub-keys/enroll", { kid, publicPem }, link)).status).toBe(400) // no PIN
-    expect((await call(cloudUrl, "POST", "/api/hub-keys/enroll", { kid, publicPem, pin: "8202" }, link)).body.code).toBe("FORBIDDEN") // cashier
-    expect((await call(cloudUrl, "POST", "/api/hub-keys/enroll", { kid, publicPem, pin: "8301" }, link)).body.code).toBe("INVALID_PIN") // other store's owner
-    expect((await call(cloudUrl, "POST", "/api/hub-keys/enroll", { kid, publicPem, pin: "8201" }, { Authorization: `Bearer ${owner}` })).body.code).toBe("HUB_LINK_REQUIRED") // a staff token is not the hub
+    expect((await call(cloudUrl, "POST", "/api/hub-keys/enroll", { kid, publicPem, pin: "8202", hubId: OTHER_HUB }, link)).body.code).toBe("FORBIDDEN") // cashier
+    expect((await call(cloudUrl, "POST", "/api/hub-keys/enroll", { kid, publicPem, pin: "8301", hubId: OTHER_HUB }, link)).body.code).toBe("INVALID_PIN") // other store's owner
+    expect((await call(cloudUrl, "POST", "/api/hub-keys/enroll", { kid, publicPem, pin: "8201", hubId: OTHER_HUB }, { Authorization: `Bearer ${owner}` })).body.code).toBe("HUB_LINK_REQUIRED") // a staff token is not the hub
     expect(await cloudPrisma.hubKey.count({ where: { tenantId: TENANT } })).toBe(0)
     // ordinary sync cannot carry a key either: an attestation from an unenrolled key is just unknown
     const op = expenseOp()

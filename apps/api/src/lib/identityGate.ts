@@ -15,6 +15,7 @@
  */
 import prisma from "./prisma.js"
 import { POLICY_GATE_WINDOW_DAYS } from "./policyGate.js"
+import { storeTopology } from "./topology.js"
 
 /** Registers at this sync schema send x-device-credential and per-operation session evidence. */
 export const IDENTITY_SCHEMA = 4
@@ -57,10 +58,12 @@ export async function identityGateBlockers(tenantId: string): Promise<IdentityBl
  * Registers that never sent anything cannot be observed: once enforcement is on, they are inside the
  * boundary or refused at it (their completed work kept for review) — never served in observe mode.
  */
-export type EnforceBlocker = { id: string; label: string; reason: "upgrade-needed" | "not-enrolled" | "no-device-id" | "no-identity-evidence" | "device-not-enrolled" | "hub-upgrade-needed" | "hub-not-enrolled" | "hub-unattested" | "hub-register-unverified"; syncSchema: number | null; lastSeenAt: string | null }
+export type EnforceBlocker = { id: string; label: string; reason: "upgrade-needed" | "not-enrolled" | "no-device-id" | "no-identity-evidence" | "device-not-enrolled" | "hub-upgrade-needed" | "hub-not-enrolled" | "hub-unattested" | "hub-register-unverified" | "topology-unset"; syncSchema: number | null; lastSeenAt: string | null }
 export async function enforceGateBlockers(tenantId: string): Promise<EnforceBlocker[]> {
   const { ENFORCE_SCHEMA } = await import("./staffPolicy.js")
   const out: EnforceBlocker[] = []
+  // operational readiness: enforcement needs one chosen topology (where stock is decided; lib/topology.ts)
+  if ((await storeTopology(tenantId)).mode === "unset") out.push({ id: "topology", label: "Store setup", reason: "topology-unset", syncSchema: null, lastSeenAt: null })
   const clients = await prisma.syncClient.findMany({ where: { tenantId, retiredAt: null, NOT: { clientKey: { startsWith: "hub-device:" } } }, orderBy: { lastSeenAt: "desc" } })
   const newestCapableHub = clients.find((c) => c.clientKey.startsWith("hub-bridge@") && c.syncSchema >= ENFORCE_SCHEMA)
   const seenDevices = new Set<string>()

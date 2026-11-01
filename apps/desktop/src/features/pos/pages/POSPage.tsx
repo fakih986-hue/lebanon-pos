@@ -60,7 +60,7 @@ import {
 import { recordAuditEvent, userCan, getActiveShift, getCurrentUser, subscribeSecurity, type Permission } from "../services/security.service"
 import { showToast } from "../services/toast.service"
 import { consumeInventoryBatches } from "../services/inventoryBatch.service"
-import { getApiUrl, getConnectionMode, pullFromServer, nextDocumentReference, getSyncStatus, serverSupportsMadeToOrder } from "../services/sync.service"
+import { getApiUrl, getConnectionMode, pullFromServer, nextDocumentReference, getSyncStatus, serverSupportsMadeToOrder, getTopologyGuidance } from "../services/sync.service"
 import { createId } from "../lib/storage"
 
 import type { Product } from "../types/product"
@@ -767,6 +767,16 @@ export default function POSPage() {
     // atomic-local-commit the hub authority is meant to have, with no false
     // success. For CONNECT_TO_HUB it's the LAN hub.
     const writeThrough = (mode === "CONNECT_TO_HUB" || mode === "STORE_HUB") && stockDecrementing
+
+    // The store's topology: connected where this store's stock is not kept, a sale would only be held.
+    // Refuse here, before any money is taken (the register's queued work is kept and sent once reconnected).
+    const topology = getTopologyGuidance()
+    if (topology) {
+      playErrorBuzz()
+      setScannerStatus(t(`pos.topology.${topology.verdict}`))
+      showToast(t(`pos.topology.${topology.verdict}`), "error")
+      return
+    }
 
     // SPRINT-1: an older hub or cloud cannot record made-to-order lines (it would reject the sale
     // after payment). Refuse here, before any money is taken.

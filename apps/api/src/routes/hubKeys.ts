@@ -4,7 +4,10 @@
  * POST /api/hub-keys/enroll      the store's hub link (x-cloud-key) + { kid, publicPem, pin, staffId? }.
  *                                The PIN of an active staff member of THIS store with settings.manage is
  *                                checked here, by the cloud: the cloud key alone (what every sync carries)
- *                                can never enroll a key. The new key becomes the store's ACTIVE key; the
+ *                                can never enroll a key. `hubId` (the hub installation, stable across key
+ *                                rotation): a different hub cannot take over while another hub's key is
+ *                                active (HUB_CONFLICT); the owner retires that hub first, and only a
+ *                                topology decision makes the new one the store's hub (lib/topology.ts). The new key becomes the store's ACTIVE key; the
  *                                previous one is ROTATED (accepted only for what it signed before).
  * GET  /api/hub-keys             settings.manage: the store's keys (no key material).
  * POST /api/hub-keys/:kid/revoke settings.manage + { note }: never accepted again.
@@ -26,14 +29,16 @@ const enrollSchema = z.object({
   publicPem: z.string().min(50).max(1000),
   pin: z.string().min(1).max(32),
   staffId: z.string().min(1).max(64).optional(),
+  hubId: z.string().regex(/^hubi-[0-9a-f-]{36}$/),
+  label: z.string().max(80).optional(),
 })
 
 router.post("/enroll", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
   if (req.auth?.userId !== "cloud-bridge") { json(res, { error: "Only the store's hub can enroll its key.", code: "HUB_LINK_REQUIRED" }, 403); return }
   const tenantId = req.auth.tenantId
   const parsed = enrollSchema.safeParse(req.body)
-  if (!parsed.success) { json(res, { error: "kid, publicPem and the owner's PIN are required", code: "INVALID" }, 400); return }
-  const { kid, publicPem, pin, staffId } = parsed.data
+  if (!parsed.success) { json(res, { error: "kid, publicPem, the hub's id and the owner's PIN are required (update the hub if it does not send its id)", code: "INVALID" }, 400); return }
+  const { kid, publicPem, pin, staffId, hubId, label } = parsed.data
   try {
     const k = createPublicKey(publicPem)
     if (k.asymmetricKeyType !== "ec" || (k.asymmetricKeyDetails as { namedCurve?: string } | undefined)?.namedCurve !== "prime256v1") throw new Error("not P-256")
@@ -49,17 +54,23 @@ router.post("/enroll", requireCloudOrJwtAuth, async (req: AuthRequest, res: Serv
     json(res, { error: `${who.staff.name} is not allowed to enroll a hub (Settings permission).`, code: "FORBIDDEN" }, 403); return
   }
   if (await prisma.hubKey.findUnique({ where: { kid } })) { json(res, { error: "This key is already enrolled.", code: "KEY_EXISTS" }, 409); return }
+  // one hub per store: another hub with an active key keeps it until the owner retires that hub
+  const other = await prisma.hubKey.findFirst({ where: { tenantId, status: "ACTIVE", OR: [{ hubId: null }, { hubId: { not: hubId } }] }, select: { kid: true, hubLabel: true, enrolledAt: true } })
+  if (other) {
+    await audit(tenantId, "hub.key.refused", `${who.staff.name} tried to enroll a second hub (${label || hubId}) while ${other.hubLabel || "another hub"} is the store's active hub`, { kid, hubId, activeKid: other.kid })
+    json(res, { error: `This store already has an active hub (${other.hubLabel || "enrolled"} ${other.enrolledAt.toISOString().slice(0, 10)}). To replace it, retire that hub in the owner portal (Store security) first; then change the store's hub there.`, code: "HUB_CONFLICT" }, 409); return
+  }
   const now = new Date()
   await prisma.$transaction([
     prisma.hubKey.updateMany({ where: { tenantId, status: "ACTIVE" }, data: { status: "ROTATED", rotatedAt: now } }),
-    prisma.hubKey.create({ data: { kid, tenantId, publicPem, status: "ACTIVE", enrolledById: who.staff.id, enrolledAt: now } }),
+    prisma.hubKey.create({ data: { kid, tenantId, publicPem, status: "ACTIVE", enrolledById: who.staff.id, enrolledAt: now, hubId, hubLabel: label ?? "" } }),
   ])
   await audit(tenantId, "hub.key.enrolled", `${who.staff.name} enrolled the hub's signing key ${kid}`, { kid, staffId: who.staff.id })
   json(res, { ok: true, kid, enrolledAt: now.toISOString(), enrolledBy: { id: who.staff.id, name: who.staff.name } })
 })
 
 router.get("/", requireAuth, requirePermission("settings.manage"), async (req: AuthRequest, res: ServerResponse) => {
-  const keys = await prisma.hubKey.findMany({ where: { tenantId: req.auth!.tenantId }, orderBy: { enrolledAt: "desc" }, select: { kid: true, status: true, enrolledById: true, enrolledAt: true, rotatedAt: true, revokedAt: true, revokedById: true, revokeNote: true } })
+  const keys = await prisma.hubKey.findMany({ where: { tenantId: req.auth!.tenantId }, orderBy: { enrolledAt: "desc" }, select: { kid: true, status: true, hubId: true, hubLabel: true, enrolledById: true, enrolledAt: true, rotatedAt: true, revokedAt: true, revokedById: true, revokeNote: true, lastReportAt: true } })
   json(res, { keys })
 })
 

@@ -13,7 +13,7 @@
 // every effect is checked against its snapshot: before -> not applied, expected -> applied,
 // anything else -> the entry is BLOCKED and shown, with the figures, until a person closes it.
 // Nothing is silently abandoned.
-import { commitStagedSyncOperation, discardStagedSyncOperation, getCurrentTenantId, registerPreRecoveryHook, registerStagedOwner, registerStoreSwitchHook } from "./sync.service"
+import { commitStagedSyncOperation, discardStagedSyncOperation, getCurrentTenantId, registerJournalCounter, registerPreRecoveryHook, registerStagedOwner, registerStoreSwitchHook } from "./sync.service"
 import { getCurrentUser, PermissionError, recordAuditEvent, userCan, type Permission } from "./security.service"
 import { createId } from "../lib/storage"
 
@@ -112,6 +112,7 @@ export function check(now: number | undefined, before: number | undefined, delta
 }
 
 registerPreRecoveryHook(() => { recoverBusinessJournal() })
+registerJournalCounter(() => getOpenJournalEntries().length)
 // A store switch replaces this store's data on the device: an entry still unfinished then can
 // no longer be checked against it (on return its records are gone or pulled from the server).
 registerStoreSwitchHook(() => {

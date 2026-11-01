@@ -24,6 +24,7 @@ import { claimedActor, observeEvidence, transportOf } from "../lib/evidence.js"
 import { claimedActorOf, describeEffects, actorLimitations, redactSecrets } from "../lib/refusedReview.js"
 import { checkDevice, checkSession, type SessionResult } from "../lib/credentials.js"
 import { identityGateBlockers, isHubServer, enforceGateBlockers } from "../lib/identityGate.js"
+import { acceptHubReport, appliesOnlyAtStoresHub, changeTopology, connectionVerdict, hubIdentity, isStoresHub, isTopologyHold, recordQueueReport, storeHubs, storeTopology, topologyDenial, topologyReadiness, TopologyStaleError, TOPOLOGY_GUIDANCE, REPORT_FRESH_MS, type HubReport } from "../lib/topology.js"
 import { tokenKind } from "../middleware/auth.js"
 import { recordStockMovement, recordStockMovementOnce, UNALLOCATED_RETURN_NOTE } from "../lib/ledger.js"
 import { effectivePermissions, recordedActorRule, requiredPermissionForOp, shiftOpAllowed } from "../lib/permissions.js"
@@ -239,6 +240,56 @@ router.post("/identity-mode", requireAuth, requireTokenKinds("staff", "hub-local
   json(res, { ok: true, mode: after.mode, version: after.version, before: before.mode })
 })
 
+// Operational readiness: the store's topology (lib/topology.ts). Read: settings.manage. On a hub: as adopted.
+router.get("/topology", requireAuth, requireTokenKinds("staff", "hub-local"), async (req: AuthRequest, res: ServerResponse) => {
+  if (!(await can(req, "settings.manage"))) { json(res, { error: "Needs the Settings permission." }, 403); return }
+  const tenantId = req.auth!.tenantId
+  const topology = await storeTopology(tenantId)
+  if (isHubServer()) { const own = hubIdentity(); json(res, { hubServer: true, topology, thisHub: { hubId: own.hubId, label: own.label, isStoresHub: isStoresHub(topology, own.hubId) } }); return }
+  const now = Date.now()
+  const hubs = (await storeHubs(tenantId)).filter((h) => h.status !== "ROTATED").map((h) => {
+    const r = h.lastReport as HubReport | null
+    return { kid: h.kid, hubId: h.hubId, label: h.hubLabel || h.hubId || h.kid, status: h.status, enrolledAt: h.enrolledAt, isStoresHub: topology.mode === "hub" && h.hubId === topology.hubId,
+      report: r && h.lastReportAt ? { at: h.lastReportAt, fresh: now - h.lastReportAt.getTime() <= REPORT_FRESH_MS, unsent: r.unsent, held: r.held, openShifts: r.openShifts, policyVersion: r.policyVersion, topologyVersion: r.topologyVersion, registers: (r.registers ?? []).length } : null }
+  })
+  const q = req.query as Record<string, string | undefined>
+  const to = q.to === "direct" || q.to === "hub" ? q.to : null
+  json(res, { hubServer: false, topology, hubs, readiness: to ? { to, hubId: q.hubId ?? null, blockers: await topologyReadiness(tenantId, to, q.hubId ?? null) } : null })
+})
+
+// The owner's decision (cloud only): the next version, after readiness, on the version they looked at, with a note.
+router.post("/topology", requireAuth, requireTokenKinds("staff", "hub-local"), async (req: AuthRequest, res: ServerResponse) => {
+  const body = z.object({ to: z.enum(["direct", "hub"]), hubId: z.string().max(80).optional(), expectedVersion: z.number().int().min(0), note: z.string().trim().min(3).max(500), confirm: z.literal(true) }).safeParse(req.body)
+  if (!body.success) { json(res, { error: "Choose direct or hub (and which hub), confirm, write a note and send the version you looked at.", code: "INVALID" }, 400); return }
+  const tenantId = req.auth!.tenantId
+  if (isHubServer()) { json(res, { error: "The store's setup is changed at the cloud; this hub adopts it from its next sync.", code: "HUB_SERVER" }, 409); return }
+  const who = await actingPerson(req)
+  if (who.basis === "none" || who.basis === "store" || who.permissions === "store" || !who.permissions.has("settings.manage")) { json(res, { error: "Needs the Settings permission (signed in as yourself).", code: "FORBIDDEN" }, 403); return }
+  const current = await storeTopology(tenantId)
+  if (current.version !== body.data.expectedVersion) { json(res, { error: "The store's setup changed since you looked at it. Look again before deciding.", code: "TOPOLOGY_STALE", topology: current }, 409); return }
+  const hubId = body.data.to === "hub" ? body.data.hubId ?? null : null
+  const blockers = await topologyReadiness(tenantId, body.data.to, hubId)
+  if (blockers.length) {
+    await prisma.auditEvent.create({ data: { tenantId, action: "security.topology.refused", entity: "settings", summary: `${who.name} could not change the store's setup to ${body.data.to}: ${blockers.map((b) => b.code).join(", ")}`, metadata: { to: body.data.to, hubId, blockers } as any, userId: who.staffId ?? "system", userName: who.name ?? "", userRole: "Admin" as any } }).catch(() => undefined)
+    json(res, { error: "The store's setup cannot be changed yet. Clear each item listed, then try again.", code: "TOPOLOGY_NOT_READY", blockers }, 409); return
+  }
+  try {
+    const after = await changeTopology(tenantId, body.data.to, hubId, body.data.expectedVersion, { id: who.staffId ?? "unknown", name: who.name ?? "" }, body.data.note)
+    json(res, { ok: true, topology: after })
+  } catch (e) {
+    if (e instanceof TopologyStaleError) { json(res, { error: "The store's setup changed since you looked at it. Look again before deciding.", code: "TOPOLOGY_STALE", topology: e.current }, 409); return }
+    throw e
+  }
+})
+
+// A hub's signed status report (its queue, held work, stock and versions): kept on its enrolled key.
+router.post("/hub-report", staffSync, async (req: AuthRequest, res: ServerResponse) => {
+  if (req.auth!.userId !== "cloud-bridge" || isHubServer()) { json(res, { error: "Only a store's hub sends its report to the cloud.", code: "HUB_LINK_REQUIRED" }, 403); return }
+  const r = await acceptHubReport(req.auth!.tenantId, (req.body as { report?: unknown } | undefined)?.report)
+  if (!r.ok) { json(res, { error: `The hub's report was not accepted (${r.reason}).`, code: "REPORT_REFUSED", reason: r.reason }, 409); return }
+  json(res, { ok: true })
+})
+
 router.get("/status", requireAuth, requireTokenKinds("staff", "hub-local"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenant = await prisma.tenant.findUnique({
@@ -251,7 +302,9 @@ router.get("/status", requireAuth, requireTokenKinds("staff", "hub-local"), asyn
       },
     })
     if (!tenant) { json(res, { error: "Tenant not found" }, 404); return }
-    json(res, tenant)
+    // the store's topology, and what this register should do about it (lib/topology.ts)
+    const verdict = connectionVerdict(await storeTopology(req.auth!.tenantId), { hub: isHubServer(), ownHubId: isHubServer() ? hubIdentity().hubId : null })
+    json(res, { ...tenant, connection: { verdict, guidance: verdict === "ok" ? null : TOPOLOGY_GUIDANCE[verdict] } })
   } catch (err) {
     console.error("Tenant status error:", err)
     json(res, { error: "Failed to get tenant status" }, 500)
@@ -633,6 +686,16 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
   const storeMode = (await storePolicy(tenantId)).mode
   // SPRINT-2 hub batch: which operations need the session's person here (lib/staffPolicy.ts)
   const enforcedFor = (op: { entity: string; action: string }) => enforcesAll(storeMode) || (storeMode === "enforce-checkout" && op.entity === "sale" && op.action === "create")
+  // Operational readiness: the store's topology (lib/topology.ts). Where stock is decided is the owner's choice;
+  // a register or hub outside it cannot change stock or money here — its work is held, never applied or lost.
+  const topo = await storeTopology(tenantId)
+  const ownHubId = isHubServer() ? hubIdentity().hubId : null
+  const hubOfKid = new Map<string, string | null>()
+  const forwardingHub = async (kid: string | null) => {
+    if (!kid) return null
+    if (!hubOfKid.has(kid)) hubOfKid.set(kid, (await prisma.hubKey.findUnique({ where: { kid }, select: { hubId: true } }))?.hubId ?? null)
+    return hubOfKid.get(kid)!
+  }
   for (const op of operations) {
     try {
       validateSyncOperation(op)
@@ -678,7 +741,14 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
       const attested: AttestationResult | null = pushKind === "bridge"
         ? await verifyAttestation(tenantId, (op as any).ev?.fwd?.att, { id: op.id, entity: op.entity, action: op.action, digest: commandDigest(op.entity, op.action, op.payload) })
         : null
-      const hubIdentity = enforcedFor(op) && attested?.check === "valid" ? attestedIdentity(attested.srv) : null
+      // the store's topology: a register or hub outside it is held (a checkout not yet paid is refused outright)
+      const topoHold = topologyDenial(topo, { hub: isHubServer(), ownHubId, bridge: pushKind === "bridge", forwardingHubId: attested?.check === "valid" ? await forwardingHub(attested.kid) : null })
+      if (topoHold && op.entity === "sale" && op.action === "create" && String(op.id).startsWith("wt-")) {
+        // a live checkout: refused before the customer pays, nothing to keep
+        results.push({ id: op.id, status: "rejected", error: topoHold.replace(/ Nothing was lost:.*$| This register's work was not recorded.*$/, " The sale was not completed: take no payment.") })
+        continue
+      }
+      const hubSeen = enforcedFor(op) && attested?.check === "valid" ? attestedIdentity(attested.srv) : null
       // SPRINT-2 E: a manager's online approval, checked against the register that sent the operation. A
       // hub's forwarded operation carries the approval as the hub checked it (inside its attestation).
       // The approval is for the person signed in when it was given: the verified session's person, else
@@ -704,7 +774,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         ? await staffIdentity(tenantId, deviceSeen, sessionSeen, (op as any).ev, op)
         // an enrolled hub's attested operation: the same rules, on what the hub recorded and signed (the hub
         // vouches for its device and session checks; the person's standing is checked here, now)
-        : hubIdentity ? (hubIdentity.reviewer ? await reviewedAtHub(tenantId, hubIdentity.reviewer, op) : await staffIdentity(tenantId, hubIdentity.device, hubIdentity.session, hubIdentity.ev, op))
+        : hubSeen ? (hubSeen.reviewer ? await reviewedAtHub(tenantId, hubSeen.reviewer, op) : await staffIdentity(tenantId, hubSeen.device, hubSeen.session, hubSeen.ev, op))
         : null
       // Without a valid attestation a hub's forwarded operation cannot be attributed to anyone: in an
       // enforcing store it is kept for review rather than applied on the hub link's store-level authority.
@@ -717,7 +787,9 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
       // tampered client can't bypass in-app limits. Only fires for a real staff
       // actor (actorPermissions != null) and only for mapped ops; everything
       // else passes through unchanged.
+      // (an enforcing store's unattested forward says why first: the attestation)
       const ruled = hubOutside ? hubOutside
+        : topoHold ? topoHold
         : gate && "refuse" in gate ? gate.refuse
         // a reviewer's decision at the hub stands as a manager's approval would (see the resolve route)
         : enforcedActor ? await makeOpAuthorizer(tenantId, enforcedActor.permissions, enforcedActor.id, gate && "basis" in gate && gate.basis === "review" ? [...approved, ...enforcedActor.permissions] : approved)(op)
@@ -962,6 +1034,8 @@ const REVIEW_PERMISSIONS = ["settings.manage", "sales.price_override", "inventor
 /** Permissions a reviewer must hold to decide about this operation (any one of them). */
 function reviewPermissionsFor(entity: string, action: string, payload: unknown, reason: string | null): string[] {
   if (reason?.startsWith("PRICE_OVERRIDE:")) return ["sales.price_override"]
+  // work held by the store's topology: the owner's setup decides where it may change stock
+  if (isTopologyHold(reason)) return ["settings.manage"]
   // A sale refused for missing identity: a manager decides (it may be applied under their authority).
   if (/^(IDENTITY_REQUIRED|OFFLINE_REVIEW|SESSION_REVIEW|HUB_UNSUPPORTED):/.test(reason ?? "")) return ["sales.void", "settings.manage"]
   // a failed approval: whoever may do the action itself decides
@@ -1086,6 +1160,13 @@ router.post("/refused/:id/resolve", staffSync, async (req: AuthRequest, res: Ser
   const reason = refusalReason(row.error)
   const needs = reviewPermissionsFor(row.entity, row.action, row.payload, reason)
   if (!needs.some((p) => reviewer.permissions.includes(p))) { json(res, { error: `Deciding about this needs: ${needs.join(" or ")}.`, code: "FORBIDDEN" }, 403); return }
+  // Work held by the store's topology changes stock only at the store's stock authority: while this server is not
+  // it, the work can be declined here, or delivered there (the register connected to the store's hub resends it).
+  if (body.data.decision === "apply" && isTopologyHold(reason)) {
+    const t = await storeTopology(tenantId)
+    const elsewhere = isHubServer() ? !isStoresHub(t, hubIdentity().hubId) : t.mode === "hub" && appliesOnlyAtStoresHub(reason)
+    if (elsewhere) { json(res, { error: isHubServer() ? "This hub is not the store's hub: this work cannot change stock here. Connect the register to the store's stock authority (it resends this work), or decline it." : "This store's stock is kept at its hub: this work cannot be applied at the cloud. Connect the register to the store hub (it resends this work there), or decline it.", code: "TOPOLOGY_APPLY_ELSEWHERE" }, 409); return }
+  }
   // SPRINT-2 F (after the reviewer's authority): the decision must be about what the reviewer saw (the operation and the server's state now)
   if (previewTokenOf(row, await describeEffects(tenantId, row.entity, row.action, row.payload)) !== body.data.previewToken) {
     json(res, { error: "This operation or its effects changed since you looked at it. Look again before deciding.", code: "STALE_PREVIEW" }, 409); return
@@ -1321,6 +1402,18 @@ export function redactVerifiers<T>(rows: T[], req: AuthRequest, placeholder = fa
 router.get("/pull", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   try {
   const tenantId = req.auth!.tenantId
+  // operational readiness: the register's own report about its queue (topology changes need it empty)
+  if (req.auth!.userId !== "cloud-bridge" && req.headers["x-titan-queue"]) {
+    const dev = await checkDevice(typeof req.headers["x-device-credential"] === "string" ? String(req.headers["x-device-credential"]) : undefined, tenantId)
+    const claimed = typeof req.headers["x-device-id"] === "string" ? String(req.headers["x-device-id"]) : null
+    // an enrolled register reports under its credential; an unenrolled one under the id it gives
+    const enrolledClaim = claimed ? await prisma.device.findUnique({ where: { tenantId_deviceId: { tenantId, deviceId: claimed } }, select: { credentialVersion: true } }).catch(() => null) : null
+    const enrolled = dev.check === "valid" && dev.deviceId ? await prisma.device.findFirst({ where: { id: dev.deviceId, tenantId }, select: { deviceId: true } }) : null
+    const reporter = enrolled ? enrolled.deviceId : claimed && !(enrolledClaim && enrolledClaim.credentialVersion > 0) ? claimed : null
+    await recordQueueReport(tenantId, reporter, req.headers["x-titan-queue"])
+  }
+  const pullTopology = await storeTopology(tenantId)
+  const pullVerdict = req.auth!.userId === "cloud-bridge" ? "ok" as const : connectionVerdict(pullTopology, { hub: isHubServer(), ownHubId: isHubServer() ? hubIdentity().hubId : null })
   const since = req.query.since as string | undefined
   const sinceDate = since ? new Date(since) : undefined
   if (since && (!sinceDate || isNaN(sinceDate.getTime()))) {
@@ -1462,6 +1555,9 @@ router.get("/pull", staffSync, async (req: AuthRequest, res: ServerResponse) => 
     adjustments, stockCounts: counts, dailyCloses: await shapeDailyClosesForClient(dailyCloses, req as any, tenantId), deliveryOrders,
     // SPRINT-2 hub batch: the store's staff policy (a hub adopts a newer version; registers cache it)
     staffPolicy: await storePolicy(tenantId),
+    // the store's topology (a hub adopts a newer version) and what this register should do about it
+    topology: pullTopology,
+    connection: { verdict: pullVerdict, guidance: pullVerdict === "ok" ? null : TOPOLOGY_GUIDANCE[pullVerdict] },
     deletions: deletions.map((op) => ({
       entity: op.entity,
       id: (op.payload as any)?.id,

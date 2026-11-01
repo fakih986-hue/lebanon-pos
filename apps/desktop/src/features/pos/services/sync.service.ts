@@ -316,6 +316,52 @@ function setStoreMismatch(m: StoreMismatch | null) {
   try { if (m) localStorage.setItem(STORE_MISMATCH_KEY, JSON.stringify(m)); else localStorage.removeItem(STORE_MISMATCH_KEY) } catch { /* storage unavailable */ }
   if (typeof window !== "undefined") window.dispatchEvent(new Event(STORE_MISMATCH_EVENT))
 }
+// Operational readiness: the store's topology (where its stock is decided) as the server this register syncs
+// with states it. "use-hub" / "use-cloud" / "use-store-hub": this register is connected to the wrong place for
+// its store. New checkouts stop and sending pauses (the server would only hold the work); everything already
+// queued stays exactly as it is and is sent once the register is connected where the owner chose.
+const TOPOLOGY_KEY = "lebanonpos.topology-guidance.v1"
+export const TOPOLOGY_EVENT = "lebanonpos-topology"
+export type TopologyGuidance = { apiUrl: string; verdict: "use-hub" | "use-cloud" | "use-store-hub"; guidance: string; at: string }
+/** The guidance for the server this register is connected to now (a guidance for another server no longer applies). */
+export function getTopologyGuidance(): TopologyGuidance | null {
+  try {
+    const raw = localStorage.getItem(TOPOLOGY_KEY)
+    const g = raw ? (JSON.parse(raw) as TopologyGuidance) : null
+    return g && g.apiUrl === getApiUrl() ? g : null
+  } catch { return null }
+}
+/** What the server said about this register's connection (its pull and status answers carry it). */
+export function noteConnectionVerdict(connection: unknown): void {
+  const c = connection as { verdict?: unknown; guidance?: unknown } | null | undefined
+  if (!c || typeof c !== "object" || typeof c.verdict !== "string") return // an older server says nothing
+  const before = getTopologyGuidance()
+  const next = c.verdict === "use-hub" || c.verdict === "use-cloud" || c.verdict === "use-store-hub"
+    ? { apiUrl: getApiUrl(), verdict: c.verdict, guidance: typeof c.guidance === "string" ? c.guidance : "This register is not connected where this store's stock is kept.", at: new Date().toISOString() } as TopologyGuidance
+    : null
+  if ((before?.verdict ?? null) === (next?.verdict ?? null)) return
+  try { if (next) localStorage.setItem(TOPOLOGY_KEY, JSON.stringify(next)); else localStorage.removeItem(TOPOLOGY_KEY) } catch { /* storage unavailable: the server still holds the work */ }
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(TOPOLOGY_EVENT))
+}
+
+let _journalCount: () => number = () => 0
+/** The business journal reports its unfinished entries (a topology change needs none on any register). */
+export function registerJournalCounter(fn: () => number) { _journalCount = fn }
+/** This register's own queue, as it reports it to the server with each pull (header x-titan-queue). */
+export function queueReport(): { pending: number; held: number; failed: number; staged: number; journal: number } {
+  let pending = 0, held = 0, failed = 0, staged = 0
+  for (const op of readQueue()) {
+    if (op.status === "Synced") continue
+    if (op.staged) { staged++; continue }
+    if (op.status === "Rejected" || op.attempts >= MAX_ATTEMPTS) { failed++; continue }
+    if (isHeldError(op.error)) held++
+    else pending++
+  }
+  let journal = 0
+  try { journal = _journalCount() } catch { journal = 0 }
+  return { pending, held, failed, staged, journal }
+}
+
 export const STORE_MISMATCH_MESSAGE = "STORE_MISMATCH: this hub is now set up for a different store than the data on this register. Sending and downloading are paused so the two stores are never mixed; nothing was lost. Switch store explicitly (New device / add another store), or set the hub back to this register's store."
 /**
  * The ONLY way a token a local hub offers on its own (auto-login, at startup or on refresh) is
@@ -668,6 +714,7 @@ export async function checkTenantStatus(): Promise<boolean> {
     storeLicenseLease(data)
     // SPRINT-2: the store's identity mode (the POS shows it; checkout checks it before payment)
     if (setStoreIdentityMode(data.staffSessionMode) && typeof window !== "undefined") window.dispatchEvent(new Event("lebanonpos-security-changed"))
+    noteConnectionVerdict(data.connection)
     setSuspended(data.suspended === true)
     return data.suspended === true
   } catch {
@@ -1405,7 +1452,8 @@ export async function retireSyncClient(blocker: PolicyGateBlocker, note: string)
 }
 
 export function isHeldError(error: string | undefined | null): boolean {
-  return typeof error === "string" && error.startsWith("STOCK_POLICY_HELD:")
+  // also: held by the store's topology (connected where its stock is not kept): kept, never given up on
+  return typeof error === "string" && (error.startsWith("STOCK_POLICY_HELD:") || /^TOPOLOGY_[A-Z_]+:/.test(error))
 }
 
 export type PolicyHeldSale = {
@@ -1746,6 +1794,8 @@ async function _flushSyncQueue() {
   if (isSuspended()) return { synced: 0, skipped: 0 }
   // Paused: the hub serves another store now; the queue stays as it is for this store.
   if (getStoreMismatch()) { dispatchSyncChanged(); return { synced: 0, skipped: readQueue().filter((op) => op.status === "Pending").length } }
+  // Paused: connected where this store's stock is not kept; the queue is sent once connected where the owner chose.
+  if (getTopologyGuidance()) { dispatchSyncChanged(); return { synced: 0, skipped: readQueue().filter((op) => op.status === "Pending" || op.status === "Failed").length } }
 
   const queue = readQueue()
   const apiUrl = getApiUrl()
@@ -2371,10 +2421,11 @@ async function _incrementalPull(apiUrl: string, token: string): Promise<void> {
     ? `${apiUrl}/api/sync/pull?since=${encodeURIComponent(sinceParam)}`
     : `${apiUrl}/api/sync/pull`
 
-  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()), ...SYNC_SCHEMA_HEADERS } })
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()), ...SYNC_SCHEMA_HEADERS, "x-device-id": getDeviceId(), "x-titan-queue": JSON.stringify(queueReport()) } })
   if (!response.ok) throw new Error(`Sync pull failed: ${response.status}`)
 
   const data = await response.json()
+  noteConnectionVerdict(data.connection)
   applyPulledDeletions(Array.isArray(data.deletions) ? data.deletions : [])
 
   for (const [key, value] of Object.entries(data)) {

@@ -26,7 +26,8 @@ import { randomUUID } from "node:crypto"
 import { dataDir } from "../lib/dataDir.js"
 import { mirrorClose } from "../lib/dailyClose.js"
 import { adoptPolicy } from "../lib/staffPolicy.js"
-import { createHubKey, markHubKeyEnrolled, readHubKey, restoreHubKey, signAttestation } from "../lib/hubAttestation.js"
+import { createHubKey, markHubKeyEnrolled, readHubKey, restoreHubKey, signAttestation, signHubReport } from "../lib/hubAttestation.js"
+import { adoptTopology, buildHubReport, hubIdentity, isStoresHub, storeTopology } from "../lib/topology.js"
 import prisma from "../lib/prisma.js"
 import { recordStockMovementOnce } from "../lib/ledger.js"
 import { broadcastToTenant } from "../ws/index.js"
@@ -151,7 +152,7 @@ export async function enrollHubKey(pin: string, staffId?: string): Promise<{ ok:
   if (!CLOUD_API_URL || !CLOUD_API_KEY || !CLOUD_TENANT) return { ok: false, status: 409, error: "This hub is not connected to the cloud.", code: "NOT_CONFIGURED" }
   const previous = readHubKey()
   const key = createHubKey()
-  const res = await fetchCloud("/api/hub-keys/enroll", { method: "POST", body: JSON.stringify({ kid: key.kid, publicPem: key.publicPem, pin, ...(staffId ? { staffId } : {}) }) }).catch((err) => err as Error)
+  const res = await fetchCloud("/api/hub-keys/enroll", { method: "POST", body: JSON.stringify({ kid: key.kid, publicPem: key.publicPem, pin, ...(staffId ? { staffId } : {}), ...hubIdentity() }) }).catch((err) => err as Error)
   const body = res instanceof Error ? null : await res.json().catch(() => null) as any
   if (res instanceof Error || !res.ok || !body?.ok) {
     // not enrolled: keep the key that was in use (if any)
@@ -307,6 +308,8 @@ async function syncLoop(): Promise<void> {
     }
     try {
       await pullFromCloud()
+      // the hub's signed state for the owner's topology readiness checks (lib/topology.ts)
+      await sendHubReport().catch((err) => console.error("[cloud-sync] Hub report not sent:", (err as Error).message))
     } catch (err) {
       console.error("[cloud-sync] Pull error:", (err as Error).message)
     } finally {
@@ -343,8 +346,21 @@ export async function retireCloudClient(id: string, body: Record<string, unknown
 /** One push of this hub's applied operations to the cloud (tests drive the bridge with it). */
 export function pushToCloudOnce(): Promise<void> { return pushToCloud() }
 
+/** Operational readiness: this hub's signed report (queue, held work, stock, versions) to the cloud. */
+export async function sendHubReport(): Promise<boolean> {
+  const tenantId = CLOUD_TENANT
+  if (!tenantId) return false
+  const token = signHubReport(tenantId, await buildHubReport(tenantId) as unknown as Record<string, unknown>)
+  if (!token) return false
+  const res = await fetchCloud("/api/sync/hub-report", { method: "POST", body: JSON.stringify({ report: token }) })
+  return res.ok
+}
+
 async function pushToCloud(): Promise<void> {
   const tenantId = CLOUD_TENANT!
+  // Not the store's hub (the owner chose another hub, or registers connected to the cloud): nothing this hub
+  // applied may change stock at the cloud. Its work stays here, listed for review, until the owner decides.
+  if (!isStoresHub(await storeTopology(tenantId), hubIdentity().hubId)) return
 
   // Cheap local check — skip network call when nothing is pending
   const pendingCount = await prisma.syncOperation.count({
@@ -427,7 +443,7 @@ async function pushToCloud(): Promise<void> {
             error:         _lastPushError,
           },
         })
-      } else if ((r.error ?? "").startsWith("STOCK_POLICY_HELD:")) {
+      } else if ((r.error ?? "").startsWith("STOCK_POLICY_HELD:") || /^TOPOLOGY_[A-Z_]+:/.test(r.error ?? "")) {
         // SPRINT-1: held by the cloud (it has not received the policy revision the sale was sold
         // under yet). Kept pending — not dropped, not counted against its attempts — and retried;
         // the reason stays visible in this hub's sync status.
@@ -536,6 +552,8 @@ export async function pullFromCloud(opts: { isRestore?: boolean } = {}): Promise
   // SPRINT-2 hub batch: the store's staff policy, adopted only when newer (lib/staffPolicy.ts): a hub that
   // cannot reach the cloud, or receives no policy, keeps the one it holds
   if ((data as any).staffPolicy) await adoptPolicy(CLOUD_TENANT!, (data as any).staffPolicy).catch((e) => console.error("[cloud-sync] staff policy not adopted:", e))
+  // the store's topology, adopted the same way (lib/topology.ts): never lowered by an absent or older one
+  if ((data as any).topology) await adoptTopology(CLOUD_TENANT!, (data as any).topology).catch((e) => console.error("[cloud-sync] topology not adopted:", e))
 
   // Strip Railway's updatedAt from all upserted entities so Prisma auto-sets
   // updatedAt to the hub's local time. This ensures the hub browser's incremental

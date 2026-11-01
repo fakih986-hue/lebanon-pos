@@ -5,6 +5,8 @@ import prisma from "../lib/prisma.js"
 import { recordStockMovement, recordStockMovementOnce, UNALLOCATED_RETURN_NOTE } from "../lib/ledger.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 import { can } from "../middleware/permission.js"
+import { stockWriteRefusal } from "../lib/topology.js"
+import { isHubServer } from "../lib/identityGate.js"
 
 /**
  * POS-SYNC-AUTHORITY-2C-1 — Inventory Reconciliation (READ-ONLY report) + the
@@ -119,6 +121,8 @@ router.post("/ledger/initialize", requireAuth, async (req: AuthRequest, res: Ser
     // the acting person (in a store that enforces staff identity: the register's verified session's person,
     // never the connection account's role)
     if (!(await can(req, "settings.manage"))) { json(res, { error: "Needs the Settings permission (owner).", code: "FORBIDDEN" }, 403); return }
+    const topologyRefusal = await stockWriteRefusal(tenantId, isHubServer())
+    if (topologyRefusal) { json(res, { error: topologyRefusal, code: "TOPOLOGY_STOCK_AUTHORITY" }, 409); return }
 
     const [products, ledgerSums] = await Promise.all([
       prisma.product.findMany({ where: { tenantId, archived: false, isParent: false }, select: { id: true, syncId: true, stock: true } }),
@@ -160,6 +164,8 @@ router.post("/reconciliation/repair", requireAuth, async (req: AuthRequest, res:
   try {
     const tenantId = req.auth!.tenantId
     if (!(await can(req, "inventory.adjust"))) { json(res, { error: "Needs the Adjust stock permission (a manager).", code: "FORBIDDEN" }, 403); return }
+    const topologyRefusal = await stockWriteRefusal(tenantId, isHubServer())
+    if (topologyRefusal) { json(res, { error: topologyRefusal, code: "TOPOLOGY_STOCK_AUTHORITY" }, 409); return }
     const productId = Number((req.body as any)?.productId)
     const reason = String((req.body as any)?.reason ?? "").trim()
     if (!productId || productId <= 0) { json(res, { error: "productId is required" }, 400); return }

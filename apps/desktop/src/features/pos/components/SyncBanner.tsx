@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Cloud, CloudOff, RefreshCw, AlertTriangle, Wifi, WifiOff } from "lucide-react"
-import { getSyncStatus, getConnectionMode, subscribeSync, type SyncStatus } from "../services/sync.service"
+import { getSyncStatus, getConnectionMode, getTopologyGuidance, subscribeSync, TOPOLOGY_EVENT, type SyncStatus } from "../services/sync.service"
+import { useI18n } from "@lebanonpos/shared"
 import type { ConnectionMode } from "../services/settings.service"
 import { isHubDeviceAutoApproved } from "../services/deviceRegistry.service"
 
@@ -91,17 +92,23 @@ const levelStyles: Record<BannerLevel, string> = {
 }
 
 export default function SyncBanner() {
+  const { t } = useI18n()
   const [banner, setBanner] = useState<Banner | null>(null)
 
   useEffect(() => {
     function update() {
+      // connected where this store's stock is not kept: said first (new sales stop; the queue waits)
+      const topology = getTopologyGuidance()
+      if (topology) { setBanner({ level: "error", icon: AlertTriangle, message: t(`pos.topology.${topology.verdict}`) }); return }
       const status = getSyncStatus()
       const mode = getConnectionMode()
       setBanner(statusToBanner(status, mode))
     }
     update()
-    return subscribeSync(update)
-  }, [])
+    window.addEventListener(TOPOLOGY_EVENT, update)
+    const off = subscribeSync(update)
+    return () => { off(); window.removeEventListener(TOPOLOGY_EVENT, update) }
+  }, [t])
 
   if (!banner) return null
 
@@ -111,7 +118,7 @@ export default function SyncBanner() {
     <div className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold ${levelStyles[banner.level]}`}>
       <Icon size={14} className="shrink-0" />
       <span>{banner.message}</span>
-      {(banner.level === "warning" || banner.level === "error") && (
+      {(banner.level === "warning" || banner.level === "error") && !getTopologyGuidance() && (
         <button
           type="button"
           onClick={() => {

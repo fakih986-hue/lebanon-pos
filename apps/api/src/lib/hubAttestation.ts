@@ -74,6 +74,15 @@ export function signAttestation(tenantId: string, op: AttestedOp, srv: Record<st
   })
 }
 
+/** The hub's signed status report (lib/topology.ts): its queue, held work, stock and versions. */
+export function signHubReport(tenantId: string, report: Record<string, unknown>): string | null {
+  const key = readHubKey()
+  if (!key?.enrolledAt || key.tenantId !== tenantId) return null
+  return jwt.sign({ typ: "hub-report", tid: tenantId, report }, key.privatePem, {
+    algorithm: "ES256", keyid: key.kid, issuer: ISSUER, audience: attestationAudience(tenantId), expiresIn: "1h",
+  })
+}
+
 export type AttestationCheck = "valid" | "absent" | "unknown-key" | "revoked" | "rotated" | "other-store" | "invalid-signature" | "op-mismatch" | "digest-mismatch"
 export type AttestationResult = { check: AttestationCheck; kid: string | null; srv: Record<string, unknown> | null }
 
