@@ -698,7 +698,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         continue
       }
 
-      const outcome = await applyOnce(tenantId, op, { deviceId: deviceId ?? null, userId: req.auth!.userId, syncSchema: pushSchema, costTrusted: opCostTrusted }, async (tx) => {
+      const outcome = await applyOnce(tenantId, op, { deviceId: deviceId ?? null, userId: req.auth!.userId, syncSchema: pushSchema, costTrusted: opCostTrusted, resolutionAuthority: storeMode === "enforce-checkout" ? { staffId: enforcedActor?.id ?? null, approved } : undefined }, async (tx) => {
         // SPRINT-2 Phase B (observe): what this server knows about the operation, in the same
         // transaction (never an applied operation without its evidence row, or the reverse).
         if ((tx as any).operationEvidence) {
@@ -1684,7 +1684,10 @@ async function processOperation(
   payload?: Record<string, unknown>,
   db: typeof prisma = prisma,
   // POS-SYNC-AUTHORITY-2A — source attribution for the stock ledger (record-only).
-  source: { deviceId?: string | null; userId?: string | null; syncSchema?: number; costTrusted?: boolean } = {}
+  source: { deviceId?: string | null; userId?: string | null; syncSchema?: number; costTrusted?: boolean
+    /** SPRINT-2 (enforcing stores): who may decide a held line's stock policy for this operation: the
+     *  verified session's person, or a manager's online approval. A name in the payload is not enough. */
+    resolutionAuthority?: { staffId: string | null; approved: string[] } } = {}
 ) {
   // Cost a client sends is taken only from an account that can see cost (or a hub's link); anyone
   // else was never sent cost, so whatever it sends (0, a stale value, a made-up one) is replaced by
@@ -2032,7 +2035,7 @@ async function processOperation(
           // SPRINT-1: the line's stock policy is the SERVER's product policy at sale time (a client
           // cannot declare a packaged item untracked to skip stock control).
           const product = productId ? await db.product.findFirst({ where: { tenantId, id: productId }, select: { name: true, stockPolicy: true, stockPolicyRev: true, stockPolicyHistory: true, cost: true } }) : null
-          const resolved = resolveLinePolicy(product, item, await authorizedResolution(db, tenantId, item))
+          const resolved = resolveLinePolicy(product, item, await authorizedResolution(db, tenantId, item, source.resolutionAuthority))
           return {
             productId,
             productName: item.name,
@@ -3036,9 +3039,12 @@ export async function applyStaffWrite(db: typeof prisma, tenantId: string, actio
  * SPRINT-1: a held line's resolution counts only when the manager named in it may manage
  * inventory in this store (the till checks too; the server does not take its word for it).
  */
-async function authorizedResolution(db: typeof prisma, tenantId: string, item: any): Promise<{ policy: "tracked" | "untracked" } | null> {
+async function authorizedResolution(db: typeof prisma, tenantId: string, item: any, authority?: { staffId: string | null; approved: string[] }): Promise<{ policy: "tracked" | "untracked" } | null> {
   const r = item?.stockPolicyResolution
   if (!r || (r.policy !== "tracked" && r.policy !== "untracked") || typeof r.resolvedBy !== "string" || typeof r.note !== "string" || r.note.trim().length < 3) return null
+  // An enforcing store: naming a manager is a claim. The decision stands only when the person whose
+  // session the sale was verified under made it, or a manager approved this sale online.
+  if (authority && !authority.approved.includes("inventory.manage") && r.resolvedBy !== authority.staffId) return null
   const staff = await db.staffUser.findFirst({ where: { id: r.resolvedBy, tenantId, active: true }, select: { role: true, permissions: true } })
   if (!staff || !effectivePermissions(staff.permissions as any, staff.role).includes("inventory.manage" as any)) return null
   return { policy: r.policy }

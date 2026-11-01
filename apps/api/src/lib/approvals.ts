@@ -20,7 +20,7 @@ export const APPROVAL_SECONDS = 120
 
 /** What may be approved, and with which permission (existing permissions; no thresholds). */
 export const APPROVABLE: Record<string, string[]> = {
-  "sale:create": ["sales.discount", "sales.price_override"],
+  "sale:create": ["sales.discount", "sales.price_override", "inventory.manage"],
   "sale:void": ["sales.void"],
   "refund:create": ["sales.refund"],
   "cash-movement:create": ["cash.manage"],
