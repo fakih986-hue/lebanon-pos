@@ -280,3 +280,13 @@ printers/scanners need the isolated machine.
 - **F — revocation/review:** revoked user/device with pending cash sale, debt sale/payment, refund, supplier payment, stock adjustment → held with money/stock effects shown; resolution once, no duplicate effects; restart before/after each persistence boundary.
 - **G — enforce gate:** compatibility check; returning old/retired device; device that aged out is not implicitly safe.
 - **H — installed acceptance:** clean short-path checkout of the exact commit; disposable store and data dir; guarded launchers; Electron hub screen, paired browser till, direct-cloud till, offline/reconnect, staff switch and approval, PIN reset and revocation, pending recovery, hub forwarding, supported legacy versions; installer path and SHA-256 recorded; not the Sprint 1 candidate.
+
+### Freeze and pilot handoff (2026-11-02)
+
+`dev-176fc59` is frozen (local tag `freeze/dev-176fc59`, candidate folder `FROZEN.txt`); café stabilization is closed
+on it. The isolated-machine pilot is one document, [ISOLATED-MACHINE-CHECKLIST.md](ISOLATED-MACHINE-CHECKLIST.md),
+with a kit in `D:\TitanPOS-pilot\dev-176fc59` (frozen source bundle; disposable-store seed, checked on a fresh scratch
+schema). The release manifest now inventories the 19 migrations by kind, says which changes make old code unsafe, and
+defines recovery (stop, preserve, decide, reconcile). After the freeze, `ea52d71` fixes the observe-mode remake/waste
+wording (desktop 512 passed, typechecks 0); it is not in `dev-176fc59` and goes into 1.0.53, which must be built and
+validated as that exact binary before publication.

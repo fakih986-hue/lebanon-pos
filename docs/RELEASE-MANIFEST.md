@@ -38,29 +38,49 @@ The full list with dates: `D:\TitanPOS-it\batch75\commits-since-e2fd79a.txt`. By
   for and is never silently exhausted (`d79e4fe`, `241f45c`); quantity precision and no float drift, café refunds and
   cost fields (`f0657d3`); refund/void wording, Arabic punctuation and reasons (`241f45c`).
 
-## 3. Pending migrations, in order (all applied by `prisma migrate deploy`)
+## 3. Pending migrations, in order (all applied by `prisma migrate deploy`; hubs apply the same files at start)
 
-| # | Migration | Change | Additive? |
+The deployed cloud (`e2fd79a`) and the published 1.0.51 hubs both stop at `20261019120000_one_active_admin`, so the same
+19 migrations are pending for the cloud and for every hub. Each migration file runs in one transaction (Prisma on the
+cloud; the hub's runner sends each file as one statement batch).
+
+Kinds used below: **new table** (nothing old reads it); **column + default** (every existing row gets the default; old
+code neither reads nor writes it); **nullable column** (old rows NULL); **constraint change** (changes what may be
+stored); **data change** (rewrites existing values); **index change**. All additive changes still change *meaning* for
+old code — see §8.
+
+| # | Migration | Kind | Exactly what changes |
 |---|---|---|---|
-| 1 | 20261029100000_product_stock_policy | Product/SaleItem `stockPolicy`; empty-string barcodes become NULL | data: blank barcodes → NULL (harmless to old code) |
-| 2 | 20261029120000_stock_policy_version | policy version/changedAt; SaleItem conflict | yes |
-| 3 | 20261029140000_stock_policy_history | policy history | yes |
-| 4 | 20261029160000_stock_policy_rev | policy revision ids | yes |
-| 5 | 20261029180000_sync_client_gate | table SyncClient | yes |
-| 6 | 20261030100000_operation_evidence | table OperationEvidence | yes |
-| 7 | 20261031100000_device_enrollment_staff_sessions | device credential columns, staff sessions | yes |
-| 8 | 20261031120000_staff_session_mode | Tenant `staffSessionMode` (default observe) | yes |
-| 9 | 20261101090000_sync_operation_server_valued | SyncOperation `serverValued` | yes |
-| 10 | 20261101130000_daily_close_unknown_cost | DailyClose cost columns become nullable (unknown ≠ 0) | relaxes NOT NULL |
-| 11 | 20261101150000_hub_attestation | table HubKey; evidence attestation columns | yes |
-| 12 | 20261101170000_manager_approval | table ManagerApproval | yes |
-| 13 | 20261101190000_review_resolution | SyncOperation `heldEvidence`; table ReviewResolution | yes |
-| 14 | 20261102090000_approval_permissions_close_revisions | approval permissions; DailyClose scope/revision; **unique index (tenant,date) replaced by (tenant,date,scope,revision)** | **structural** |
-| 15 | 20261102120000_staff_policy_version | Tenant `staffPolicyVersion` | yes |
-| 16 | 20261103090000_store_topology | Tenant topology columns (default `unset`) | yes |
-| 17 | 20261103100000_record_attribution | attribution columns on records | yes |
-| 18 | 20261104090000_cafe_menu_recipes | product units/sellable/recipe pointer; sale-line snapshots; lot purchase fields; tables ModifierGroup, RecipeRevision | yes |
-| 19 | 20261105090000_sync_product_refs | SyncOperation `productRefs` | yes |
+| 1 | 20261029100000_product_stock_policy | column + default; **data change** | Product, SaleItem `stockPolicy` (default `tracked`). `UPDATE Product SET barcode = NULL` where the barcode is blank or spaces |
+| 2 | 20261029120000_stock_policy_version | column + default; nullable | Product `stockPolicyVersion` (1), `stockPolicyChangedAt`; SaleItem `stockPolicyConflict` |
+| 3 | 20261029140000_stock_policy_history | column + default | Product `stockPolicyHistory` (`[]`) |
+| 4 | 20261029160000_stock_policy_rev | column + default; nullable | Product `stockPolicyRev` (`initial`); SaleItem `stockPolicyRev` |
+| 5 | 20261029180000_sync_client_gate | new table | SyncClient (+ unique and lookup index) |
+| 6 | 20261030100000_operation_evidence | new table | OperationEvidence (+ 2 indexes) |
+| 7 | 20261031100000_device_enrollment_staff_sessions | new table; column + default; nullable | StaffSession (+ 2 indexes); Device `credentialVersion` (0), `enrolledAt`, `enrolledById`; PairingCode `createdById`; 7 OperationEvidence columns |
+| 8 | 20261031120000_staff_session_mode | column + default | Tenant `staffSessionMode` (`observe`) |
+| 9 | 20261101090000_sync_operation_server_valued | column + default | SyncOperation `serverValued` (false) |
+| 10 | 20261101130000_daily_close_unknown_cost | **constraint change**; nullable | DailyClose `costOfGoods`, `returnedCost`, `grossMargin`, `netProfit`: NOT NULL and default 0 **removed** (NULL = unknown); new `costStatus` |
+| 11 | 20261101150000_hub_attestation | new table; nullable | HubKey (+ index); OperationEvidence `attestation`, `attestationKid` |
+| 12 | 20261101170000_manager_approval | new table; nullable | ManagerApproval (+ 2 indexes); OperationEvidence `approval` |
+| 13 | 20261101190000_review_resolution | new table; nullable | ReviewResolution (+ unique on `opId`, index); SyncOperation `heldEvidence` |
+| 14 | 20261102090000_approval_permissions_close_revisions | column + default; nullable; **index change** | ManagerApproval `permissions`; DailyClose `scope` (`store`), `revision` (1), `registerId`, `shiftId`, `revisionOf`, `correction`, `supersededById`, `supersededAt`; **unique (tenant, date) dropped, unique (tenant, date, scope, revision) created** + lookup index |
+| 15 | 20261102120000_staff_policy_version | column + default; nullable | Tenant `staffPolicyVersion` (0), `staffPolicyIssuedAt`, `staffPolicyIssuedBy` |
+| 16 | 20261103090000_store_topology | column + default; nullable | Tenant `storeTopology` (`unset`), `topologyVersion` (0), `topologyHubId`, `topologyChangedAt`, `topologyChangedBy`; HubKey `hubLabel` (''), `hubId`, `lastReport`, `lastReportAt`; SyncClient `queueReport`, `queueReportedAt` |
+| 17 | 20261103100000_record_attribution | nullable | who/attribution columns on Sale (incl. `voidedById/Name/At`), SaleRefund, Expense, CashMovement, InventoryBatch, StockAdjustment, StockCountSession, SupplierPayment, PurchaseOrder, DebtSale, DebtPayment, Shift, DailyClose, OperationEvidence |
+| 18 | 20261104090000_cafe_menu_recipes | new table; column + default; nullable | ModifierGroup, RecipeRevision (+ 3 indexes); Product `sellable` (true), `stockUnit` (`unit`), `modifierGroupIds` ([]), `purchaseUnit`, `unitsPerPurchase`, `recipeRev`; SaleItem `modifiers`, `note`, `basePrice`, `recipeRev`, `consumption`, `costStatus`, `recipeConflict`, `modifierConflict`; InventoryBatch purchase fields; StockAdjustment `wasteRef`, `wasteOf` |
+| 19 | 20261105090000_sync_product_refs | nullable | SyncOperation `productRefs` |
+
+In total: 8 new tables, 1 data change (#1), 1 constraint relaxation (#10), 1 unique-index replacement (#14); everything
+else adds columns with constant defaults or NULL. Nothing is dropped or renamed except that one index, and no existing
+value changes except blank barcodes (#1). The earlier wording "only one structural" meant "only #14 replaces an
+index"; it was imprecise and is withdrawn.
+
+Locks and duration: adding a column with a constant default is a catalogue change on PostgreSQL 11+ (no table rewrite).
+#1 updates only Product rows with blank barcodes. #14 builds its unique index without `CONCURRENTLY`, blocking writes to
+DailyClose for the build (one row per store per day; seconds at most). On Railway the previous deployment keeps serving until the
+new one is healthy, so old code briefly runs on the migrated schema; stop client writes first (§8.2, step 1) so that
+window carries no work.
 
 Verified (evidence `D:\TitanPOS-it\batch75`):
 - **Fresh database**: all 54 migrations apply; `prisma migrate diff --from-schema-datasource --to-schema-datamodel
@@ -109,28 +129,88 @@ a hub store. The change is versioned, audited and adopted by hubs only when newe
 
 ## 8. Backup, recovery and rollback
 
-Before upgrading:
-1. Cloud: take a Railway PostgreSQL backup (or `pg_dump -Fc`) and record the deployed commit (e2fd79a).
-2. Each hub: stop the hub, back up its data folder (`%APPDATA%\lebanon-pos\hub-data`) and its embedded database
-   (see HUB-INSTALL-CHECKLIST.md); confirm the hub's queue is forwarded (Sync status: nothing pending/held).
-3. Registers: make sure each register's queue is empty (Sync status) before updating it.
+### 8.1 Why old code must not run on the migrated data (by code inspection of `e2fd79a` and 1.0.51; not executed)
 
-Recovery: restore the backup and reinstall the previous version (cloud: redeploy e2fd79a; hub/registers: 1.0.51
-installer).
+The schema changes are additive, so old code *starts* on the migrated database. It is unsafe because it would
+silently misread or overwrite what the new code records:
 
-**Rollback limits once new-format work exists** (after the first operation is applied by the new version):
-- Migrations are additive except the DailyClose index (#14): the old code's upsert on (tenant, date) no longer has its
-  unique index; closes written per register/shift by the new code are several rows per date. **Old cloud code must not
-  run on the migrated database.** Rolling back = restoring the pre-upgrade backup (work done since is lost unless
-  replayed from registers' queues).
-- An old cloud would read a new hub's forwards by number (it ignores the stable ids beside the command) — the exact
-  wrong-product risk this release removes. Never point upgraded hubs at a rolled-back cloud.
-- Recipe drinks, options, ingredient lots and consumption snapshots have no meaning in old code (it would treat recipe
-  lines as packaged stock). Held statuses (`Held`, register `held`) are unknown to old code (kept, not lost, but not
-  re-checked). Prefer a forward fix over a rollback after café items are in use.
+| Change | What old code would do on migrated data |
+|---|---|
+| #10 nullable close costs | reads an unknown cost (NULL) as 0: a day with unknown cost shows full margin; a close it writes without a cost value is stored as NULL, not 0 |
+| #14 close scope/revision | ignores `scope`, `revision`, `supersededAt`: per-register and per-shift closes and superseded revisions all look like store closes for that date, and its pull sends them all to registers (totals counted more than once). Its upsert by close id still works; the earlier note that it relied on the dropped index was wrong |
+| #1–#4, #18 stock policy and café | has no stock policy: sells made-to-order and recipe products as stock items (their stock goes negative), never takes ingredients, offers ingredients (`sellable` false) to registers, drops options, notes, base price and consumption from new registers' sales — the café revenue split, ingredient stock and café report become wrong |
+| #5 SyncClient | no store-wide gate: a product can become a recipe drink while 1.0.50/1.0.51 registers trade |
+| #6, #11–#13 evidence, hub keys, approvals, review | accepts forwarded work without hub signatures or approvals; work held for review (`Refused`, `Held`, `heldEvidence`) is never shown or resolved |
+| #8, #15, #16 staff mode, policy, topology | ignores them: a store moved to enforce silently returns to no enforcement; a hub store's single stock authority is not enforced |
+| #19 and hub forwarding | reads a new hub's forwards by the register's numeric product id and ignores the stable ids beside them — the wrong-product write this release removes |
+| code, not schema | old code lacks the Sprint 0 fixes (tenant isolation, PIN verifiers, route authorization) |
+
+Hubs: the 1.0.51 hub's migration runner applies missing migrations and ignores extra ones, so 1.0.51 installed over an
+upgraded hub opens the migrated database with the same hazards locally, and its sender does not know the `Held` status
+(that work is never sent). Registers: their local data has no schema version; 1.0.51 ignores new fields, retries work
+the new version marked as waiting until its attempts run out, and keeps drinks received by the new version in its
+product list as stock items.
+
+**Point of no return**: the first operation the new code applies in a store (in practice the first sale after the
+upgrade). Before it, restoring the pre-upgrade backup loses nothing. After it, prefer a forward fix; a restore loses
+everything written since the backup unless it is reconciled (8.3).
+
+### 8.2 Before upgrading
+
+1. **Stop client writes to the cloud.** Announce a window; stores keep selling (hub stores through the hub, direct
+   registers record routine sales as offline claims). Make the cloud unreachable for clients for the window (Railway:
+   remove the public domain or stop the service) and record the time `T_stop`.
+2. **Cloud backup** after `T_stop`: `pg_dump -Fc` (or a Railway backup). Record its time `T_backup`, its SHA-256, the
+   deployed commit (`e2fd79a`) and per-store row counts (Sale, SaleRefund, InventoryBatch, StockAdjustment,
+   SyncOperation, DailyClose).
+3. **Each hub**: Sync status shows nothing pending or held; quit the hub; copy `%APPDATA%\lebanon-pos` (`pgdata`,
+   `hub-data`, `.env`) to a dated backup; record the SHA-256 of `hub-data\cloud-config.json`.
+4. **Registers**: queue empty (Sync status) before each register is updated.
+5. Deploy the cloud (migrations run); check `/api/health` and the applied-migration list; reopen client access; then
+   upgrade hubs, then registers (§4).
+
+### 8.3 Recovery: stop, preserve, decide, reconcile
+
+1. **Stop.** Make the cloud unreachable for clients again (as in 8.2.1); record `T_stop2`. Hubs and registers keep
+   their work in their own queues. Tell stores they may keep selling or pause, but must **not reinstall, re-pair or
+   clear data** on any device.
+2. **Preserve.** Before anything else, dump the live (migrated) database to a new file `D_post` and record its SHA-256:
+   it holds every transaction since `T_backup`. Back up each hub's `%APPDATA%\lebanon-pos` as in 8.2.3 (a hub that keeps
+   selling holds its own complete record). Never restore over the live database; restore only into a **new** database.
+3. **Decide.** The default is a **forward fix**: fix, build and validate the new version, deploy it on the live database
+   (`D_post` unchanged), reopen; clients resend what they queued; nothing is lost. Roll back only when a forward fix is
+   impossible.
+4. **Rollback path** (only if step 3 says so):
+   1. Restore the pre-upgrade backup into a new database and deploy `e2fd79a` on it, still unreachable for clients.
+   2. Build the **reconciliation report** from `D_post`, per store, for everything after `T_backup`: applied sync
+      operations (`SyncOperation` with `appliedAt > T_backup`: id, entity, action, device, payload), changes made in the
+      cloud admin (`AuditEvent` with `createdAt > T_backup`), and comparison totals (sales count and value, refunds,
+      receipts, adjustments, closes, cash per shift, stock per product, open lots).
+   3. Replay into the restored database only what old code understands: operations from 1.0.50/1.0.51 registers and
+      hubs whose products resolve there by stable id, with their **original operation ids** (so nothing applies twice).
+      Recipe sales, options, ingredient consumption, waste, held or reviewed work and topology/enforcement changes are
+      **not** replayable into old code; list them for manual entry or keep them for a forward fix. **No replay tool
+      exists today.** It must be written and rehearsed on a copy (checklist §9) before any production rollback; until
+      then, rolling back after the point of no return means manual re-entry from the report.
+   4. Hubs: an upgraded hub must **never** forward to the restored old cloud. Either keep it upgraded and disconnected
+      until a forward fix, or restore its pre-upgrade backup and reinstall 1.0.51 — only after its post-upgrade work is
+      in the report (it is in `D_post` if it was forwarded; otherwise export it from the hub first).
+   5. Registers: drain each queue to the upgraded hub or cloud **before** downgrading; a current-version queue sent to
+      old code is misapplied. Then reinstall 1.0.51 and re-pair.
+   6. Verify per store that the restored database plus replayed and re-entered work equals `D_post`'s totals; record
+      every difference explicitly.
+5. **Reopen** client access only when step 4.6 (or the forward fix's acceptance) passes.
 
 ## 9. Acceptance status and what is still outside
 
 See SPRINT-2-ACCEPTANCE.md ("Batch: café stabilization and release preparation"). The NSIS installer, an upgrade from
 1.0.51 on a real machine, real LAN/Wi-Fi registers and physical printers/scanners need an isolated Windows machine:
 `docs/ISOLATED-MACHINE-CHECKLIST.md`.
+
+## 10. Tracked items (not blocking the pilot)
+
+| Item | Status |
+|---|---|
+| The remake/waste confirmation said "for a manager's review" from the staff member's own permission, while in observe mode the server decides by the register's connection account | **Fixed on the branch after the freeze** (`ea52d71`, wording only, English and Arabic, test `wasteWording.test.ts`). Not in `dev-176fc59`: the pilot records the old text and does not fail on it. Ships in 1.0.53. |
+| Observe mode authorizes by the connection account | By design until enforcement (STAFF-ENFORCEMENT.md). The real outcome always shows in Sync status (work kept by the server). |
+| Replay tool for a rollback after the point of no return (8.3) | Not written. Required before any production rollback; rehearse on a copy. |
