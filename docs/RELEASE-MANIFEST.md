@@ -1,7 +1,9 @@
 # Release manifest — from the deployed containment release (e2fd79a) to the proposed development release
 
-Status: **development candidate — not a release.** Nothing here is published or deployed. The version number below is a
-proposal; the candidate binaries still say 1.0.52 and must not be published as they are.
+Status: **release candidate 1.0.53 — awaiting the owner's deployment approval.** Nothing here is published or deployed.
+`apps/electron/package.json` says 1.0.53 from the release commit on; the exact source commit, files and hashes of the
+candidate are in `D:\TitanPOS-candidates\1.0.53-<commit>\RELEASE.txt` and in SPRINT-2-ACCEPTANCE.md (batch 80). The
+test builds `1.0.53-test.*` and every `dev-*` build are evidence only; never publish them.
 
 ## 1. Where production is, and the proposed number
 
@@ -10,12 +12,12 @@ proposal; the candidate binaries still say 1.0.52 and must not be published as t
 | Cloud (deployed) | containment release `e2fd79a` (branch `hotfix/containment-1.0.50`) |
 | Registers (published) | GitHub release **v1.0.51** (tag → `31e1ce6`, 2026-10-31, "Latest"); v1.0.50, v1.0.49 before it |
 | Published tags (checked 2026-11-02, `git ls-remote --tags origin`, `gh release list`) | v1.0.43 … v1.0.47, v1.0.49, v1.0.50, v1.0.51. **No 1.0.52 exists.** |
-| Proposed next version | **1.0.53** |
+| Proposed next version | **1.0.53** (published tags and releases re-checked 2026-11-02 before the version change: latest v1.0.51; 1.0.53 sorts above every published and every local test version, and `1.0.53-test.N` pre-releases sort below 1.0.53) |
 
 Why not 1.0.52: it was never published, but many local builds carry 1.0.52 (`1.0.52-*` candidates, the frozen `d678a84`,
 every `dev-*` build). The updater offers only a higher version, so a machine where any of them was installed for testing
-would never be offered a different 1.0.52. 1.0.53 is above all of them. Raise `apps/electron/package.json` to 1.0.53 only
-when acceptance (section 9) is complete; until then every build stays a `dev-*` candidate.
+would never be offered a different 1.0.52. 1.0.53 is above all of them. The version was raised to 1.0.53 in the release
+commit, after the on-PC acceptance of the test build (batch 79) and the two cashier fixes (`794a5cd`).
 
 ## 2. What changes (120 commits, `e2fd79a..` this branch)
 
@@ -34,9 +36,12 @@ The full list with dates: `D:\TitanPOS-it\batch75\commits-since-e2fd79a.txt`. By
   readiness checks); authoritative attribution on records; Store security screen.
 - **Café** — modifier groups, recipe revisions, ingredient units and purchase-unit receiving, consumption from lots at
   commit, remake/waste, café report, delivery refused in hub stores.
-- **This batch (stabilization)** — products cross servers by stable id only (`d79e4fe`); held work says what it waits
+- **Stabilization** — products cross servers by stable id only (`d79e4fe`); held work says what it waits
   for and is never silently exhausted (`d79e4fe`, `241f45c`); quantity precision and no float drift, café refunds and
-  cost fields (`f0657d3`); refund/void wording, Arabic punctuation and reasons (`241f45c`).
+  cost fields (`f0657d3`); refund/void wording, Arabic punctuation and reasons (`241f45c`). Frozen as `176fc59`.
+- **After the freeze (release 1.0.53)** — remake/waste wording (`ea52d71`); hubs 1.0.49–1.0.51 can pull from the
+  upgraded cloud (`1e4fb28`, §4); a drawer closes only on an entered count, and Void follows the refund rule on every
+  screen (`794a5cd`, §10); the version and these notes (release commit). No migration was added after the freeze.
 
 ## 3. Pending migrations, in order (all applied by `prisma migrate deploy`; hubs apply the same files at start)
 
@@ -108,6 +113,14 @@ Verified (evidence `D:\TitanPOS-it\batch75`):
   against the new cloud received no products or staff (found on a real 1.0.49 install, batch 79). Side effect until
   such a hub is upgraded: it no longer receives `StaffUser.roleVersion` (1.0.50/1.0.51 have the column), so a role
   edit made on that hub after a cloud-side role change of the same person is refused as a conflict (safe, visible).
+- **Drawer close on older registers** (1.0.49–1.0.51): their drawer still records the expected cash when the count is
+  left empty, and the server cannot tell that close from a real count (both arrive as a number). Update registers to
+  1.0.53 before relying on drawer counts; a 1.0.53 register shows a shift closed with no recorded count as "Not
+  counted". The server Z-report (cloud admin → Reports) now refuses a close without a counted amount (`COUNT_REQUIRED`);
+  the admin page already required one.
+- **Cloud bundles** served by the same deployment (one Docker image): the API, the register SPA (`/`), admin
+  (`/admin`: Store security, Refused work, reports), ordering (`/order`: shows "delivery unavailable" for a hub store)
+  and owner/driver (unchanged since `e2fd79a`). All are rebuilt by the deployment; no separate step.
 - Mixed-version payloads tested: `product-identity.test.ts` (1.0.51 adjustment/count/sale/refund payloads through a
   hub to the cloud with crossing product numbers), `installed-hub.test.ts` phases with the released 1.0.51 till on the
   final package (section 9).
@@ -123,7 +136,9 @@ updater; hub installation and data folder.
 - Staff identity: **observe** for every store (`staffSessionMode` default). Enforcement is changed only explicitly at
   the cloud by a person with Settings permission, after the activation gate passes.
 - Store topology: **`unset`** for every store. Nothing is enforced until the owner chooses direct-cloud or one hub.
-- Production enforcement stays off in this release.
+- Production enforcement stays off in this release. Checked in code: the only ways to change a store's staff mode or
+  topology are the owner's explicit, audited calls (`/api/sync/identity-mode`, `/api/sync/topology`, from the Store
+  security screen); no migration, environment variable or startup path sets them.
 
 ## 7. Topology transition requirements
 
@@ -219,4 +234,5 @@ See SPRINT-2-ACCEPTANCE.md ("Batch: café stabilization and release preparation"
 | The remake/waste confirmation said "for a manager's review" from the staff member's own permission, while in observe mode the server decides by the register's connection account | **Fixed on the branch after the freeze** (`ea52d71`, wording only, English and Arabic, test `wasteWording.test.ts`). Not in `dev-176fc59`: the pilot records the old text and does not fail on it. Ships in 1.0.53. |
 | Observe mode authorizes by the connection account | By design until enforcement (STAFF-ENFORCEMENT.md). The real outcome always shows in Sync status (work kept by the server). |
 | Replay tool for a rollback after the point of no return (8.3) | Not written. Required before any production rollback; rehearse on a copy. |
-| Closing a shift from the register's drawer with the counted-cash field left empty records the expected amount (zero difference) | Unchanged since 1.0.49 (`CashDrawerPanel.tsx`); not changed in this batch (no new behaviour). Train cashiers to type the count, or require it in a later batch. |
+| Closing a shift from the register's drawer with the counted-cash field left empty recorded the expected amount (zero difference) | **Fixed in 1.0.53** (`794a5cd`): the count is required (0 allowed, distinct from blank); shifts already closed without a count show "Not counted"; the Z-report refuses a missing count. Older registers keep the old behaviour (§4). Shifts closed blank before 1.0.53 by a register that filled in the expected amount cannot be told apart from real counts. |
+| Void offered on a sale that already has refunds | **Fixed in 1.0.53** (`794a5cd`): the screens use the service/server rule; Void shows disabled with the reason. The service and server already refused it; concurrent refund/void and repeated voids were already covered (`refund-integrity.test.ts`). |
