@@ -232,6 +232,46 @@ negative-stock policy, never lost); older registers' adjustments without a sync 
 sentences stay English in Arabic; option names are joined with a Latin comma in Arabic; held operations keep the existing retry
 cap of 5 before needing review; NSIS installation/upgrade and real LAN/hardware need a disposable Windows machine.
 
+## Batch: café stabilization and release preparation (2026-11-02; final dev candidate `dev-176fc59`, never published)
+
+Manifest, migrations, compatibility, defaults, backup and rollback: [RELEASE-MANIFEST.md](RELEASE-MANIFEST.md). External
+acceptance: [ISOLATED-MACHINE-CHECKLIST.md](ISOLATED-MACHINE-CHECKLIST.md). Tested commit
+`176fc5922508fa58a6316afe5dc17309ff884715` (fresh worktree `D:\tpdc20`, clean before and after, install and package exit
+0, unsigned). No new café features. Production untouched; every runtime test on disposable stores in scratch schemas.
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| 1. No product-id guessing across servers: first-server resolution recorded with the operation and forwarded beside the unchanged command; receiving server by stable id only; held when not establishable; pulled records translated by stable id | `product-identity.test.ts` (14, two databases with crossing numbers, 1.0.51 adjustment/count/sale/refund payloads, an older hub, a product not received yet, lost acknowledgements, work from before this version, collisions, another product's lot, pulls); packaged old-till store: hub = cloud for every product and lot (`batch77\compare-old.out`); café pilot: 0 wrong product ids (`batch77c\check-ids.out`) | pass |
+| 2. Held-work lifecycle: dependency vs review vs invalid vs network; never exhausted; outcome reaches the till; actor/approver/reviewer apart; staff switch and restart | `heldWorkLifecycle.test.ts` (7), `product-identity.test.ts`, `approval-till.test.ts`; rendered: a cashier's remake kept by the hub, applied by a manager on the review screen, the register learns it with "Check now" | pass |
+| 3. Recipe and unit edge cases with conservation (stock = lots = ledger; consumption = ledger sales) | `cafe-edges.test.ts` (14): shared and substituted ingredients, expired and used-up lots, 100 fractional sales (0.3 ml), yield 3, precision refusals, archived options and ingredients, an old revision offline, concurrent last-serving checkouts | pass |
+| 4. Return and cancellation meaning | `cafe-edges.test.ts` (drink refund money only, packaged return restores its lot); rendered refund confirmation: "Money only: prepared items (Cappuccino) are not returned to stock — the ingredients used stay used" | pass |
+| 5. Rendered acceptance on the final app (headless Chromium, real frames, no shim) | `batch77\ui-accept.log` (70 passing check lines, 0 failing), `batch77\shots\` (28): Full POS and Simple POS options/edit/repeat, required options and "only N can be made", manager-approved discount on a drink with options (approver recorded apart), receiving 1 kg = 1000 g, menu options with a long name, recipe editor, refund/waste/remake, held work, café report in the cloud admin; EN/AR, desktop/tablet/phone; focus trap and return, keyboard-only, touch targets, sticky Add, accessible names, offline (paused, nothing charged) | pass |
+| 6. Reporting and accounting reconciliation; cost-hidden staff | `cafe-edges.test.ts`: base + options = revenue (options once), refunds apart, lot cost, real zero vs unknown, the shift's sales/refunds/cost; cost-hidden staff refused reports and sales, and their x-report, products and register pull carry no cost; café report in the pilot: refunds 5, margin 9.19 | pass |
+| 7. Release consolidation: manifest, migrations from a fresh database and a copy of the deployed schema with pending work, published tags, proposed number | RELEASE-MANIFEST.md; `batch75\mig-*.out|json` (fresh: 54 applied, no drift; deployed copy: 19 applied, counts unchanged, defaults, waiting work revived); tags checked: latest published v1.0.51; proposed 1.0.53 | pass |
+| 8. Final validation | API 750 passed / 7 skipped (6 packaged-only + the café-day harness); desktop 511; typechecks api, desktop, admin, shared exit 0; negative controls 24, each failing on its business assertion (`batch75\negctl-75*.out`); one candidate from a clean checkout; clean café-day pilot (`batch77c\evidence.txt`: every phase, hub = cloud, 5 sales, 10 lines, lots identical, 9 waste both sides); released 1.0.51 till and this version's till against the final hub (`batch77\evidence-old.txt`: accept, outage, hub down, resume — every sale once) | pass |
+
+Defects found and fixed in this batch: an old register's adjustment or count line could change another product at the cloud
+(numeric id fallback) and a pull could copy the cloud's numbers onto the hub's lines (count lines verbatim); review-held and
+dependency-held work used up attempts and went "stuck" (and was marked rejected at the till although a manager could still
+apply it); a dropped connection used up attempts; a send requested during another returned with nothing sent (the
+approval-till flake); a drink quantity with more than 3 decimals consumed nothing, silently; float residue on stock and
+lots (100 × 0.3 ml ≠ 30); the café report ignored refunds; invoice prices, values and ingredient cost reached cost-hidden
+clients; refund/void confirmations said "stock restored" for prepared drinks; Arabic option lists used the Latin comma;
+server reason codes shown raw; the invoice price field announced as "Unit cost of …"; held remakes "Not summarised" and
+count effects "0 lines" on the review screen; six keys shown raw (two on the admin Reports tabs); an icon-only collapsed
+admin sidebar without accessible names; a register offline before its first sale could not sell café items. The full
+suite also caught two false holds in the first identity version (refund lines by sale line; a current register's old
+offline numbering), fixed before the candidate.
+
+Remaining (not fixed): in observe mode an operation is authorized by the register's connection account (a cashier on a
+manager-paired register can record a remake at once; the register's message then says "for a manager's review");
+a register connected to its hub pauses stock sales while the hub is unreachable (by design); hubs 1.0.50/1.0.51 forwarding
+to the new cloud have number-only adjustments held for review until upgraded; a legacy product without a stable id is held
+at the cloud until the hub adopts the cloud's id; the old-numbering collision rule depends on the device id an old register
+claims; server-composed details stay English (known codes are translated); back-office drawer buttons are 40 px (the
+register's are 44 px); held operations keep the retry cap for unknown errors; NSIS install/upgrade, LAN/Wi-Fi and
+printers/scanners need the isolated machine.
+
 ## Plan by phase (to be filled with evidence as implemented)
 - **B — observe mode:** token kinds (`typ/iss/aud`) on new tokens with old tokens still accepted; `requireCloudKeyOrJwt` refuses non-staff tokens; envelope parsing; derived `actorId`; claimed-vs-derived mismatch audited; evidence labels; no behaviour change for legacy clients (mixed-version tests).
 - **C — devices and sessions:** enrollment with single-use manager-created code; cross-tenant enrollment refused; device credential can't enroll/approve another device; staff session bound to device (use on another device refused); actor substitution refused; staff switch issues a new session and clears approvals; revocation of staff and device; storage deletion and credential recovery on the till.
