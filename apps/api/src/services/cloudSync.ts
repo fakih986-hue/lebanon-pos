@@ -32,6 +32,7 @@ import prisma from "../lib/prisma.js"
 import { recordStockMovementOnce } from "../lib/ledger.js"
 import { broadcastToTenant } from "../ws/index.js"
 import { pickRelayed } from "../lib/evidence.js"
+import { firstServerRefs, parseRefs, productRefSites, type ProductRef } from "../lib/productIdentity.js"
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -41,6 +42,12 @@ const CLOUD_API_URL = process.env.CLOUD_API_URL?.replace(/\/+$/, "")
 const PUSH_INTERVAL_MS  =  5_000   // 5s
 const BATCH_SIZE        = 100
 const MAX_ATTEMPTS      = 5
+/** Release batch: a forward the cloud keeps for a manager (Held) is asked about again this often for the outcome. */
+const REVIEW_RECHECK_MS = 10 * 60_000
+/** Waiting for something the cloud has not received yet: kept and retried without using up attempts. */
+const DEPENDENCY_CODES  = /^(STOCK_POLICY_HELD|RECIPE_HELD|PRODUCT_PENDING|TOPOLOGY_[A-Z_]+):/
+/** Kept by the cloud for a manager's decision (older hubs marked these Rejected or used up their attempts). */
+const REVIEW_CODES      = /^(PRICE_OVERRIDE|IDENTITY_REQUIRED|IDENTITY_HELD|OFFLINE_REVIEW|SESSION_REVIEW|HUB_UNSUPPORTED|APPROVAL_INVALID|INGREDIENT_SHORT):/
 const FETCH_TIMEOUT_MS  = 20_000
 
 /**
@@ -366,14 +373,27 @@ async function pushToCloud(): Promise<void> {
   // applied may change stock at the cloud. Its work stays here, listed for review, until the owner decides.
   if (!isStoresHub(await storeTopology(tenantId), hubIdentity().hubId)) return
 
-  // Cheap local check — skip network call when nothing is pending
-  const pendingCount = await prisma.syncOperation.count({
-    where: { tenantId, status: "Pending", attempts: { lt: MAX_ATTEMPTS } },
+  // Release batch: work an earlier version gave up on while it only waited (for something to reach the cloud, or for a
+  // manager there) is forwarded again: it was applied here, so it must reach the cloud or be declined there.
+  await prisma.syncOperation.updateMany({
+    where: { tenantId, appliedAt: { not: null }, status: "Failed", OR: ["STOCK_POLICY_HELD:", "RECIPE_HELD:", "PRODUCT_PENDING:", "IDENTITY_HELD:", "TOPOLOGY_"].map((p) => ({ error: { startsWith: p } })) },
+    data:  { status: "Pending", attempts: 0 },
   })
+  await prisma.syncOperation.updateMany({
+    where: { tenantId, appliedAt: { not: null }, status: { in: ["Failed", "Rejected"] }, OR: ["PRICE_OVERRIDE:", "IDENTITY_REQUIRED:", "IDENTITY_HELD:", "OFFLINE_REVIEW:", "SESSION_REVIEW:", "HUB_UNSUPPORTED:", "APPROVAL_INVALID:", "INGREDIENT_SHORT:"].map((p) => ({ error: { startsWith: p } })) },
+    data:  { status: "Held", attempts: 0, lastAttemptAt: new Date(0) },
+  })
+  const due = { OR: [
+    { status: "Pending", attempts: { lt: MAX_ATTEMPTS } },
+    { status: "Held", OR: [{ lastAttemptAt: null }, { lastAttemptAt: { lt: new Date(Date.now() - REVIEW_RECHECK_MS) } }] },
+  ] }
+
+  // Cheap local check — skip network call when nothing is pending
+  const pendingCount = await prisma.syncOperation.count({ where: { tenantId, ...due } })
   if (pendingCount === 0) return
 
   const pending = await prisma.syncOperation.findMany({
-    where:   { tenantId, status: "Pending", attempts: { lt: MAX_ATTEMPTS } },
+    where:   { tenantId, ...due },
     orderBy: { createdAt: "asc" },
     take:    BATCH_SIZE,
   })
@@ -389,6 +409,18 @@ async function pushToCloud(): Promise<void> {
   // SPRINT-2 D: with an enrolled key this hub signs each forwarded command and its own evidence.
   const { commandDigest } = await import("../routes/sync.js")
 
+  // Release batch: the stable ids of the products each command names (recorded when this hub applied it). Work applied
+  // by an earlier version, or naming a product that had no stable id then, is resolved now by this hub's own numbers
+  // (the register's) and recorded. The cloud never reads this hub's numbers: what is still missing is held there.
+  const refsOf = new Map<string, ProductRef[]>()
+  for (const op of pending) {
+    const stored = parseRefs((op as { productRefs?: unknown }).productRefs)
+    if (stored.length >= productRefSites(op.entity, op.action, op.payload).length) { refsOf.set(op.id, stored); continue }
+    const refs = await firstServerRefs(prisma, tenantId, op as any).catch(() => stored)
+    if (JSON.stringify(refs) !== JSON.stringify(stored)) await prisma.syncOperation.updateMany({ where: { id: op.id, tenantId }, data: { productRefs: refs as any } })
+    refsOf.set(op.id, refs)
+  }
+
   const res = await fetchCloud("/api/sync/push", {
     method: "POST",
     body:   JSON.stringify({
@@ -397,14 +429,17 @@ async function pushToCloud(): Promise<void> {
         // valued: this hub applied the operation under server valuation (an operation queued
         // before an upgrade did not: the cloud values it itself).
         const valued = (op as { serverValued?: boolean }).serverValued === true
-        const signed = relayed ? { ...relayed, ...(valued ? { valued: "server" } : {}) } : valued ? { valued: "server" } : null
+        const refs = refsOf.get(op.id) ?? []
+        const signedBase = relayed ? { ...relayed, ...(valued ? { valued: "server" } : {}) } : valued ? { valued: "server" } : null
+        // the stable ids are signed with the command (when this hub has a key)
+        const signed = refs.length ? { ...(signedBase ?? {}), refs } : signedBase
         const att = signAttestation(tenantId, { id: op.id, entity: op.entity, action: op.action, digest: commandDigest(op.entity, op.action, op.payload) }, signed)
         return {
           id:      op.id,
           entity:  op.entity,
           action:  op.action,
           payload: op.payload,
-          ...(relayed || valued || att ? { ev: { v: 1, ...(relayed ? { relayed } : {}), ...(valued ? { valued: "server" } : {}), ...(att ? { fwd: { att } } : {}) } } : {}),
+          ...(relayed || valued || att || refs.length ? { ev: { v: 1, ...(relayed ? { relayed } : {}), ...(valued ? { valued: "server" } : {}), ...(refs.length ? { refs } : {}), ...(att ? { fwd: { att } } : {}) } } : {}),
         }
       }),
     }),
@@ -419,7 +454,7 @@ async function pushToCloud(): Promise<void> {
   }
 
   const { results } = (await res.json()) as {
-    results: Array<{ id: string; status: "ok" | "error" | "rejected"; error?: string }>
+    results: Array<{ id: string; status: "ok" | "error" | "rejected"; error?: string; kind?: "dependency" | "review" | "invalid" | "retry" }>
   }
 
   let okCount  = 0
@@ -432,6 +467,16 @@ async function pushToCloud(): Promise<void> {
         await prisma.syncOperation.updateMany({
           where: { id: r.id, tenantId },
           data:  { status: "Synced", syncedAt: new Date(), lastAttemptAt: new Date() },
+        })
+      } else if (r.kind === "review" || (!r.kind && r.status === "rejected" && REVIEW_CODES.test(r.error ?? ""))) {
+        // Release batch: kept at the cloud for a manager's decision. Not dropped and not counted against its attempts:
+        // asked about again now and then, so the outcome (applied there, or declined) reaches this hub.
+        errCount++
+        _lastPushError = r.error ?? "Kept for a manager's review at the cloud"
+        _lastPushErrorAt = new Date().toISOString()
+        await prisma.syncOperation.updateMany({
+          where: { id: r.id, tenantId },
+          data:  { status: "Held", lastAttemptAt: new Date(), error: _lastPushError },
         })
       } else if (r.status === "rejected") {
         errCount++
@@ -447,7 +492,7 @@ async function pushToCloud(): Promise<void> {
             error:         _lastPushError,
           },
         })
-      } else if ((r.error ?? "").startsWith("STOCK_POLICY_HELD:") || /^TOPOLOGY_[A-Z_]+:/.test(r.error ?? "")) {
+      } else if (r.kind === "dependency" || DEPENDENCY_CODES.test(r.error ?? "")) {
         // SPRINT-1: held by the cloud (it has not received the policy revision the sale was sold
         // under yet). Kept pending — not dropped, not counted against its attempts — and retried;
         // the reason stays visible in this hub's sync status.
@@ -529,7 +574,7 @@ export async function pullFromCloud(opts: { isRestore?: boolean } = {}): Promise
     const pendingStockOps = await prisma.syncOperation.count({
       where: {
         tenantId,
-        status:  { in: ["Pending", "Failed"] },
+        status:  { in: ["Pending", "Failed", "Held"] },
         entity:  { in: [...STOCK_RELATED_ENTITIES] },
       },
     })
@@ -960,16 +1005,19 @@ async function upsertPulledData(
   }
 
   // SPRINT-1: this hub keeps its own product ids; pulled records name the product by syncId too
-  // (schema 3). Translate to the local id; without a syncId (older cloud) keep the id as before.
+  // (schema 3). Translate to the local id. Release batch: the cloud's own number never stands for a product here
+  // (independent sequences collide): a record naming a product this hub cannot translate is not copied (0), and is
+  // counted (it stays at the cloud; the next pull brings it once the product is known here).
   const localIdBySync = new Map<string, number | null>()
+  let skippedForIdentity = 0
   const localProductId = async (row: any): Promise<number> => {
     const sid = typeof row?.productSyncId === "string" ? row.productSyncId : null
-    if (!sid) return Number(row?.productId)
+    if (!sid) return 0
     if (!localIdBySync.has(sid)) {
       const p = await prisma.product.findFirst({ where: { tenantId, syncId: sid }, select: { id: true } })
       localIdBySync.set(sid, p?.id ?? null)
     }
-    return localIdBySync.get(sid) ?? Number(row?.productId)
+    return localIdBySync.get(sid) ?? 0
   }
   // a recipe line's consumption names its ingredients by sync id; the ids beside them become this server's own
   const localizeConsumption = async (c: unknown) => Array.isArray(c)
@@ -985,6 +1033,8 @@ async function upsertPulledData(
   for (const sale of data.sales ?? []) {
     const { items, tender, ...saleData } = sale as any
     await run("sale", async () => {
+      const translated = Array.isArray(items) ? await Promise.all(items.map(localizeLine)) : []
+      if (translated.some((it: any) => !(Number(it.productId) > 0))) { skippedForIdentity++; return }
       await prisma.sale.upsert({
         where:  { id: saleData.id },
         create: { ...saleData, tenantId } as any,
@@ -1005,7 +1055,7 @@ async function upsertPulledData(
           if (local.lineId && Array.isArray(local.consumption)) localConsumption.set(local.lineId, local.consumption)
         }
         await prisma.saleItem.deleteMany({ where: { saleId: saleData.id } })
-        const localItems = await Promise.all(items.map(localizeLine))
+        const localItems = translated
         await prisma.saleItem.createMany({
           data: localItems.map((it: any) => ({
             ...it,
@@ -1028,6 +1078,8 @@ async function upsertPulledData(
   for (const r of data.refunds ?? []) {
     const { items, ...refundData } = r as any
     await run("refund", async () => {
+      const translated = Array.isArray(items) ? await Promise.all(items.map(localizeLine)) : []
+      if (translated.some((it: any) => !(Number(it.productId) > 0))) { skippedForIdentity++; return }
       await prisma.saleRefund.upsert({
         where:  { id: refundData.id },
         create: { ...refundData, tenantId } as any,
@@ -1035,7 +1087,7 @@ async function upsertPulledData(
       })
       if (Array.isArray(items) && items.length > 0) {
         await prisma.refundItem.deleteMany({ where: { refundId: refundData.id } })
-        const localItems = await Promise.all(items.map(localizeLine))
+        const localItems = translated
         await prisma.refundItem.createMany({
           data: localItems.map((it: any) => ({ ...it, refundId: refundData.id })),
         })
@@ -1186,6 +1238,7 @@ async function upsertPulledData(
   for (const a0 of data.adjustments ?? []) {
     await run("stockAdjustment", async () => {
       const a = await localizeLine(a0)
+      if (!(Number((a as any).productId) > 0)) { skippedForIdentity++; return }
       await prisma.stockAdjustment.upsert({
         where:  { id: (a as any).id },
         create: { ...a, tenantId } as any,
@@ -1204,9 +1257,11 @@ async function upsertPulledData(
         update: { ...sessionData }           as any,
       })
       if (Array.isArray(lines) && lines.length > 0) {
+        const translated = await Promise.all(lines.map(localizeLine))
+        if (translated.some((l: any) => !(Number(l.productId) > 0))) { skippedForIdentity++; return }
         await prisma.stockCountLine.deleteMany({ where: { sessionId: sessionData.id } })
         await prisma.stockCountLine.createMany({
-          data: lines.map((l: any) => ({ ...l, sessionId: sessionData.id })),
+          data: translated.map((l: any) => ({ ...l, sessionId: sessionData.id })),
         })
       }
     })
@@ -1252,6 +1307,7 @@ async function upsertPulledData(
 
   // auditEvents — intentionally skipped: generated server-side, read-only
 
+  if (skippedForIdentity > 0) console.warn(`[cloud-sync] ${skippedForIdentity} pulled record(s) name a product this hub cannot identify (no stable id it knows); not copied, kept at the cloud.`)
   if (skippedProductStockCount > 0 || skippedBatchCount > 0) {
     console.log(`[cloud-sync] Hub-authoritative inventory: ignored cloud stock on ${skippedProductStockCount} existing product(s) and skipped ${skippedBatchCount} existing batch update(s) (POS-SYNC-AUTHORITY-1).`)
   }

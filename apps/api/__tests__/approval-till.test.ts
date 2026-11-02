@@ -190,7 +190,8 @@ describe("manager approval on the register (its own services, real API)", () => 
     d.sales.processRefund({ saleId: sale.id, quantities: { [lineKey(sale)]: 2 }, reason: "IT", id })
     await flush()
     const op = queue().find((o) => o.entity === "refund" && o.payload?.id === id)!
-    expect(op.status).toBe("Rejected")
+    // kept by the server for a manager (release batch): never final here, attempts not used up; the outcome arrives later
+    expect([op.status, op.held, op.attempts]).toEqual(["Failed", "review", 0])
     expect(String(op.error)).toMatch(/APPROVAL_INVALID: .*changed/)
     expect(await prisma.saleRefund.count({ where: { tenantId: T, id } })).toBe(0)
     expect((await prisma.syncOperation.findUnique({ where: { id: op.id } }))?.status).toBe("Refused")
@@ -307,10 +308,11 @@ describe("checkout approval: a discount or a price below list by a cashier witho
     expect(checkout(switched).status).toBe("completed")
     expect(opOf(switched).ev?.approval).toBeUndefined()
     await flush()
-    // an approval that does not hold is final for the register; a missing permission stays retryable
-    for (const [x, status, why] of [[changed, "Rejected", /APPROVAL_INVALID: the manager approval presented is changed/], [late, "Rejected", /APPROVAL_INVALID: the manager approval presented is expired/], [switched, "Failed", /permission/i]] as const) {
+    // release batch: each is kept by the server for a manager's decision; the register keeps it (attempts not used up)
+    // and learns the outcome when it asks again (applied once, or declined)
+    for (const [x, why] of [[changed, /APPROVAL_INVALID: the manager approval presented is changed/], [late, /APPROVAL_INVALID: the manager approval presented is expired/], [switched, /permission/i]] as const) {
       const op = opOf(x)
-      expect([op.status, String(op.lastError ?? op.error)]).toEqual([status, expect.stringMatching(why)])
+      expect([op.status, op.held, String(op.lastError ?? op.error)]).toEqual(["Failed", "review", expect.stringMatching(why)])
       expect(await serverSale(x)).toBeNull()
       expect((await prisma.syncOperation.findUnique({ where: { id: op.id } }))?.status).toBe("Refused")
     }

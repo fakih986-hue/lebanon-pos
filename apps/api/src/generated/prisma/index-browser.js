@@ -684,6 +684,7 @@ exports.Prisma.SyncOperationScalarFieldEnum = {
   error: 'error',
   appliedAt: 'appliedAt',
   serverValued: 'serverValued',
+  productRefs: 'productRefs',
   heldEvidence: 'heldEvidence'
 };
 

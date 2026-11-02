@@ -41000,6 +41000,7 @@ export namespace Prisma {
     error: number
     appliedAt: number
     serverValued: number
+    productRefs: number
     heldEvidence: number
     _all: number
   }
@@ -41060,6 +41061,7 @@ export namespace Prisma {
     error?: true
     appliedAt?: true
     serverValued?: true
+    productRefs?: true
     heldEvidence?: true
     _all?: true
   }
@@ -41165,6 +41167,7 @@ export namespace Prisma {
     error: string | null
     appliedAt: Date | null
     serverValued: boolean
+    productRefs: JsonValue | null
     heldEvidence: JsonValue | null
     _count: SyncOperationCountAggregateOutputType | null
     _avg: SyncOperationAvgAggregateOutputType | null
@@ -41202,6 +41205,7 @@ export namespace Prisma {
     error?: boolean
     appliedAt?: boolean
     serverValued?: boolean
+    productRefs?: boolean
     heldEvidence?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["syncOperation"]>
@@ -41221,6 +41225,7 @@ export namespace Prisma {
     error?: boolean
     appliedAt?: boolean
     serverValued?: boolean
+    productRefs?: boolean
     heldEvidence?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["syncOperation"]>
@@ -41240,6 +41245,7 @@ export namespace Prisma {
     error?: boolean
     appliedAt?: boolean
     serverValued?: boolean
+    productRefs?: boolean
     heldEvidence?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["syncOperation"]>
@@ -41259,10 +41265,11 @@ export namespace Prisma {
     error?: boolean
     appliedAt?: boolean
     serverValued?: boolean
+    productRefs?: boolean
     heldEvidence?: boolean
   }
 
-  export type SyncOperationOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "entity" | "action" | "summary" | "payload" | "status" | "attempts" | "createdAt" | "lastAttemptAt" | "syncedAt" | "error" | "appliedAt" | "serverValued" | "heldEvidence", ExtArgs["result"]["syncOperation"]>
+  export type SyncOperationOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "entity" | "action" | "summary" | "payload" | "status" | "attempts" | "createdAt" | "lastAttemptAt" | "syncedAt" | "error" | "appliedAt" | "serverValued" | "productRefs" | "heldEvidence", ExtArgs["result"]["syncOperation"]>
   export type SyncOperationInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }
@@ -41301,6 +41308,12 @@ export namespace Prisma {
        * forwards it with ev.valued = "server"; the cloud values any operation without it itself.
        */
       serverValued: boolean
+      /**
+       * Release batch: the stable ids (syncId) of the products the command names, resolved by the first server that
+       * knew them ([{ path, key, syncId }]). Forwarded beside the command; the receiving server never reads another
+       * server's numeric product ids (lib/productIdentity.ts).
+       */
+      productRefs: Prisma.JsonValue | null
       /**
        * SPRINT-2 F: what this server knew when it held the operation for review (actor, device, session,
        * approval and attestation checks, evidence label). Never a token or a PIN. Kept with the command.
@@ -41744,6 +41757,7 @@ export namespace Prisma {
     readonly error: FieldRef<"SyncOperation", 'String'>
     readonly appliedAt: FieldRef<"SyncOperation", 'DateTime'>
     readonly serverValued: FieldRef<"SyncOperation", 'Boolean'>
+    readonly productRefs: FieldRef<"SyncOperation", 'Json'>
     readonly heldEvidence: FieldRef<"SyncOperation", 'Json'>
   }
     
@@ -56495,6 +56509,7 @@ export namespace Prisma {
     error: 'error',
     appliedAt: 'appliedAt',
     serverValued: 'serverValued',
+    productRefs: 'productRefs',
     heldEvidence: 'heldEvidence'
   };
 
@@ -60427,6 +60442,7 @@ export namespace Prisma {
     error?: StringNullableFilter<"SyncOperation"> | string | null
     appliedAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
     serverValued?: BoolFilter<"SyncOperation"> | boolean
+    productRefs?: JsonNullableFilter<"SyncOperation">
     heldEvidence?: JsonNullableFilter<"SyncOperation">
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }
@@ -60446,6 +60462,7 @@ export namespace Prisma {
     error?: SortOrderInput | SortOrder
     appliedAt?: SortOrderInput | SortOrder
     serverValued?: SortOrder
+    productRefs?: SortOrderInput | SortOrder
     heldEvidence?: SortOrderInput | SortOrder
     tenant?: TenantOrderByWithRelationInput
   }
@@ -60468,6 +60485,7 @@ export namespace Prisma {
     error?: StringNullableFilter<"SyncOperation"> | string | null
     appliedAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
     serverValued?: BoolFilter<"SyncOperation"> | boolean
+    productRefs?: JsonNullableFilter<"SyncOperation">
     heldEvidence?: JsonNullableFilter<"SyncOperation">
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }, "id">
@@ -60487,6 +60505,7 @@ export namespace Prisma {
     error?: SortOrderInput | SortOrder
     appliedAt?: SortOrderInput | SortOrder
     serverValued?: SortOrder
+    productRefs?: SortOrderInput | SortOrder
     heldEvidence?: SortOrderInput | SortOrder
     _count?: SyncOperationCountOrderByAggregateInput
     _avg?: SyncOperationAvgOrderByAggregateInput
@@ -60513,6 +60532,7 @@ export namespace Prisma {
     error?: StringNullableWithAggregatesFilter<"SyncOperation"> | string | null
     appliedAt?: DateTimeNullableWithAggregatesFilter<"SyncOperation"> | Date | string | null
     serverValued?: BoolWithAggregatesFilter<"SyncOperation"> | boolean
+    productRefs?: JsonNullableWithAggregatesFilter<"SyncOperation">
     heldEvidence?: JsonNullableWithAggregatesFilter<"SyncOperation">
   }
 
@@ -65662,6 +65682,7 @@ export namespace Prisma {
     error?: string | null
     appliedAt?: Date | string | null
     serverValued?: boolean
+    productRefs?: NullableJsonNullValueInput | InputJsonValue
     heldEvidence?: NullableJsonNullValueInput | InputJsonValue
     tenant: TenantCreateNestedOneWithoutSyncOperationsInput
   }
@@ -65681,6 +65702,7 @@ export namespace Prisma {
     error?: string | null
     appliedAt?: Date | string | null
     serverValued?: boolean
+    productRefs?: NullableJsonNullValueInput | InputJsonValue
     heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -65698,6 +65720,7 @@ export namespace Prisma {
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     serverValued?: BoolFieldUpdateOperationsInput | boolean
+    productRefs?: NullableJsonNullValueInput | InputJsonValue
     heldEvidence?: NullableJsonNullValueInput | InputJsonValue
     tenant?: TenantUpdateOneRequiredWithoutSyncOperationsNestedInput
   }
@@ -65717,6 +65740,7 @@ export namespace Prisma {
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     serverValued?: BoolFieldUpdateOperationsInput | boolean
+    productRefs?: NullableJsonNullValueInput | InputJsonValue
     heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -65735,6 +65759,7 @@ export namespace Prisma {
     error?: string | null
     appliedAt?: Date | string | null
     serverValued?: boolean
+    productRefs?: NullableJsonNullValueInput | InputJsonValue
     heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -65752,6 +65777,7 @@ export namespace Prisma {
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     serverValued?: BoolFieldUpdateOperationsInput | boolean
+    productRefs?: NullableJsonNullValueInput | InputJsonValue
     heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -65770,6 +65796,7 @@ export namespace Prisma {
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     serverValued?: BoolFieldUpdateOperationsInput | boolean
+    productRefs?: NullableJsonNullValueInput | InputJsonValue
     heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -70114,6 +70141,7 @@ export namespace Prisma {
     error?: SortOrder
     appliedAt?: SortOrder
     serverValued?: SortOrder
+    productRefs?: SortOrder
     heldEvidence?: SortOrder
   }
 
@@ -75088,6 +75116,7 @@ export namespace Prisma {
     error?: string | null
     appliedAt?: Date | string | null
     serverValued?: boolean
+    productRefs?: NullableJsonNullValueInput | InputJsonValue
     heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -75105,6 +75134,7 @@ export namespace Prisma {
     error?: string | null
     appliedAt?: Date | string | null
     serverValued?: boolean
+    productRefs?: NullableJsonNullValueInput | InputJsonValue
     heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -76136,6 +76166,7 @@ export namespace Prisma {
     error?: StringNullableFilter<"SyncOperation"> | string | null
     appliedAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
     serverValued?: BoolFilter<"SyncOperation"> | boolean
+    productRefs?: JsonNullableFilter<"SyncOperation">
     heldEvidence?: JsonNullableFilter<"SyncOperation">
   }
 
@@ -87067,6 +87098,7 @@ export namespace Prisma {
     error?: string | null
     appliedAt?: Date | string | null
     serverValued?: boolean
+    productRefs?: NullableJsonNullValueInput | InputJsonValue
     heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -88258,6 +88290,7 @@ export namespace Prisma {
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     serverValued?: BoolFieldUpdateOperationsInput | boolean
+    productRefs?: NullableJsonNullValueInput | InputJsonValue
     heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -88275,6 +88308,7 @@ export namespace Prisma {
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     serverValued?: BoolFieldUpdateOperationsInput | boolean
+    productRefs?: NullableJsonNullValueInput | InputJsonValue
     heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -88292,6 +88326,7 @@ export namespace Prisma {
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     serverValued?: BoolFieldUpdateOperationsInput | boolean
+    productRefs?: NullableJsonNullValueInput | InputJsonValue
     heldEvidence?: NullableJsonNullValueInput | InputJsonValue
   }
 

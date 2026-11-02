@@ -9,7 +9,7 @@ import prisma from "../lib/prisma.js"
 const IS_CLOUD = !["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")
 
 import { decrementProductStock } from "../lib/inventory.js"
-import { applyPolicyChange, resolveLinePolicy, StockPolicyMismatchError } from "../lib/stockPolicy.js"
+import { applyPolicyChange, resolveLinePolicy, StockPolicyHeldError, StockPolicyMismatchError } from "../lib/stockPolicy.js"
 import { CloseConflictError, closeScope, legacyClosesFor, recordClose } from "../lib/dailyClose.js"
 import { isTechnicalError, publicError } from "../lib/publicError.js"
 import { enforcesAll, enforcesCheckout, issuePolicy, storePolicy } from "../lib/staffPolicy.js"
@@ -20,6 +20,7 @@ import { DISMISS_OUTCOMES, moneyEffect, previewTokenOf, reviewCategory } from ".
 import { createHash } from "node:crypto"
 import { localGateBlockers, recordSyncClient, RETIRED_CLIENT_MESSAGE, StockPolicyGateError, POLICY_GATE_WINDOW_DAYS, type GateBlocker } from "../lib/policyGate.js"
 import { LEGACY_REV } from "../lib/stockPolicy.js"
+import { firstServerRefs, IdentityHeldError, parseRefs, ProductPendingError, withoutRefs, withRefs, type ProductRef } from "../lib/productIdentity.js"
 import { consumeIngredient, consumeRecipeLine, IngredientShortError, knownDeltas, MenuRuleError, modifierProblems, ProductSetupError, RecipeHeldError, RESTORES_STOCK, type ConsumedIngredient } from "../lib/cafeStock.js"
 import { asStockUnit, checkGroup, checkRecipe, planReceive, purchaseConversion, toMilli, type ModifierGroup } from "../lib/cafeMenu.js"
 import { CAFE_SCHEMA } from "../lib/policyGate.js"
@@ -100,13 +101,15 @@ export async function shapeDailyClosesForClient(rows: any[], req: { headers?: Re
  * it to its own id. (Hubs used to store this server's numeric productId verbatim, so a refund on the
  * hub restocked a product id that does not exist there.)
  */
-export async function attachProductSyncIds(tenantId: string, data: { sales?: any[]; refunds?: any[]; batches?: any[]; adjustments?: any[] }) {
+export async function attachProductSyncIds(tenantId: string, data: { sales?: any[]; refunds?: any[]; batches?: any[]; adjustments?: any[]; stockCounts?: any[] }) {
   const ids = new Set<number>()
   const note = (v: unknown) => { const n = Number(v); if (Number.isInteger(n) && n > 0) ids.add(n) }
   for (const s of data.sales ?? []) for (const i of s.items ?? []) note(i.productId)
   for (const r of data.refunds ?? []) for (const i of r.items ?? []) note(i.productId)
   for (const b of data.batches ?? []) note(b.productId)
   for (const a of data.adjustments ?? []) note(a.productId)
+  // release batch: count lines too (a hub stored this server's numbers on its count lines)
+  for (const c of data.stockCounts ?? []) for (const l of c.lines ?? []) note(l.productId)
   if (ids.size === 0) return
   const rows = await prisma.product.findMany({ where: { tenantId, id: { in: [...ids] } }, select: { id: true, syncId: true } })
   const sync = new Map(rows.map((p) => [p.id, p.syncId]))
@@ -115,6 +118,7 @@ export async function attachProductSyncIds(tenantId: string, data: { sales?: any
   for (const r of data.refunds ?? []) for (const i of r.items ?? []) tag(i)
   for (const b of data.batches ?? []) tag(b)
   for (const a of data.adjustments ?? []) tag(a)
+  for (const c of data.stockCounts ?? []) for (const l of c.lines ?? []) tag(l)
 }
 
 export function shapeProductsForSchema(rows: any[], schema: number): any[] {
@@ -349,6 +353,14 @@ async function auditObservedSession(tenantId: string, op: { id: string; entity: 
   } catch { /* best-effort audit */ }
 }
 
+/** release batch: lookup copies of a forwarded command (stable ids filled in): products by stable id only. */
+const FORWARDED_VIEWS = new WeakSet<object>()
+function forwardedView<T>(payload: T, refs: ProductRef[]): T {
+  const view = withRefs(payload, refs)
+  if (view && typeof view === "object") FORWARDED_VIEWS.add(view as unknown as object)
+  return view
+}
+
 // SPRINT-0 price policy: a sale line below the product's current catalogue price (or a
 // sell-at-cost sale) needs sales.price_override on the pushing account. A wholesale price is
 // honoured for a sale to a named customer. Unknown products are left to the sale handler.
@@ -356,12 +368,13 @@ async function priceOverrideViolationFor(tenantId: string, payload: unknown): Pr
   const p = (payload ?? {}) as Record<string, unknown>
   if (p.soldAtCost === true) return "PRICE_OVERRIDE: a sale at cost needs a manager's price-override permission."
   const items = Array.isArray(p.items) ? (p.items as Array<Record<string, unknown>>) : []
+  const strict = FORWARDED_VIEWS.has(p)
   for (const item of items) {
     const syncId = typeof item.productSyncId === "string" && item.productSyncId ? item.productSyncId : null
     const id = Number(item.id)
     const product = syncId
       ? await prisma.product.findFirst({ where: { tenantId, syncId }, select: { name: true, price: true, wholesalePrice: true } })
-      : Number.isInteger(id) && id > 0 ? await prisma.product.findFirst({ where: { tenantId, id }, select: { name: true, price: true, wholesalePrice: true } }) : null
+      : !strict && Number.isInteger(id) && id > 0 ? await prisma.product.findFirst({ where: { tenantId, id }, select: { name: true, price: true, wholesalePrice: true } }) : null
     if (!product) continue
     // café batch: plus the server's current delta of each option chosen (an option it does not know adds nothing)
     const deltas = Number(await knownDeltas(prisma, tenantId, item))
@@ -536,7 +549,19 @@ async function applyOnce(tenantId: string, op: { id: string; entity: string; act
       await syncTestHooks.afterClaim?.(op.id)
       if (claim.appliedAt) return "duplicate" as const
 
-      await processOperation(tenantId, op.entity, op.action, op.payload as any, tx as typeof prisma, { ...ctx, live: op.id.startsWith("wt-") })
+      // release batch: the stable ids of the products the command names: as the forwarding server recorded them, or
+      // resolved here, where the register's numbers are this server's own (held when they cannot be trusted)
+      const refs: ProductRef[] = ctx?.forwarded ? (ctx.refs ?? []) : await firstServerRefs(tx as typeof prisma, tenantId, op, { deviceId: ctx?.deviceId, accountId: ctx?.userId }, { reviewed: ctx?.reviewed })
+      if (ctx?.forwarded) {
+        // a forward is applied on a copy with the stable ids filled in; the command kept is the register's (its
+        // valuation written back, the filled-in ids removed)
+        const original = op.payload
+        const view = withRefs(op.payload, refs)
+        await processOperation(tenantId, op.entity, op.action, view as any, tx as typeof prisma, { ...ctx, live: op.id.startsWith("wt-") })
+        op.payload = withoutRefs(view, refs, original)
+      } else {
+        await processOperation(tenantId, op.entity, op.action, op.payload as any, tx as typeof prisma, { ...ctx, live: op.id.startsWith("wt-") })
+      }
 
       // Applied (same transaction) and queued for onward delivery: the cloud sync bridge
       // forwards status Pending and marks it Synced once the cloud acknowledges it.
@@ -550,6 +575,8 @@ async function applyOnce(tenantId: string, op: { id: string; entity: string; act
           appliedAt: new Date(),
           // applied under this server's valuation: its forwarded figures are this server's
           serverValued: true,
+          // forwarded with the command (a hub) or kept to apply it again on review (the cloud)
+          productRefs: refs as any,
           status: "Pending",
           // from here on attempts count forwarding to the cloud (refused deliveries before a review must
           // not use them up: the hub's bridge forwards only operations under its attempt limit)
@@ -685,7 +712,11 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
   //     has synced).
   const authorizeOp = makeOpAuthorizer(tenantId, actorPermissions, req.auth!.userId)
 
-  const results: Array<{ id: string; status: "ok" | "error" | "rejected"; error?: string }> = []
+  // release batch: `kind` says what a held or failed operation waits for (older senders ignore it):
+  //  dependency — something it needs has not reached this server yet (retried, attempts not used up);
+  //  review — kept here for a manager's decision (retried for the outcome, attempts not used up);
+  //  invalid — refused for good; retry — anything else (attempts count)
+  const results: Array<{ id: string; status: "ok" | "error" | "rejected"; error?: string; kind?: "dependency" | "review" | "invalid" | "retry" }> = []
   const activities: Array<{ entity: string; action: string; summary: string }> = []
 
   // SYNC-DEDUPE-2: "applied on this server" (appliedAt) is separate from onward delivery to the
@@ -725,7 +756,15 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
       // hub's figures. An older hub (1.0.51 and before) and work it queued before an upgrade carry no
       // mark: those figures may be a till's own, so this server values the operation instead.
       const opCostTrusted = pushIsBridge ? (op as any).ev?.valued === "server" : pushCostTrusted
-      if (!opCostTrusted) op.payload = await withServerCost(tenantId, op.entity, op.action, op.payload)
+      // release batch: a hub's forward names products by the stable ids the hub recorded (beside the command, which
+      // stays the register's); this server never reads the hub's numbers (lib/productIdentity.ts)
+      const forwarded = pushKind === "bridge"
+      let refs: ProductRef[] = forwarded ? parseRefs((op as any).ev?.refs) : []
+      const valued = async () => {
+        if (opCostTrusted) return
+        op.payload = forwarded ? withoutRefs(await withServerCost(tenantId, op.entity, op.action, forwardedView(op.payload, refs)), refs, op.payload) : await withServerCost(tenantId, op.entity, op.action, op.payload)
+      }
+      await valued()
 
       // Already applied here (a lost response, a client retry, a hub re-forward): acknowledge.
       const applied = await prisma.syncOperation.findFirst({ where: { id: op.id, tenantId, appliedAt: { not: null } }, select: { entity: true, action: true, payload: true } })
@@ -759,6 +798,12 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
       const attested: AttestationResult | null = pushKind === "bridge"
         ? await verifyAttestation(tenantId, (op as any).ev?.fwd?.att, { id: op.id, entity: op.entity, action: op.action, digest: commandDigest(op.entity, op.action, op.payload) })
         : null
+      // what the hub signed wins over the envelope's copy
+      if (attested?.check === "valid" && Array.isArray(attested.srv?.refs)) {
+        const signedRefs = parseRefs(attested.srv!.refs)
+        if (JSON.stringify(signedRefs) !== JSON.stringify(refs)) { refs = signedRefs; await valued() }
+      }
+      const opView = forwarded ? { ...op, payload: forwardedView(op.payload, refs) } : op
       // the store's topology: a register or hub outside it is held (a checkout not yet paid is refused outright)
       const topoHold = topologyDenial(topo, { hub: isHubServer(), ownHubId, bridge: pushKind === "bridge", forwardingHubId: attested?.check === "valid" ? await forwardingHub(attested.kid) : null })
       if (topoHold && op.entity === "sale" && op.action === "create" && String(op.id).startsWith("wt-")) {
@@ -813,9 +858,9 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         : topoHold ? topoHold
         : gate && "refuse" in gate ? gate.refuse
         // a reviewer's decision at the hub stands as a manager's approval would (see the resolve route)
-        : enforcedActor ? await makeOpAuthorizer(tenantId, enforcedActor.permissions, enforcedActor.id, gate && "basis" in gate && gate.basis === "review" ? [...approved, ...enforcedActor.permissions] : approved)(op)
-        : approved.length ? await makeOpAuthorizer(tenantId, actorPermissions, req.auth!.userId, approved)(op)
-        : await authorizeOp(op)
+        : enforcedActor ? await makeOpAuthorizer(tenantId, enforcedActor.permissions, enforcedActor.id, gate && "basis" in gate && gate.basis === "review" ? [...approved, ...enforcedActor.permissions] : approved)(opView)
+        : approved.length ? await makeOpAuthorizer(tenantId, actorPermissions, req.auth!.userId, approved)(opView)
+        : await authorizeOp(opView)
       // an approval that does not hold is said so; the operation is kept for a manager's review
       const denial = ruled && approvalSeen && approvalSeen.check !== "valid" ? `APPROVAL_INVALID: the manager approval presented is ${approvalSeen.check}; ${ruled}` : ruled
       if (denial) {
@@ -846,7 +891,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
           const heldEvidence = JSON.parse(JSON.stringify({ ...held, heldAt: new Date().toISOString() }))
           if (!row) {
             await prisma.syncOperation.create({
-              data: { id: op.id, tenantId, entity: op.entity, action: op.action, summary: `${op.action} ${op.entity}`, payload: (op.payload ?? {}) as any, status: "Refused", attempts: 1, lastAttemptAt: new Date(), error, heldEvidence },
+              data: { id: op.id, tenantId, entity: op.entity, action: op.action, summary: `${op.action} ${op.entity}`, payload: (op.payload ?? {}) as any, status: "Refused", attempts: 1, lastAttemptAt: new Date(), error, heldEvidence, ...(forwarded ? { productRefs: refs as any } : {}) },
             })
           } else if (row.tenantId === tenantId && !row.appliedAt) {
             // never reopens work a manager is resolving or has declined; the first held evidence and the reason
@@ -856,7 +901,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         } catch (keepErr) { console.error("Failed to keep refused operation:", keepErr) }
         // A refused price is a money decision a manager settles (never retried); other refusals
         // stay retryable (the permission may be granted later).
-        results.push({ id: op.id, status: /^(PRICE_OVERRIDE|IDENTITY_REQUIRED|OFFLINE_REVIEW|SESSION_REVIEW|HUB_UNSUPPORTED|APPROVAL_INVALID):/.test(denial) ? "rejected" : "error", error: denial })
+        results.push({ id: op.id, status: /^(PRICE_OVERRIDE|IDENTITY_REQUIRED|OFFLINE_REVIEW|SESSION_REVIEW|HUB_UNSUPPORTED|APPROVAL_INVALID):/.test(denial) ? "rejected" : "error", error: denial, kind: "review" })
         continue
       }
 
@@ -872,7 +917,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         // a hub's signed record of who did it (observe): as it vouched, a claim stays a claim
         : signedAttribution ?? await attributionFor(tenantId, op, { session: sessionSeen, approver: approverSeen })
 
-      const outcome = await applyOnce(tenantId, op, { deviceId: deviceId ?? null, userId: req.auth!.userId, syncSchema: pushSchema, costTrusted: opCostTrusted, resolutionAuthority: enforcesCheckout(storeMode) ? { staffId: enforcedActor?.id ?? null, approved } : undefined }, async (tx) => {
+      const outcome = await applyOnce(tenantId, op, { deviceId: deviceId ?? null, userId: req.auth!.userId, syncSchema: pushSchema, costTrusted: opCostTrusted, forwarded, refs, resolutionAuthority: enforcesCheckout(storeMode) ? { staffId: enforcedActor?.id ?? null, approved } : undefined }, async (tx) => {
         // SPRINT-2 Phase B (observe): what this server knows about the operation, in the same
         // transaction (never an applied operation without its evidence row, or the reverse).
         if ((tx as any).operationEvidence) {
@@ -908,7 +953,10 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
       // café batch: a queued sale (or waste) short of an ingredient where the stock is kept is held for a manager's
       // review (Held work) and stays on the register; a live checkout is refused before payment instead.
       const heldShort = err instanceof IngredientShortError && !String(op.id).startsWith("wt-")
-      const isRejected = !heldShort && (
+      // release batch: a product that cannot be established is kept for a manager (never applied to a guess)
+      const heldIdentity = err instanceof IdentityHeldError
+      const dependency = err instanceof ProductPendingError || err instanceof StockPolicyHeldError || (err instanceof RecipeHeldError && !String(op.id).startsWith("wt-"))
+      const isRejected = !heldShort && !heldIdentity && (
         // REFUND-INTEGRITY-1: refund/void rule violations are business
         // conflicts with a stable code prefix (e.g. "REFUND_EXCEEDS_REFUNDABLE: …").
         err instanceof RefundRuleError ||
@@ -932,7 +980,8 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         (err instanceof RecipeHeldError && String(op.id).startsWith("wt-")) ||
         err instanceof IngredientShortError)
       // a close correction based on a close since corrected by someone else: kept for a manager's review
-      const opStatus = err instanceof CloseConflictError || heldShort ? "Refused" : isRejected ? "Rejected" : "Failed"
+      const opStatus = err instanceof CloseConflictError || heldShort || heldIdentity ? "Refused" : isRejected ? "Rejected" : "Failed"
+      const kind = opStatus === "Refused" ? "review" as const : dependency ? "dependency" as const : isRejected ? "invalid" as const : "retry" as const
 
       // Record the failure — but never on a row that was applied (it would stop its onward
       // delivery and misreport an applied operation as rejected), nor on another store's row.
@@ -943,19 +992,21 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
             data: {
               id: op.id, tenantId, entity: op.entity, action: op.action, summary: `${op.action} ${op.entity}`,
               payload: (op.payload ?? {}) as any, status: opStatus, attempts: isRejected ? 5 : 1, lastAttemptAt: new Date(), error: errorMessage,
+              ...(pushKind === "bridge" ? { productRefs: parseRefs((op as any).ev?.refs) as any } : {}),
+              ...(heldIdentity ? { heldEvidence: { credentialKind: pushKind, deviceIdClaimed: deviceId ?? null, heldAt: new Date().toISOString() } as any } : {}),
             },
           })
         } else if (row.tenantId === tenantId && !row.appliedAt && !(err instanceof OperationIdReuseError) && !(err instanceof CheckoutCancelledError) && !(err instanceof DismissedOperationError)) {
           await prisma.syncOperation.updateMany({
             where: { id: op.id, tenantId, appliedAt: null, status: { notIn: ["Resolving", "Dismissed"] } },
-            data: { status: opStatus, attempts: isRejected ? 5 : { increment: 1 }, lastAttemptAt: new Date(), error: errorMessage, ...(heldShort ? { payload: (op.payload ?? {}) as any } : {}) },
+            data: { status: opStatus, attempts: isRejected ? 5 : { increment: 1 }, lastAttemptAt: new Date(), error: errorMessage, ...(heldShort || heldIdentity ? { payload: (op.payload ?? {}) as any } : {}) },
           })
         }
       } catch (syncLogError) {
         console.error("Failed to record sync error:", syncLogError)
       }
 
-      results.push({ id: op.id, status: isRejected ? "rejected" : "error", error: errorMessage })
+      results.push({ id: op.id, status: isRejected ? "rejected" : "error", error: errorMessage, kind })
     }
   }
 
@@ -1217,7 +1268,7 @@ router.post("/refused/:id/resolve", staffSync, async (req: AuthRequest, res: Ser
   const reviewer = await staffReviewer(req)
   if (!reviewer) { json(res, { error: "Sign in as a staff member to review refused work.", code: "NOT_STAFF" }, 403); return }
   const id = String((req.params as Record<string, string>).id)
-  const row = await prisma.syncOperation.findFirst({ where: { id, tenantId }, select: { id: true, entity: true, action: true, payload: true, status: true, error: true, appliedAt: true, attempts: true, heldEvidence: true } })
+  const row = await prisma.syncOperation.findFirst({ where: { id, tenantId }, select: { id: true, entity: true, action: true, payload: true, status: true, error: true, appliedAt: true, attempts: true, heldEvidence: true, productRefs: true } })
   if (!row) { json(res, { error: "Not found", code: "NOT_FOUND" }, 404); return }
   if (row.status !== "Refused" || row.appliedAt) { json(res, { error: "This operation is no longer waiting for review.", code: "NOT_REFUSED", status: row.appliedAt ? "applied" : row.status }, 409); return }
   const reason = refusalReason(row.error)
@@ -1262,10 +1313,13 @@ router.post("/refused/:id/resolve", staffSync, async (req: AuthRequest, res: Ser
   // The reviewer's own authority must allow the operation (the same rules as a push by them).
   // A reviewer who may do the action applies it on their own authority, as a manager's approval would: the
   // person the register named (a cashier without the permission) does not then need it.
-  const refusal = await makeOpAuthorizer(tenantId, reviewer.permissions, reviewer.id, reviewer.permissions)(op)
+  // release batch: work another server forwarded is applied with the stable ids it came with (never by number)
+  const forwarded = (row.heldEvidence as Record<string, unknown> | null)?.credentialKind === "bridge"
+  const refs = forwarded ? parseRefs(row.productRefs) : []
+  const refusal = await makeOpAuthorizer(tenantId, reviewer.permissions, reviewer.id, reviewer.permissions)(forwarded ? { ...op, payload: forwardedView(op.payload, refs) } : op)
   if (refusal) { await back(row.error ?? ""); json(res, { error: refusal, code: "FORBIDDEN" }, 403); return }
   try {
-    const outcome = await applyOnce(tenantId, op, reviewApplyCtx(origin.deviceId, reviewer.id, origin.syncSchema), reviewApplyHook(req, tenantId, op, reviewer.id, origin.deviceId, row.heldEvidence as Record<string, unknown> | null, await reviewedAttribution(tenantId, op, row.heldEvidence as Record<string, any> | null, reviewer)))
+    const outcome = await applyOnce(tenantId, op, { ...reviewApplyCtx(origin.deviceId, reviewer.id, origin.syncSchema), ...(forwarded ? { forwarded, refs } : {}) }, reviewApplyHook(req, tenantId, op, reviewer.id, origin.deviceId, row.heldEvidence as Record<string, unknown> | null, await reviewedAttribution(tenantId, op, row.heldEvidence as Record<string, any> | null, reviewer)))
     await record("applied", outcome)
     await audit("sync.refused.applied", `${reviewer.name} applied refused ${row.action} ${row.entity}: ${body.data.note}`, { outcome })
     try { broadcastToTenant(tenantId, "sync:data-changed", {}) } catch { /* no-op */ }
@@ -1279,7 +1333,7 @@ router.post("/refused/:id/resolve", staffSync, async (req: AuthRequest, res: Ser
 
 /** A manager applying refused work runs as themselves, with the sync schema the till pushed it with. */
 // Refused work was pushed by an account that lacked a permission: its cost figures are not taken.
-const reviewApplyCtx = (deviceId: string | null, userId: string, syncSchema?: number) => ({ deviceId, userId, syncSchema, costTrusted: false })
+const reviewApplyCtx = (deviceId: string | null, userId: string, syncSchema?: number) => ({ deviceId, userId, syncSchema, costTrusted: false, reviewed: true })
 /**
  * Evidence for work applied on a manager's review. Three people, kept apart: the ACTOR (who the register
  * says did it, and the session it arrived on, as checked when it was held), the APPROVER (a manager's
@@ -1623,7 +1677,7 @@ router.get("/pull", staffSync, async (req: AuthRequest, res: ServerResponse) => 
     clientSyncSchema(req as any) >= CAFE_SCHEMA ? (prisma as any).recipeRevision.findMany({ where: { tenantId, ...(createdFilter ? { createdAt: createdFilter } : {}) }, orderBy: { createdAt: "asc" } }) : [],
   ])
 
-  if (clientSyncSchema(req as any) >= 3) await attachProductSyncIds(tenantId, { sales, refunds, batches, adjustments })
+  if (clientSyncSchema(req as any) >= 3) await attachProductSyncIds(tenantId, { sales, refunds, batches, adjustments, stockCounts: counts })
   const showCost = await can(req, "reports.cost")
   const body = {
     serverTime: new Date().toISOString(),
@@ -1928,6 +1982,7 @@ function sameOperation(stored: { entity: string; action: string; payload: unknow
  * the lot itself). A receive's unit cost is not a valuation but the purchase price: it is kept.
  */
 export async function withServerCost(tenantId: string, entity: string, action: string, payload: unknown): Promise<any> {
+  const strict = !!payload && typeof payload === "object" && FORWARDED_VIEWS.has(payload as object)
   const p = withoutClientCost(entity, action, payload)
   if (!p || typeof p !== "object") return p
   const known = new Map<string, number>()
@@ -1939,8 +1994,8 @@ export async function withServerCost(tenantId: string, entity: string, action: s
     if (known.has(key)) return known.get(key)!
     const select = { cost: true } as const
     const product = (syncId ? await prisma.product.findFirst({ where: { tenantId, syncId: String(syncId) }, select }) : null)
-      ?? (Number.isInteger(id) && id > 0 ? await prisma.product.findFirst({ where: { tenantId, id }, select }) : null)
-      ?? (barcode ? await prisma.product.findFirst({ where: { tenantId, OR: [{ barcode }, { barcodeAliases: { has: barcode } }] }, select }) : null)
+      ?? (!strict && Number.isInteger(id) && id > 0 ? await prisma.product.findFirst({ where: { tenantId, id }, select }) : null)
+      ?? (!strict && barcode ? await prisma.product.findFirst({ where: { tenantId, OR: [{ barcode }, { barcodeAliases: { has: barcode } }] }, select }) : null)
     const cost = Number(product?.cost) || 0
     known.set(key, cost)
     return cost
@@ -2007,7 +2062,14 @@ async function processOperation(
      *  verified session's person, or a manager's online approval. A name in the payload is not enough. */
     resolutionAuthority?: { staffId: string | null; approved: string[] }
     /** café batch: a live checkout through a hub (before payment): a menu rule or a short ingredient refuses it */
-    live?: boolean } = {}
+    live?: boolean
+    /** release batch: forwarded by another server (a hub): its numbers are not this server's, so products are
+     *  identified by their stable ids only (lib/productIdentity.ts) */
+    forwarded?: boolean
+    /** the stable ids the forwarding server recorded beside the command */
+    refs?: ProductRef[]
+    /** a manager applies held work on review (their decision stands for which product a number names) */
+    reviewed?: boolean } = {}
 ) {
   // Fields only this server writes (lib/attribution.ts): never taken from a client, on any create or update path.
   stripServerAttribution(payload)
@@ -2029,6 +2091,12 @@ async function processOperation(
     if (syncId) {
       const bySync = await db.product.findFirst({ where: { tenantId, syncId: String(syncId) }, select: { id: true } })
       if (bySync) return bySync.id
+    }
+    // release batch: another server's number or a barcode never identifies a product here
+    if (source.forwarded) {
+      const what = `"${String(idOrProduct?.productName ?? idOrProduct?.name ?? "a product")}"`
+      if (syncId) throw new ProductPendingError(what)
+      throw new IdentityHeldError(`${what} reached this server from another one without its stable id (only that server's number). It is kept until the forwarding server sends the stable id.`)
     }
     let pid = Number(idOrProduct.productId ?? idOrProduct.id ?? idOrProduct)
     if (pid > 0) {
@@ -2155,7 +2223,7 @@ async function processOperation(
           // café batch: a stock unit changes only while nothing is in stock (1000 g never becomes 1000 ml)
           if ("stockUnit" in patch) {
             const cur = syncId ? await db.product.findFirst({ where: { tenantId, syncId: syncId as string }, select: { id: true, name: true, stock: true, stockUnit: true } })
-              : id !== undefined ? await db.product.findFirst({ where: { tenantId, id: id as number }, select: { id: true, name: true, stock: true, stockUnit: true } }) : null
+              : id !== undefined && !source.forwarded ? await db.product.findFirst({ where: { tenantId, id: id as number }, select: { id: true, name: true, stock: true, stockUnit: true } }) : null
             if (cur && cur.stockUnit !== patch.stockUnit) {
               const openLots = await db.inventoryBatch.count({ where: { tenantId, productId: cur.id, status: "Open", quantityRemaining: { gt: 0 } } })
               if (Number(cur.stock) !== 0 || openLots > 0) throw new ProductSetupError(`"${cur.name}" has stock in ${cur.stockUnit}: its unit can change only when its stock is zero.`)
@@ -2165,7 +2233,7 @@ async function processOperation(
             const policySelect = { id: true, name: true, stockPolicy: true, stockPolicyRev: true, stockPolicyHistory: true }
             const cur = syncId
               ? await db.product.findFirst({ where: { tenantId, syncId: syncId as string }, select: policySelect })
-              : id !== undefined ? await db.product.findFirst({ where: { tenantId, id: id as number }, select: policySelect }) : null
+              : id !== undefined && !source.forwarded ? await db.product.findFirst({ where: { tenantId, id: id as number }, select: policySelect }) : null
             if (cur) {
               const { data: policyData, branch } = applyPolicyChange(cur, policyIn)
               if (Object.keys(policyData).length > 0 && source.userId !== "cloud-bridge") {
@@ -2191,8 +2259,11 @@ async function processOperation(
           if (syncId) {
             const r = await db.product.updateMany({ where: { tenantId, syncId: syncId as string }, data: patch as any })
             if (r.count > 0) continue
+            // release batch: a forwarded update of a product not here yet waits for it (never matched by number)
+            if (source.forwarded) throw new ProductPendingError(`"${String(patch.name ?? syncId)}"`)
             // syncId given but no local row yet — fall through to legacy match
           }
+          if (source.forwarded) throw new IdentityHeldError(`a product update reached this server from another one without the product's stable id.`)
           if (id !== undefined) {
             await db.product.updateMany({ where: { tenantId, id: id as number }, data: patch as any })
           } else if (patch.barcode) {
@@ -2288,6 +2359,10 @@ async function processOperation(
         if (syncId) {
           const r = await db.product.updateMany({ where: { tenantId, syncId }, data: { archived: true } as any })
           done = r.count > 0
+        }
+        if (!done && source.forwarded) {
+          if (syncId) throw new ProductPendingError(`"${syncId}"`)
+          throw new IdentityHeldError(`a product archive reached this server from another one without the product's stable id.`)
         }
         if (!done && payloadId) {
           await db.product.updateMany({ where: { tenantId, id: payloadId as number }, data: { archived: true } as any })
@@ -2667,9 +2742,11 @@ async function processOperation(
           lineId: it.lineId, productId: it.productId, quantity: Number(it.quantity), allocations: it.batchAllocations,
         })))
         const prior = priorRefunds.flatMap((r: any) => (r.items ?? []).map((it: any) => toPriorRefundLine(it)))
+        const saleLine = (key: unknown) => typeof key === "string" ? sale.items.find((it: any) => it.lineId === key) : undefined
         const request = await Promise.all((data.items ?? []).map(async (item: any) => ({
           key: typeof item?.saleLineId === "string" ? item.saleLineId : null,
-          productId: await resolveProductId(item),
+          // a line named by its sale line is that line's product (stable on every server)
+          productId: saleLine(item?.saleLineId)?.productId ?? await resolveProductId(item),
           quantity: Number(item?.quantity),
         })))
         const planned = planRefund(lines, prior, request)
@@ -3035,6 +3112,12 @@ async function processOperation(
         if (existingAdjustment) {
           await db.stockAdjustment.update({ where: { id: payload?.id as string }, data: persisted as any })
           break
+        }
+        // release batch: a lot the adjustment names belongs to the product it names, or nothing moves (held)
+        for (const slice of normalizeAllocations(adj.batchAllocations) ?? []) {
+          if (!slice.batchId) continue
+          const owner = await db.inventoryBatch.findFirst({ where: { id: slice.batchId, tenantId }, select: { productId: true } })
+          if (owner && owner.productId !== resolvedPid) throw new IdentityHeldError(`lot ${slice.batchId} belongs to another product than the adjustment names. Which product was meant cannot be established.`)
         }
         await db.stockAdjustment.create({ data: { ...persisted, tenantId } as any })
         const delta = Number(adj.quantityChange ?? 0)

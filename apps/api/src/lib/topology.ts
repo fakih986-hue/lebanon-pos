@@ -154,7 +154,7 @@ export function stockDifferences(a: StockLine[], b: StockLine[]): Array<{ syncId
 
 /** This server's own unsent and held work (a hub's report; the cloud's readiness). */
 export async function workCounts(tenantId: string) {
-  const unsent = await prisma.syncOperation.count({ where: { tenantId, appliedAt: { not: null }, status: { in: ["Pending", "Failed", "Processing"] } } })
+  const unsent = await prisma.syncOperation.count({ where: { tenantId, appliedAt: { not: null }, status: { in: ["Pending", "Failed", "Processing", "Held"] } } })
   // held for review (a person decides); a client's failed attempts are its own queue's (reported separately)
   const held = await prisma.syncOperation.count({ where: { tenantId, appliedAt: null, status: { in: ["Refused", "Resolving"] } } })
   const openShifts = await prisma.shift.count({ where: { tenantId, status: "Open" } })

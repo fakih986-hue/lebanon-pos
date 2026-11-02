@@ -911,6 +911,10 @@ model SyncOperation {
   /// Applied under server valuation (1.0.52+): the figures it carries are this server's. A hub
   /// forwards it with ev.valued = "server"; the cloud values any operation without it itself.
   serverValued  Boolean   @default(false)
+  /// Release batch: the stable ids (syncId) of the products the command names, resolved by the first server that
+  /// knew them ([{ path, key, syncId }]). Forwarded beside the command; the receiving server never reads another
+  /// server's numeric product ids (lib/productIdentity.ts).
+  productRefs   Json?
   /// SPRINT-2 F: what this server knew when it held the operation for review (actor, device, session,
   /// approval and attestation checks, evidence label). Never a token or a PIN. Kept with the command.
   heldEvidence  Json?

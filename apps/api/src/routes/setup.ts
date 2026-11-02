@@ -557,6 +557,8 @@ router.get("/diagnostics", async (req: Req, res: Response) => {
     const tenantCount = dbConnected ? await prisma.tenant.count() : null
     const syncPending = dbConnected ? await prisma.syncOperation.count({ where: { status: "Pending" } }) : null
     const syncFailed = dbConnected ? await prisma.syncOperation.count({ where: { status: "Failed" } }) : null
+    // release batch: forwarded work the cloud keeps for a manager's decision (re-checked for the outcome)
+    const syncHeld = dbConnected ? await prisma.syncOperation.count({ where: { status: "Held" } }) : null
 
     res.json({
       timestamp: new Date().toISOString(),
@@ -565,6 +567,7 @@ router.get("/diagnostics", async (req: Req, res: Response) => {
       tenantCount,
       syncPending,
       syncFailed,
+      syncHeld,
       nodeVersion: process.version,
       platform: process.platform,
       env: process.env.NODE_ENV || "development",

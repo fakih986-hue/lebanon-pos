@@ -466,12 +466,25 @@ describe("cloudSync", () => {
       vi.mocked(prisma.inventoryBatch.findUnique).mockResolvedValue(null)
       vi.mocked(prisma.inventoryBatch.create).mockResolvedValue({} as any)
       vi.mocked(prisma.inventoryBatch.update).mockResolvedValue({} as any)
-      stubPull({ batches: [{ id: "new-b", productId: 9, quantityRemaining: 12, status: "Open", tenantId: "test-tenant-1" }] })
+      vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 9 } as any)
+      stubPull({ batches: [{ id: "new-b", productId: 1234, productSyncId: "S9", quantityRemaining: 12, status: "Open", tenantId: "test-tenant-1" }] })
 
       await cloudSync.pullFromCloud()
 
       expect(vi.mocked(prisma.inventoryBatch.create)).toHaveBeenCalledTimes(1)
+      // on this hub's own product (found by stable id), never the cloud's #1234
+      expect((vi.mocked(prisma.inventoryBatch.create).mock.calls[0][0] as any).data.productId).toBe(9)
       expect(vi.mocked(prisma.inventoryBatch.update)).not.toHaveBeenCalled()
+      vi.unstubAllGlobals()
+    })
+
+    it("release batch: a pulled lot naming its product only by the cloud's number is not copied (never matched by number)", async () => {
+      vi.mocked(prisma.inventoryBatch.findUnique).mockResolvedValue(null)
+      vi.mocked(prisma.inventoryBatch.create).mockClear()
+      vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 9 } as any)
+      stubPull({ batches: [{ id: "numbered-b", productId: 9, quantityRemaining: 3, status: "Open", tenantId: "test-tenant-1" }] })
+      await cloudSync.pullFromCloud()
+      expect(vi.mocked(prisma.inventoryBatch.create)).not.toHaveBeenCalled()
       vi.unstubAllGlobals()
     })
 
@@ -497,7 +510,7 @@ describe("cloudSync", () => {
       vi.mocked(prisma.inventoryBatch.update).mockResolvedValue({} as any)
       stubPull({
         products: [{ id: 88, syncId: "STABLE-1", name: "cola", barcode: "C1", price: 2, stock: 20, tenantId: "test-tenant-1" }],
-        batches:  [{ id: "b1", productId: 5, quantityRemaining: 20, status: "Open", tenantId: "test-tenant-1" }],
+        batches:  [{ id: "b1", productId: 88, productSyncId: "STABLE-1", quantityRemaining: 20, status: "Open", tenantId: "test-tenant-1" }],
       })
 
       await cloudSync.triggerFullPull() // explicit operator restore
