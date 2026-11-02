@@ -15,7 +15,7 @@ import { Drawer, Field } from "./BackOffice"
  * sales keep showing what was bought). Managing staff only (inventory.manage); the server checks the same.
  */
 export default function MenuOptionsDrawer({ onClose }: { onClose: () => void }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [groups, setGroups] = useState<ModifierGroup[]>(() => getModifierGroups())
   const [draft, setDraft] = useState<ModifierGroup | null>(null)
   const [problems, setProblems] = useState<string[]>([])
@@ -58,7 +58,7 @@ export default function MenuOptionsDrawer({ onClose }: { onClose: () => void }) 
                   <strong>{g.name}</strong>{g.nameAr ? <span className="mg2-cap" dir="rtl"> · {g.nameAr}</span> : null}
                   <span className="mg2-cap" style={{ display: "block" }}>
                     {g.archived ? t("menu.archived") : `${g.required ? t("pos.mod.required") : t("pos.mod.optional")} · ${t("menu.choose_n", { min: g.minSelect ?? 0, max: g.maxSelect ?? 1 })}`}
-                    {" · "}{g.options.filter((o) => !o.archived).map((o) => `${o.name}${Number(o.priceDelta) ? ` \u2066${Number(o.priceDelta) > 0 ? "+" : "−"}${formatCurrency(Math.abs(Number(o.priceDelta)))}\u2069` : ""}`).join(", ")}
+                    {" · "}{g.options.filter((o) => !o.archived).map((o) => `${o.name}${Number(o.priceDelta) ? ` \u2066${Number(o.priceDelta) > 0 ? "+" : "−"}${formatCurrency(Math.abs(Number(o.priceDelta)))}\u2069` : ""}`).join(locale === "ar" ? "\u060c " : ", ")}
                   </span>
                 </span>
                 <button type="button" className="mg2-btn" disabled={!canManage} onClick={() => setDraft(JSON.parse(JSON.stringify(g)))}>{t("inv.edit")}</button>

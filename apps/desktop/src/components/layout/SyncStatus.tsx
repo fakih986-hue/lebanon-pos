@@ -4,6 +4,8 @@ import { AlertTriangle, Cloud, CloudOff, RotateCw, X } from "lucide-react"
 
 import { useI18n } from "@lebanonpos/shared"
 import StockDecisionSales from "./StockDecisionSales"
+import WaitingWork from "./WaitingWork"
+import { serverReason } from "../../features/pos/lib/serverReason"
 import DeclinedWork from "./DeclinedWork"
 import { closeBlockedJournalEntry, getBlockedJournalEntries, previewBlockedJournalEntry, type JournalEntry } from "../../features/pos/services/businessJournal.service"
 import {
@@ -148,6 +150,11 @@ export default function SyncStatus() {
     pillBg = "var(--v2-err-soft)"; pillBorder = "var(--border)"; pillColor = "var(--v2-err)"
     label = t("sync.v2.stuck", { n: status.dead + status.rejected })
     Icon = AlertTriangle
+  } else if (status.held > 0 && status.online && pendingWork === 0) {
+    // release batch: kept by the server (waiting for something, or for a manager): not stuck, nothing lost
+    pillBg = "var(--v2-warn-soft)"; pillBorder = "var(--border)"; pillColor = "var(--v2-warn)"
+    label = t("sync.v2.held", { n: status.held })
+    Icon = RotateCw
   } else if (!status.online) {
     pillBg = "var(--v2-warn-soft)"; pillBorder = "var(--border)"; pillColor = "var(--v2-warn)"
     label = t("sync.v2.offline", { n: pendingWork })
@@ -173,7 +180,7 @@ export default function SyncStatus() {
             <AlertTriangle size={16} className="mt-0.5 shrink-0" style={{ color: "var(--rose-text)" }} />
             <div className="min-w-0">
               <p className="text-[13px] font-bold" style={{ color: "var(--rose-text)" }}>Sync error — {toast.entity}</p>
-              <p className="text-[12px] mt-0.5 leading-snug" style={{ color: "var(--rose-text)", opacity: 0.85 }}>{toast.error}</p>
+              <p className="text-[12px] mt-0.5 leading-snug" style={{ color: "var(--rose-text)", opacity: 0.85 }}>{serverReason(t, toast.error)}</p>
             </div>
             <button onClick={() => setToast(null)} className="shrink-0" style={{ color: "var(--rose-text)" }}>
               <X size={14} />
@@ -215,6 +222,7 @@ export default function SyncStatus() {
           </div>
 
           <StockDecisionSales />
+          <WaitingWork />
           <DeclinedWork />
 
           {blocked.length > 0 && (
@@ -284,6 +292,7 @@ export default function SyncStatus() {
           <div className="grid grid-cols-3 gap-2 mb-3">
             {[
               { label: t("sync.v2.stat.pending"), value: status.pending + status.failed, color: "var(--amber-text)" },
+              { label: t("sync.v2.stat.held"), value: status.held, color: status.held > 0 ? "var(--amber-text)" : "var(--text-3)" },
               { label: t("sync.v2.stat.staged"), value: status.staged, color: status.staged > 0 ? "var(--rose-text)" : "var(--text-3)" },
               { label: t("sync.v2.stat.rejected"), value: status.rejected, color: status.rejected > 0 ? "var(--rose-text)" : "var(--text-3)" },
               { label: t("sync.v2.stat.storage"), value: status.storageFailures, color: status.storageFailures > 0 ? "var(--rose-text)" : "var(--text-3)" },
@@ -301,7 +310,7 @@ export default function SyncStatus() {
             <div className="mb-3 rounded-lg p-2.5" style={{ background: "var(--rose-soft)" }}>
               <p className="text-[11px] font-bold mb-1" style={{ color: "var(--rose-text)" }}>Recent errors</p>
               {status.recentErrors.map((err, i) => (
-                <p key={i} className="text-[11px] leading-snug" style={{ color: "var(--rose-text)" }}>• {err}</p>
+                <p key={i} className="text-[11px] leading-snug" style={{ color: "var(--rose-text)" }}>• {serverReason(t, err.replace(/^[a-z-]+: /, ""))}</p>
               ))}
             </div>
           )}

@@ -3,7 +3,8 @@ export type LineOptionsSource = { modifiers?: Array<{ name?: string; nameAr?: st
 export function lineOptionsText(item: LineOptionsSource, locale: string = "en"): string {
   const names = (Array.isArray(item?.modifiers) ? item.modifiers : []).map((m) => (locale === "ar" && m?.nameAr ? m.nameAr : m?.name ?? "")).filter(Boolean)
   const note = typeof item?.note === "string" ? item.note.trim() : ""
-  return [names.join(", "), note ? `“${note}”` : ""].filter(Boolean).join(" · ")
+  // release batch: Arabic lists use the Arabic comma
+  return [names.join(locale === "ar" ? "، " : ", "), note ? `“${note}”` : ""].filter(Boolean).join(" · ")
 }
 /** A cart line's key: its configuration (a drink with options) or its product (one line per product). */
 export type CartKey = number | string

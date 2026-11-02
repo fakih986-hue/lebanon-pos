@@ -24,6 +24,7 @@ import WasteDialog from "../components/WasteDialog"
 import { cartShortage, configuredLine, consumptionPayload, defaultSelection, groupsForProduct, ingredientCheckoutLines, needsOptions, servingsFor, subscribeMenu, type CafeLine } from "../services/menu.service"
 import { lineConfigKey, priceWithModifiers, type LineModifier, type Selection } from "../lib/cafeMenu"
 import { cartKeyOf, type CartKey } from "../lib/lineOptions"
+import { serverReason } from "../lib/serverReason"
 import { getProductsSync } from "../services/product.service"
 import QuickPOSMode from "../components/QuickPOSMode"
 import KeyboardShortcutsModal from "../components/KeyboardShortcutsModal"
@@ -1014,7 +1015,7 @@ export default function POSPage() {
         if (outcome.status === "rejected") {
           setScannerStatus(/Insufficient stock|INGREDIENT_SHORT/i.test(outcome.error)
             ? t("pos.status.hub_out_of_stock")
-            : t("pos.status.hub_rejected", { error: outcome.error }))
+            : t("pos.status.hub_rejected", { error: serverReason(t, outcome.error) }))
           playErrorBuzz(); pullFromServer().catch(() => {}); return
         }
         if (outcome.status === "unconfirmed") {

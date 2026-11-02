@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { useI18n } from "@lebanonpos/shared"
 import { getPolicyHeldSales, resolvePolicyHeldSale, resolveRecipeHeldSale, subscribeSync, type PolicyHeldSale } from "../../features/pos/services/sync.service"
 import { getCurrentUser, recordAuditEvent, userCan } from "../../features/pos/services/security.service"
+import { serverReason } from "../../features/pos/lib/serverReason"
 
 /**
  * SPRINT-1: sales this till has been paid for that the server is holding, because it does not know
@@ -57,9 +58,9 @@ export default function StockDecisionSales() {
           <div key={sale.operationId} className="rounded-lg p-2 text-[12px] flex flex-col gap-1" style={{ background: "var(--surface-2)", color: "var(--text-2)" }}>
             <p className="font-semibold" style={{ color: "var(--text)" }}>{t("sync.held.sale", { number: sale.saleNumber, time: new Date(sale.createdAt).toLocaleString(), cashier: sale.cashier })}</p>
             <p>{t("sync.held.paid", { amount: sale.total.toFixed(2), method: sale.paymentMethod })}</p>
-            {sale.kind === "ingredient" ? <p>{t("sync.held.ingredient", { reason: sale.reason })}</p>
+            {sale.kind === "ingredient" ? <p>{t("sync.held.ingredient", { reason: serverReason(t, `INGREDIENT_SHORT: ${sale.reason}`) })}</p>
               : sale.kind === "recipe" ? <p>{t("sync.held.recipe_help", { product: sale.productName ?? "" })}</p>
-              : sale.kind === "topology" ? <p>{sale.reason}</p>
+              : sale.kind === "topology" ? <p>{serverReason(t, `TOPOLOGY_HOLD: ${sale.reason}`)}</p>
               : <>
                 <p>{t("sync.held.help", { product: sale.productName ?? "" })}</p>
                 <p>{t("sync.held.product", { name: sale.productName ?? "" })}</p>

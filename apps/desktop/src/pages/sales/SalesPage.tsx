@@ -46,6 +46,15 @@ function rangeStart(range: DateRange): Date | null {
   return null
 }
 const itemName = (item: { name?: string; productName?: string }) => item.name ?? item.productName ?? ""
+/**
+ * Release batch: what a refund (these lines) or a void (all lines) gives back besides money. Packaged items return to
+ * stock and lots; prepared items (made from a recipe, or made to order) do not — their ingredients stay used.
+ */
+function refundComposition(sale: Sale, keys?: string[]) {
+  const lines = sale.items.filter((i) => !keys || keys.includes(refundLineKeyOf(i)))
+  const isPrepared = (i: Sale["items"][number]) => i.stockPolicy === "recipe" || i.stockPolicy === "untracked"
+  return { prepared: lines.filter(isPrepared).map((i) => ({ name: itemName(i) })), packaged: lines.filter((i) => !isPrepared(i)) }
+}
 
 function exportSalesCsv(sales: Sale[]) {
   const rate = getSettings().usdToLbpRate
@@ -76,7 +85,7 @@ function useDate() {
 }
 
 export default function SalesPage() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const date = useDate()
   const [params, setParams] = useSearchParams()
   const tab: Tab = params.get("tab") === "insights" ? "insights" : "receipts"
@@ -378,9 +387,22 @@ export default function SalesPage() {
         onConfirm={executeRefund} onCancel={() => setPendingRefund(null)}>
         <p>{t("rcpt.confirm_refund", { number: pendingRefund?.sale.saleNumber ?? "", count: pendingRefund?.refundItems.reduce((n, i) => n + i.quantity, 0) ?? 0, total: formatCurrency(pendingRefund?.refundTotal ?? 0) })}</p>
         {pendingRefund?.refundReason && <p className="mt-1 text-xs" style={{ color: "var(--text-3)" }}>{t("rcpt.reason_is", { reason: pendingRefund.refundReason })}</p>}
-        <p className="mt-2 text-xs font-semibold" style={{ color: "var(--text-2)" }}>
-          {pendingRefund?.sale.paymentMethod === "Debt" ? t("rcpt.refund_effect_debt") : t("rcpt.refund_effect", { method: t(`rcpt.refund_method.${pendingRefund ? getRefundMethod(pendingRefund.sale) : "Cash"}`) })}
-        </p>
+        {pendingRefund && (() => {
+          // release batch: money and stock said apart: packaged items return to stock; prepared ones do not
+          const keys = Object.entries(pendingRefund.quantities).filter(([, q]) => Number(q) > 0).map(([k]) => k)
+          const { prepared, packaged } = refundComposition(pendingRefund.sale, keys)
+          const names = prepared.map((i) => i.name).join(locale === "ar" ? "، " : ", ")
+          return (
+            <>
+              <p className="mt-2 text-xs font-semibold" style={{ color: "var(--text-2)" }}>
+                {pendingRefund.sale.paymentMethod === "Debt" ? t("rcpt.refund_money_debt") : t("rcpt.refund_money", { method: t(`rcpt.refund_method.${getRefundMethod(pendingRefund.sale)}`) })}
+              </p>
+              <p className="mt-1 text-xs font-semibold" style={{ color: prepared.length ? "var(--v2-warn)" : "var(--text-2)" }}>
+                {prepared.length === 0 ? t("rcpt.refund_stock_tracked") : packaged.length === 0 ? t("rcpt.refund_stock_prepared", { items: names }) : t("rcpt.refund_stock_mixed", { items: names })}
+              </p>
+            </>
+          )
+        })()}
       </ConfirmLayer>
       <ManagerApprovalDialog open={!!approval} request={approval?.request ?? null}
         summary={<p style={{ fontWeight: 600, color: "var(--text)" }}>{approval?.summary}</p>}
@@ -389,7 +411,12 @@ export default function SalesPage() {
       <ConfirmLayer open={voidSaleId !== null} title={t("pos.sales.void_sale_title")} confirmLabel={t("pos.void")} confirmDestructive
         onConfirm={() => { if (voidSaleId) executeVoid(voidSaleId) }} onCancel={() => setVoidSaleId(null)}>
         {(() => { const s = sales.find((x) => x.id === voidSaleId); return <p>{t("rcpt.void_text", { number: s?.saleNumber ?? "", total: formatCurrency(s?.total ?? 0) })}</p> })()}
-        <p className="mt-2 text-xs font-semibold" style={{ color: "var(--rose-text)" }}>{t("rcpt.void_effect")}</p>
+        {(() => {
+          const s = sales.find((x) => x.id === voidSaleId)
+          const { prepared, packaged } = s ? refundComposition(s) : { prepared: [], packaged: [] }
+          const names = prepared.map((i) => i.name).join(locale === "ar" ? "، " : ", ")
+          return <p className="mt-2 text-xs font-semibold" style={{ color: "var(--rose-text)" }}>{prepared.length === 0 ? t("rcpt.void_effect") : packaged.length === 0 ? t("rcpt.void_effect_prepared", { items: names }) : t("rcpt.void_effect_mixed", { items: names })}</p>
+        })()}
       </ConfirmLayer>
     </main>
   )

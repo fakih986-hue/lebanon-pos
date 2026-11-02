@@ -358,7 +358,7 @@ export function queueReport(): { pending: number; held: number; failed: number; 
     if (op.status === "Synced") continue
     if (op.staged) { staged++; continue }
     if (op.status === "Rejected" || op.attempts >= MAX_ATTEMPTS) { failed++; continue }
-    if (isHeldError(op.error)) held++
+    if (op.held || isHeldError(op.error)) held++
     else pending++
   }
   let journal = 0
@@ -911,6 +911,12 @@ export type SyncOperation = {
   staged?: boolean
   /** SPRINT-2 C: the staff session / local-PIN evidence it was created under (sent, never part of the op). */
   ev?: SyncEnvelope
+  /**
+   * Release batch: the server keeps it and says what for (its attempts are not used up):
+   *  dependency — something it needs has not reached the server yet (a product, a recipe revision, a stock setting);
+   *  review — kept there for a manager's decision (asked about again now and then for the outcome).
+   */
+  held?: "dependency" | "review"
 }
 
 /**
@@ -944,6 +950,8 @@ export type SyncStatus = {
   lastStorageError?: string
   pending: number   // actionable: Pending and attempts < MAX_ATTEMPTS
   failed: number    // Failed and attempts < MAX_ATTEMPTS
+  /** release batch: kept by the server, waiting for something to arrive or for a manager (never stuck, never lost) */
+  held: number
   rejected: number  // Rejected (exhausted, cannot auto-retry)
   dead: number      // exhausted MAX_ATTEMPTS, not Rejected
   synced: number
@@ -1467,7 +1475,7 @@ export function isHeldError(error: string | undefined | null): boolean {
   // also: held by the store's topology (connected where its stock is not kept): kept, never given up on
   // café batch: a recipe revision the server has not received yet, or an ingredient short where the stock is kept
   // (held for a manager there): kept and resent, never given up on
-  return typeof error === "string" && (error.startsWith("STOCK_POLICY_HELD:") || error.startsWith("RECIPE_HELD:") || error.startsWith("INGREDIENT_SHORT:") || /^TOPOLOGY_[A-Z_]+:/.test(error))
+  return typeof error === "string" && (error.startsWith("STOCK_POLICY_HELD:") || error.startsWith("RECIPE_HELD:") || error.startsWith("INGREDIENT_SHORT:") || error.startsWith("PRODUCT_PENDING:") || error.startsWith("IDENTITY_HELD:") || /^TOPOLOGY_[A-Z_]+:/.test(error))
 }
 
 export type PolicyHeldSale = {
@@ -1488,9 +1496,28 @@ export type PolicyHeldSale = {
   kind: "stock-policy" | "recipe" | "ingredient" | "topology"
 }
 
+/** The holds a manager settles on this register's held-sales list (a stock setting, a recipe, an ingredient, topology). */
+const isSaleDecisionHold = (error: string | undefined) => /^(STOCK_POLICY_HELD|RECIPE_HELD|INGREDIENT_SHORT|TOPOLOGY_[A-Z_]+):/.test(error ?? "")
+
+export type WaitingWork = { operationId: string; entity: string; action: string; summary: string; createdAt: string; lastAttemptAt: string | null; state: "dependency" | "review"; error: string }
+/**
+ * Release batch: work the server keeps for now (waiting for something to reach it, or for a manager there) that is not
+ * a sale on the held-sales list. It is sent again automatically until the outcome is known; nothing is lost.
+ */
+export function getWaitingWork(): WaitingWork[] {
+  return readQueue()
+    .filter((op) => op.status === "Failed" && !op.staged && (op.held || isHeldError(op.error)) && !(op.entity === "sale" && op.action === "create" && isSaleDecisionHold(op.error)))
+    .map((op) => ({ operationId: op.id, entity: op.entity, action: op.action, summary: op.summary, createdAt: op.createdAt, lastAttemptAt: op.lastAttemptAt ?? null, state: op.held ?? "dependency", error: op.error ?? "" }))
+}
+/** Ask the server about this kept work now (instead of at the next check). */
+export async function checkWaitingWorkNow(operationId: string): Promise<void> {
+  updateQueueOps((op) => (op.id === operationId && op.status === "Failed" ? { ...op, lastAttemptAt: new Date(0).toISOString() } : op))
+  await flushSyncQueue()
+}
+
 /** Sales this till has taken payment for that the server is holding (see isHeldError). */
 export function getPolicyHeldSales(): PolicyHeldSale[] {
-  return readQueue().filter((op) => op.entity === "sale" && op.action === "create" && op.status !== "Synced" && isHeldError(op.error)).map((op) => {
+  return readQueue().filter((op) => op.entity === "sale" && op.action === "create" && op.status !== "Synced" && isSaleDecisionHold(op.error)).map((op) => {
     const sale = (op.payload ?? {}) as any
     const error = op.error ?? ""
     const productName = error.match(/"([^"]+)"/)?.[1] ?? null
@@ -1568,7 +1595,7 @@ export function getSyncStatus(): SyncStatus {
   const queue = readQueue()
   const recentErrors: string[] = []
 
-  let pending = 0, failed = 0, rejected = 0, dead = 0, synced = 0
+  let pending = 0, failed = 0, held = 0, rejected = 0, dead = 0, synced = 0
   let lastError: string | undefined
 
   for (const op of queue) {
@@ -1586,6 +1613,8 @@ export function getSyncStatus(): SyncStatus {
       // counted as staged above, not as pending
     } else if (op.status === "Pending") {
       pending++
+    } else if (op.held || isHeldError(op.error)) {
+      held++
     } else if (op.status === "Failed") {
       failed++
       if (op.error && recentErrors.length < 3) recentErrors.push(`${op.entity}: ${op.error}`)
@@ -1600,6 +1629,7 @@ export function getSyncStatus(): SyncStatus {
     lastStorageError,
     pending,
     failed,
+    held,
     rejected,
     dead,
     synced,
@@ -1824,15 +1854,50 @@ export async function deliverSessionWork(session: string, ms = 8_000): Promise<v
   }
 }
 
-export async function flushSyncQueue() {
-  if (_flushing) return { synced: 0, skipped: 0 }
-  _flushing = true
-  try { recoverStagedSyncOperations() } catch (e) { console.error("[sync] staged recovery failed:", e) }
-  try {
-    return await _flushSyncQueue()
-  } finally {
-    _flushing = false
-  }
+const REVIEW_RECHECK_MS = 2 * 60 * 1000
+/** Server answers that mean "kept, waiting" (older servers send no kind): for work an earlier version gave up on. */
+const WAITING_CODES = /^(STOCK_POLICY_HELD|RECIPE_HELD|INGREDIENT_SHORT|PRODUCT_PENDING|IDENTITY_HELD|IDENTITY_REQUIRED|OFFLINE_REVIEW|SESSION_REVIEW|HUB_UNSUPPORTED|APPROVAL_INVALID|PRICE_OVERRIDE|TOPOLOGY_[A-Z_]+):|^You don't have permission |^The (recorded )?staff member |^Only the person who opened this shift /
+const DEPENDENCY_CODES = /^(STOCK_POLICY_HELD|RECIPE_HELD|PRODUCT_PENDING):/
+/**
+ * Release batch: work an earlier version stopped sending (attempts used up, or marked rejected) although the server
+ * only kept it waiting — for something to arrive, or for a manager — is sent again: the server applies it once, or
+ * says it was declined. Nothing else that is stuck is touched.
+ */
+export function reviveWaitingWork(): number {
+  let revived = 0
+  updateQueueOps((op) => {
+    if (op.status === "Synced" || op.staged || op.held || !WAITING_CODES.test(op.error ?? "")) return op
+    if (op.status !== "Rejected" && op.attempts < MAX_ATTEMPTS) return op
+    revived++
+    return { ...op, status: "Failed" as const, attempts: 0, held: DEPENDENCY_CODES.test(op.error ?? "") ? "dependency" as const : "review" as const, lastAttemptAt: new Date(0).toISOString() }
+  })
+  return revived
+}
+
+let _flushRun: Promise<{ synced: number; skipped: number }> | null = null
+let _flushNext: Promise<{ synced: number; skipped: number }> | null = null
+/**
+ * Send the queue. A caller arriving while a send is under way waits for it and then gets one more send (shared by
+ * everyone who arrived meanwhile): what it queued just before is included. (It used to return at once with nothing
+ * sent, so "flush, then check" could look at a queue a concurrent send had not finished with.)
+ */
+export function flushSyncQueue(): Promise<{ synced: number; skipped: number }> {
+  if (!_flushRun) return startFlush()
+  if (!_flushNext) _flushNext = _flushRun.catch(() => undefined).then(() => { _flushNext = null; return startFlush() })
+  return _flushNext
+}
+function startFlush(): Promise<{ synced: number; skipped: number }> {
+  const run = (async () => {
+    _flushing = true
+    try { recoverStagedSyncOperations() } catch (e) { console.error("[sync] staged recovery failed:", e) }
+    try {
+      return await _flushSyncQueue()
+    } finally {
+      _flushing = false
+    }
+  })()
+  _flushRun = run
+  return run.finally(() => { if (_flushRun === run) _flushRun = null })
 }
 
 async function _flushSyncQueue() {
@@ -1842,6 +1907,7 @@ async function _flushSyncQueue() {
   // Paused: connected where this store's stock is not kept; the queue is sent once connected where the owner chose.
   if (getTopologyGuidance()) { dispatchSyncChanged(); return { synced: 0, skipped: readQueue().filter((op) => op.status === "Pending" || op.status === "Failed").length } }
 
+  reviveWaitingWork()
   const queue = readQueue()
   const apiUrl = getApiUrl()
   const token = getAuthToken()
@@ -1868,7 +1934,7 @@ async function _flushSyncQueue() {
     if (op.attempts >= MAX_ATTEMPTS) return false
     if (op.status === "Failed" && op.lastAttemptAt) {
       const elapsed = now - new Date(op.lastAttemptAt).getTime()
-      if (elapsed < backoffMs(op.attempts)) return false
+      if (elapsed < (op.held === "review" ? REVIEW_RECHECK_MS : backoffMs(op.attempts))) return false
     }
     return true
   })
@@ -1932,7 +1998,7 @@ async function _flushSyncQueue() {
           return { synced: 0, skipped: pending.length }
         }
       }
-      throw new Error(`Sync push failed: ${response.status}`)
+      throw Object.assign(new Error(`Sync push failed: ${response.status}`), { serverAnswered: true })
     }
 
     const result = await response.json()
@@ -1954,14 +2020,19 @@ async function _flushSyncQueue() {
         synced++
         return { ...op, status: "Synced" as const, attempts: op.attempts + 1, lastAttemptAt: now, syncedAt: now, error: undefined }
       }
+      // Release batch: the server keeps it (for something to arrive, or for a manager): attempts are not used up, and
+      // it is asked about again until the outcome is known (applied, or declined by a manager: rejected then).
+      if (syncResult?.kind === "dependency" || syncResult?.kind === "review") {
+        return { ...op, status: "Failed" as const, held: syncResult.kind, lastAttemptAt: now, error: syncResult.error }
+      }
       if (syncResult?.status === "rejected") {
         dispatchOperationRejected({ ...op, status: "Rejected", attempts: 5, lastAttemptAt: now, error: syncResult.error ?? "Rejected by server" })
         return { ...op, status: "Rejected" as const, attempts: 5, lastAttemptAt: now, error: syncResult.error ?? "Rejected by server" }
       }
       // SPRINT-1: a held sale (stock setting not known to the server) is kept and retried without
       // using up its attempts: it must stay in front of a manager until it is resolved.
-      if (isHeldError(syncResult?.error)) return { ...op, status: "Failed" as const, lastAttemptAt: now, error: syncResult!.error }
-      return { ...op, status: "Failed" as const, attempts: op.attempts + 1, lastAttemptAt: now, error: syncResult?.error ?? "Server error" }
+      if (isHeldError(syncResult?.error)) return { ...op, status: "Failed" as const, held: "dependency" as const, lastAttemptAt: now, error: syncResult!.error }
+      return { ...op, status: "Failed" as const, held: undefined, attempts: op.attempts + 1, lastAttemptAt: now, error: syncResult?.error ?? "Server error" }
     })
 
     if (synced > 0) writeLastSyncedAt(now)
@@ -1971,9 +2042,12 @@ async function _flushSyncQueue() {
     // every server handler is idempotent by operation and record id.
     const now = new Date().toISOString()
     const sent = new Set(pending.map((op) => op.id))
+    // Release batch: a connection that dropped (no answer from the server) is temporary: retried with its backoff, its
+    // attempts are not used up. A server that answered with an error counts as an attempt.
+    const answered = (err as { serverAnswered?: boolean })?.serverAnswered === true
     updateQueueOps((op) =>
       sent.has(op.id) && (op.status === "Pending" || op.status === "Failed") && op.attempts < MAX_ATTEMPTS
-        ? { ...op, status: "Failed" as const, attempts: op.attempts + 1, lastAttemptAt: now, error: String(err) }
+        ? { ...op, status: "Failed" as const, attempts: answered ? op.attempts + 1 : op.attempts, lastAttemptAt: now, error: answered ? String(err) : `NETWORK: ${String((err as Error)?.message ?? err)}` }
         : op
     )
     return { synced: 0, skipped: pending.length }
