@@ -204,7 +204,7 @@ export function describeServing(recipe: RecipeDef, optionIds: string[]): Array<{
 }
 export { toMilli }
 
-// ─── Remake / waste (inventory.adjust; anyone else is held for a manager's review) ───────────────
+// ─── Remake / waste (inventory.adjust applies it; otherwise the server may hold it for review) ──
 
 export type WasteInput = { product: Product; quantity: number; reason: "Remake" | "Waste"; note: string; selection?: Selection[] }
 export async function recordWaste(input: WasteInput) {

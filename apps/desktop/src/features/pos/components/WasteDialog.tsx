@@ -11,7 +11,8 @@ import type { Product } from "../types/product"
 /**
  * Café batch — record a remake or waste: a drink (its recipe's ingredients, with the options it was made with) or a
  * stock item itself (milk spilled, beans expired) in its unit. A stock event, never a sale or a refund: the server
- * takes it from the lots once (inventory.adjust; anyone else's is held for a manager's review).
+ * takes it from the lots once. Whether it waits for a manager's review is the server's decision (the connection's or the
+ * staff session's permission, by store mode), so the wording below never promises either outcome.
  */
 export default function WasteDialog({ products, onDone, onCancel }: { products: Product[]; onDone: (message: string) => void; onCancel: () => void }) {
   const { t, locale } = useI18n()
