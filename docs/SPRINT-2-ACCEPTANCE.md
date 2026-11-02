@@ -290,3 +290,14 @@ schema). The release manifest now inventories the 19 migrations by kind, says wh
 defines recovery (stop, preserve, decide, reconcile). After the freeze, `ea52d71` fixes the observe-mode remake/waste
 wording (desktop 512 passed, typechecks 0); it is not in `dev-176fc59` and goes into 1.0.53, which must be built and
 validated as that exact binary before publication.
+
+### On-PC acceptance with the real installer (batch 79, 2026-11-02; test build `1.0.53-test.2`, never published)
+
+All store data on the build PC is disposable test data (owner's statement). The installed 1.0.49 was backed up
+(`D:\TitanPOS-it\batch79\backup-1.0.49`), upgraded with the real silent installer, tested end to end against a
+loopback test cloud running the same commit, and restored byte for byte at the end. Final source
+`1e4fb28a2174e902a1fe58eccdfffedd284a0b5e` (= `176fc59` + `ea52d71` wording + `ba9f375` docs + `1e4fb28` legacy hub
+pulls); API 753 passed / 7 skipped, desktop 512, typechecks 0. Found and fixed: hubs 1.0.49–1.0.51 could not pull
+products or staff from the upgraded cloud. Evidence and results: `D:\TitanPOS-it\batch79` (REPORT.md,
+INSTALLER-DATA.md).
+

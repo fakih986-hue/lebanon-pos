@@ -103,6 +103,11 @@ Verified (evidence `D:\TitanPOS-it\batch75`):
   applied to a guessed product. After that hub is upgraded it re-forwards them with stable ids and they apply once.
   Until then, upgrade hubs promptly after the cloud.
 - **Older registers** cannot change a product to a recipe drink while they trade (store-wide gate).
+- **Hubs 1.0.49–1.0.51 pulling from the new cloud** (all send sync schema 2 and insert pulled rows verbatim): their pulls
+  are projected onto the v1.0.49 columns (`1e4fb28`, `lib/legacyHubShape.ts`). Without this, a 1.0.49 hub activated
+  against the new cloud received no products or staff (found on a real 1.0.49 install, batch 79). Side effect until
+  such a hub is upgraded: it no longer receives `StaffUser.roleVersion` (1.0.50/1.0.51 have the column), so a role
+  edit made on that hub after a cloud-side role change of the same person is refused as a conflict (safe, visible).
 - Mixed-version payloads tested: `product-identity.test.ts` (1.0.51 adjustment/count/sale/refund payloads through a
   hub to the cloud with crossing product numbers), `installed-hub.test.ts` phases with the released 1.0.51 till on the
   final package (section 9).
@@ -214,3 +219,4 @@ See SPRINT-2-ACCEPTANCE.md ("Batch: café stabilization and release preparation"
 | The remake/waste confirmation said "for a manager's review" from the staff member's own permission, while in observe mode the server decides by the register's connection account | **Fixed on the branch after the freeze** (`ea52d71`, wording only, English and Arabic, test `wasteWording.test.ts`). Not in `dev-176fc59`: the pilot records the old text and does not fail on it. Ships in 1.0.53. |
 | Observe mode authorizes by the connection account | By design until enforcement (STAFF-ENFORCEMENT.md). The real outcome always shows in Sync status (work kept by the server). |
 | Replay tool for a rollback after the point of no return (8.3) | Not written. Required before any production rollback; rehearse on a copy. |
+| Closing a shift from the register's drawer with the counted-cash field left empty records the expected amount (zero difference) | Unchanged since 1.0.49 (`CashDrawerPanel.tsx`); not changed in this batch (no new behaviour). Train cashiers to type the count, or require it in a later batch. |
