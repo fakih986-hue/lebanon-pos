@@ -22,9 +22,9 @@ const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 
 /** Where an operation names products (the object holding the reference and the field its stable id goes in). */
 export function productRefSites(entity: string, action: string, payload: unknown): Site[] {
   const sites: Site[] = []
-  const each = (list: unknown, base: Array<string | number>, key: Site["key"], self = false) => {
+  const each = (list: unknown, base: Array<string | number>, key: Site["key"], self = false, skip?: (o: Record<string, unknown>) => boolean) => {
     if (!Array.isArray(list)) return
-    list.forEach((o, i) => { if (isObj(o)) sites.push({ path: [...base, i], obj: o, key, self }) })
+    list.forEach((o, i) => { if (isObj(o) && !skip?.(o)) sites.push({ path: [...base, i], obj: o, key, self }) })
   }
   const top = (key: Site["key"], self = false) => {
     if (Array.isArray(payload)) each(payload, [], key, self)
@@ -34,7 +34,8 @@ export function productRefSites(entity: string, action: string, payload: unknown
   const p = payload as Record<string, unknown>
   if (entity === "product") top("syncId", true)
   else if (entity === "sale" && (action === "create" || action === "update")) each(p.items, ["items"], "productSyncId")
-  else if (entity === "refund" && action === "create") each(p.items, ["items"], "productSyncId")
+  // a refund line named by its sale line is that line's product on every server (no product reference to resolve)
+  else if (entity === "refund" && action === "create") each(p.items, ["items"], "productSyncId", false, (o) => typeof o.saleLineId === "string" && o.saleLineId.length > 0)
   else if (entity === "delivery-order" && action === "create") each(p.items, ["items"], "productSyncId")
   else if (entity === "inventory" && action === "receive") top("productSyncId")
   else if (entity === "inventory" && (action === "adjust" || action === "waste")) top("productSyncId")
@@ -70,7 +71,7 @@ export class ProductPendingError extends Error {
  * Stable ids the register sent are kept as sent. References without a resolvable stable id are left out (the receiving
  * server then holds the operation).
  */
-export async function firstServerRefs(db: Db, tenantId: string, op: { id: string; entity: string; action: string; payload?: unknown }, device: { deviceId?: string | null; accountId?: string | null } = {}, opts: { reviewed?: boolean } = {}): Promise<ProductRef[]> {
+export async function firstServerRefs(db: Db, tenantId: string, op: { id: string; entity: string; action: string; payload?: unknown }, device: { deviceId?: string | null; accountId?: string | null } = {}, opts: { reviewed?: boolean; legacyClient?: boolean } = {}): Promise<ProductRef[]> {
   const refs: ProductRef[] = []
   for (const s of productRefSites(op.entity, op.action, op.payload)) {
     const given = givenSyncId(s)
@@ -86,10 +87,12 @@ export async function firstServerRefs(db: Db, tenantId: string, op: { id: string
       if (product && !opts.reviewed) {
         // the line's own barcode is another product's here (a barcode no product has, e.g. a changed or scale code, says nothing)
         if (barcode && product.barcode !== barcode && !(product.barcodeAliases ?? []).includes(barcode)) {
-          const other = await db.product.findFirst({ where: { tenantId, id: { not: n }, OR: [{ barcode }, { barcodeAliases: { has: barcode } }] }, select: { name: true } })
-          if (other) throw new IdentityHeldError(`the line names product #${n} here, but its barcode ${barcode} is "${other.name}". Which product was meant cannot be established.`)
+          const other = await db.product.findFirst({ where: { tenantId, id: { not: n }, OR: [{ barcode }, { barcodeAliases: { has: barcode } }] }, select: { id: true, name: true } })
+          if (other && other.id !== n) throw new IdentityHeldError(`the line names product #${n} here, but its barcode ${barcode} is "${other.name}". Which product was meant cannot be established.`)
         }
-        if (await collidedLocalNumber(db, tenantId, n, product.syncId, device, op.id)) {
+        // only a register that names products by number (1.0.50/1.0.51): its queued work kept its own offline numbers.
+        // (A register of this version sends stable ids; after a pull its numbers are this server's again.)
+        if (opts.legacyClient && await collidedLocalNumber(db, tenantId, n, product.syncId, device, op.id)) {
           throw new IdentityHeldError(`this register numbered a product it created itself #${n}, which is another product here. Which product was meant cannot be established.`)
         }
       }
@@ -108,7 +111,7 @@ export async function firstServerRefs(db: Db, tenantId: string, op: { id: string
  */
 async function collidedLocalNumber(db: Db, tenantId: string, n: number, syncIdHere: string | null, device: { deviceId?: string | null; accountId?: string | null }, opId: string): Promise<boolean> {
   const deviceId = device.deviceId ?? null, accountId = device.accountId ?? null
-  if (!deviceId && !accountId) return false
+  if ((!deviceId && !accountId) || typeof (db as any).$queryRaw !== "function") return false
   const rows = await (db as any).$queryRaw`
     SELECT e->>'syncId' AS "syncId"
     FROM "SyncOperation" so

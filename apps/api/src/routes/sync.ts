@@ -551,7 +551,7 @@ async function applyOnce(tenantId: string, op: { id: string; entity: string; act
 
       // release batch: the stable ids of the products the command names: as the forwarding server recorded them, or
       // resolved here, where the register's numbers are this server's own (held when they cannot be trusted)
-      const refs: ProductRef[] = ctx?.forwarded ? (ctx.refs ?? []) : await firstServerRefs(tx as typeof prisma, tenantId, op, { deviceId: ctx?.deviceId, accountId: ctx?.userId }, { reviewed: ctx?.reviewed })
+      const refs: ProductRef[] = ctx?.forwarded ? (ctx.refs ?? []) : await firstServerRefs(tx as typeof prisma, tenantId, op, { deviceId: ctx?.deviceId, accountId: ctx?.userId }, { reviewed: ctx?.reviewed, legacyClient: (ctx?.syncSchema ?? 0) < CAFE_SCHEMA })
       if (ctx?.forwarded) {
         // a forward is applied on a copy with the stable ids filled in; the command kept is the register's (its
         // valuation written back, the filled-in ids removed)

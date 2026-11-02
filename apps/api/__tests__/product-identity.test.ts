@@ -278,6 +278,10 @@ describe("the first server holds numbers it cannot trust", () => {
     // another register's #X is the hub's Widget: applied
     expect((await asOldTill(adjust(X, -1), OTHER_DEVICE)).status).toBe("ok")
     expect(await stockOf(prisma, SYNC.widget)).toBe(before - 1)
+    // the same device once it runs this version (it pulled: its numbers are the hub's again; it sends stable ids, and a
+    // number it still sends alone is not held for its old offline numbering)
+    expect((await pushTo(hubUrl, adjust(X, -1), { Authorization: `Bearer ${clerkToken}`, "x-titan-sync-schema": "6" }, DEVICE)).status).toBe("ok")
+    expect(await stockOf(prisma, SYNC.widget)).toBe(before - 2)
   })
 
   it("a count line whose barcode is another product's: held at the hub, nothing recorded", async () => {
