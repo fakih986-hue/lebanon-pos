@@ -2641,4 +2641,6 @@ export const en = {
   "rcpt.refund_stock_mixed": "Packaged items return to stock and lots. Prepared items ({items}) do not — the ingredients used stay used.",
   "rcpt.void_effect_prepared": "The sale is reversed and any debt from it is removed. Prepared items ({items}) are not returned to stock — the ingredients used stay used. This cannot be undone.",
   "rcpt.void_effect_mixed": "The sale is reversed and any debt from it is removed. Packaged items return to stock; prepared items ({items}) do not — the ingredients used stay used. This cannot be undone.",
+  "admin.cafe.refunds": "Refunds",
+  "admin.cafe.refunds_note": "money given back; ingredients stay used",
 }

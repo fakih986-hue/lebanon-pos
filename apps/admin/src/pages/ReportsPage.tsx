@@ -34,8 +34,8 @@ type MarginData = {
   byProduct: Array<{ productId: number; name: string; category: string; quantity: number; revenue: number; cost: number; margin: number | null; marginPct: number | null; costIncomplete?: boolean }>
 }
 type CafeData = {
-  summary: { revenue: number; baseRevenue: number; modifierRevenue: number; ingredientCost?: number; unknownCostQuantity?: number; partialCostQuantity?: number; wasteCost?: number }
-  drinks: Array<{ productId: number; name: string; quantity: number; revenue: number; baseRevenue: number; modifierRevenue: number; ingredientCost?: number; costStatus?: "known" | "partial" | "unknown" | "none"; margin?: number | null }>
+  summary: { revenue: number; baseRevenue: number; modifierRevenue: number; refunds?: number; ingredientCost?: number; unknownCostQuantity?: number; partialCostQuantity?: number; wasteCost?: number }
+  drinks: Array<{ productId: number; name: string; quantity: number; revenue: number; baseRevenue: number; modifierRevenue: number; refunds?: number; ingredientCost?: number; costStatus?: "known" | "partial" | "unknown" | "none"; margin?: number | null }>
   waste?: Array<{ reason: string; events: number; cost: number }>
 }
 type DebtAgingData = {
@@ -405,23 +405,24 @@ export function ReportsPage() {
                 <section className="data-card p-5 rounded-xl overflow-auto" aria-labelledby="cafe-report-title">
                   <p id="cafe-report-title" className="font-semibold mb-3">{t("admin.cafe.title")}</p>
                   {cafe.drinks.length === 0 ? <p className="text-sm opacity-50">{t("admin.cafe.empty")}</p> : (<>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
                       <StatCard label={t("admin.cafe.base")} value={formatCurrency(cafe.summary.baseRevenue)} color="emerald" />
                       <StatCard label={t("admin.cafe.options")} value={formatCurrency(cafe.summary.modifierRevenue)} color="indigo" />
+                      <StatCard label={t("admin.cafe.refunds")} value={formatCurrency(cafe.summary.refunds ?? 0)} sub={t("admin.cafe.refunds_note")} color="amber" />
                       {cafe.summary.ingredientCost !== undefined && <StatCard label={t("admin.cafe.ingredient_cost")} value={formatCurrency(cafe.summary.ingredientCost)} color="rose" />}
                       {cafe.summary.wasteCost !== undefined && <StatCard label={t("admin.cafe.waste")} value={formatCurrency(cafe.summary.wasteCost)} color="violet" />}
                     </div>
                     {(cafe.summary.unknownCostQuantity ?? 0) + (cafe.summary.partialCostQuantity ?? 0) > 0 && <p className="text-sm opacity-70 mb-3" role="note">{t("admin.cafe.unknown", { n: (cafe.summary.unknownCostQuantity ?? 0) + (cafe.summary.partialCostQuantity ?? 0) })}</p>}
                     <table className="w-full text-sm">
                       <thead><tr className="text-start opacity-50">
-                        <th className="pb-2 pr-4">{t("admin.cafe.drink")}</th><th className="pb-2 pr-4">{t("admin.cafe.qty")}</th><th className="pb-2 pr-4">{t("admin.cafe.base")}</th><th className="pb-2 pr-4">{t("admin.cafe.options")}</th>
+                        <th className="pb-2 pr-4">{t("admin.cafe.drink")}</th><th className="pb-2 pr-4">{t("admin.cafe.qty")}</th><th className="pb-2 pr-4">{t("admin.cafe.base")}</th><th className="pb-2 pr-4">{t("admin.cafe.options")}</th><th className="pb-2 pr-4">{t("admin.cafe.refunds")}</th>
                         {cafe.summary.ingredientCost !== undefined && <><th className="pb-2 pr-4">{t("admin.cafe.ingredient_cost")}</th><th className="pb-2 pr-4">{t("admin.cafe.cost_status")}</th><th className="pb-2">{t("admin.margin_col")}</th></>}
                       </tr></thead>
                       <tbody>
                         {cafe.drinks.map((d) => (
                           <tr key={d.productId} className="border-t border-white/5">
                             <td className="py-2 pr-4">{d.name}</td><td className="py-2 pr-4">{d.quantity}</td>
-                            <td className="py-2 pr-4">{formatCurrency(d.baseRevenue)}</td><td className="py-2 pr-4">{formatCurrency(d.modifierRevenue)}</td>
+                            <td className="py-2 pr-4">{formatCurrency(d.baseRevenue)}</td><td className="py-2 pr-4">{formatCurrency(d.modifierRevenue)}</td><td className="py-2 pr-4">{formatCurrency(d.refunds ?? 0)}</td>
                             {cafe.summary.ingredientCost !== undefined && <><td className="py-2 pr-4">{money(d.ingredientCost)}</td><td className="py-2 pr-4">{t(`admin.cafe.status.${d.costStatus ?? "none"}`)}</td><td className="py-2">{money(d.margin)}</td></>}
                           </tr>
                         ))}

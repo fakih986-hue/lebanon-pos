@@ -402,13 +402,20 @@ router.get("/cafe", requireAuth, requirePermission("reports.view"), async (req: 
       where: { sale: { tenantId, status: { not: "Voided" }, createdAt: { gte: since } }, OR: [{ stockPolicy: "recipe" }, { modifiers: { not: Prisma.DbNull } }] },
       select: { productId: true, productName: true, quantity: true, total: true, unitPrice: true, basePrice: true, cost: true, costStatus: true, stockPolicy: true, modifiers: true, recipeConflict: true, modifierConflict: true },
     })
-    type Row = { productId: number; name: string; quantity: number; revenue: number; baseRevenue: number; modifierRevenue: number; cost: number; known: number; partial: number; unknown: number; conflicts: number }
+    // release batch: café lines refunded in the period (money given back; the ingredients stay used, so their cost stays)
+    const refunded = await prisma.refundItem.findMany({ where: { refund: { tenantId, createdAt: { gte: since } }, saleLineId: { not: null } }, select: { saleLineId: true, total: true } })
+    const refundedLines = refunded.length ? await prisma.saleItem.findMany({
+      where: { lineId: { in: [...new Set(refunded.map((r) => r.saleLineId!))] }, sale: { tenantId }, OR: [{ stockPolicy: "recipe" }, { modifiers: { not: Prisma.DbNull } }] },
+      select: { lineId: true, productId: true, productName: true, stockPolicy: true, modifiers: true },
+    }) : []
+    const cafeLineProduct = new Map(refundedLines.filter((l) => l.stockPolicy === "recipe" || (Array.isArray(l.modifiers) && l.modifiers.length > 0)).map((l) => [l.lineId!, { productId: l.productId, name: l.productName }]))
+    type Row = { productId: number; name: string; quantity: number; revenue: number; baseRevenue: number; modifierRevenue: number; refunds: number; cost: number; known: number; partial: number; unknown: number; conflicts: number }
     const by = new Map<number, Row>()
     const round2 = (n: number) => Math.round(n * 100) / 100
     for (const l of lines) {
       // a packaged line stored with an empty options list (JSON [] rather than NULL) is not a café line
       if (l.stockPolicy !== "recipe" && !(Array.isArray(l.modifiers) && l.modifiers.length > 0)) continue
-      const r = by.get(l.productId) ?? { productId: l.productId, name: l.productName, quantity: 0, revenue: 0, baseRevenue: 0, modifierRevenue: 0, cost: 0, known: 0, partial: 0, unknown: 0, conflicts: 0 }
+      const r = by.get(l.productId) ?? { productId: l.productId, name: l.productName, quantity: 0, revenue: 0, baseRevenue: 0, modifierRevenue: 0, refunds: 0, cost: 0, known: 0, partial: 0, unknown: 0, conflicts: 0 }
       const qty = Number(l.quantity) || 0
       const total = Number(l.total) || 0
       // the options' share: (unit price − the product's own price) × quantity, when the line kept its base price
@@ -422,17 +429,25 @@ router.get("/cafe", requireAuth, requirePermission("reports.view"), async (req: 
       if (l.recipeConflict || l.modifierConflict) r.conflicts += 1
       by.set(l.productId, r)
     }
+    for (const x of refunded) {
+      const line = cafeLineProduct.get(x.saleLineId!)
+      if (!line) continue
+      const r = by.get(line.productId) ?? { productId: line.productId, name: line.name, quantity: 0, revenue: 0, baseRevenue: 0, modifierRevenue: 0, refunds: 0, cost: 0, known: 0, partial: 0, unknown: 0, conflicts: 0 }
+      r.refunds += Number(x.total) || 0
+      by.set(line.productId, r)
+    }
     const drinks = [...by.values()].map((r) => {
       const complete = r.unknown === 0 && r.partial === 0
       return {
         productId: r.productId, name: r.name, quantity: r.quantity,
-        revenue: round2(r.revenue), baseRevenue: round2(r.baseRevenue), modifierRevenue: round2(r.modifierRevenue),
+        revenue: round2(r.revenue), baseRevenue: round2(r.baseRevenue), modifierRevenue: round2(r.modifierRevenue), refunds: round2(r.refunds),
         conflicts: r.conflicts,
         ...(showCost ? {
           ingredientCost: round2(r.cost),
           costStatus: r.known + r.partial + r.unknown === 0 ? "none" : complete ? "known" : r.known === 0 && r.partial === 0 ? "unknown" : "partial",
           unknownCostQuantity: r.unknown, partialCostQuantity: r.partial,
-          margin: complete && r.known > 0 ? round2(r.revenue - r.cost) : null,
+          // what was kept (sold, less refunds) less what the ingredients cost (consumed whether refunded or not)
+          margin: complete && r.known > 0 ? round2(r.revenue - r.refunds - r.cost) : null,
         } : {}),
       }
     }).sort((a, b) => b.revenue - a.revenue)
@@ -453,6 +468,7 @@ router.get("/cafe", requireAuth, requirePermission("reports.view"), async (req: 
         revenue: round2(drinks.reduce((s, d) => s + d.revenue, 0)),
         baseRevenue: round2(drinks.reduce((s, d) => s + d.baseRevenue, 0)),
         modifierRevenue: round2(drinks.reduce((s, d) => s + d.modifierRevenue, 0)),
+        refunds: round2(drinks.reduce((s, d) => s + d.refunds, 0)),
         ...(showCost ? {
           ingredientCost: round2(drinks.reduce((s, d: any) => s + (d.ingredientCost ?? 0), 0)),
           unknownCostQuantity: drinks.reduce((s, d: any) => s + (d.unknownCostQuantity ?? 0), 0),

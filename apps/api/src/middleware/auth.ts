@@ -61,7 +61,9 @@ type Handler = (
 ) => void
 
 /** Fields removed from responses for callers without reports.cost (SPRINT-0, see middleware/permission.ts). */
-export const COST_FIELDS = new Set(["cost", "profit", "margin", "marginPct", "totalCost", "soldAtCost", "unitCost", "wholesalePrice", "fallbackUnitCost", "costOfGoods", "returnedCost", "grossMargin", "netProfit", "costStatus"])
+export const COST_FIELDS = new Set(["cost", "profit", "margin", "marginPct", "totalCost", "soldAtCost", "unitCost", "wholesalePrice", "fallbackUnitCost", "costOfGoods", "returnedCost", "grossMargin", "netProfit", "costStatus",
+  // release batch: a lot's invoice price, a stock change's value, a drink's ingredient and waste cost, and whether a cost was known
+  "purchasePrice", "valueImpact", "totalValueImpact", "ingredientCost", "wasteCost", "costKnown"])
 
 export function json(res: ServerResponse, data: unknown, statusCode = 200) {
   res.statusCode = statusCode

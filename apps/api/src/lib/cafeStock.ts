@@ -206,7 +206,10 @@ export async function consumeRecipeLine(db: Db, tenantId: string, drink: { name:
     conflict = "resolved"
   } else {
     const optionIds = selectionOf(item).map((s) => s.optionId)
-    wanted = recipeConsumption(recipe, optionIds, item?.quantity) ?? []
+    const amounts = recipeConsumption(recipe, optionIds, item?.quantity)
+    // release batch: a quantity this precision cannot hold is refused, never sold as "nothing consumed"
+    if (!amounts) throw new ProductSetupError(`"${drink.name}": ${String(item?.quantity)} is not a supported quantity (a positive amount with at most 3 decimals).`)
+    wanted = amounts
     const recorded = recordedConsumption(item)
     if (recorded && !sameConsumption(recorded, wanted)) conflict = "mismatch" // the server's copy of the revision decides
   }

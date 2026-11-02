@@ -19,6 +19,7 @@ export async function decrementProductStock(
       where: { tenantId, id: item.productId, ...(byLine ? {} : { stockPolicy: "tracked" }), stock: { gte: item.quantity } },
       data: { stock: { decrement: item.quantity }, updatedAt: new Date() },
     })
+    if (result.count > 0) await roundProductStock(tx, tenantId, item.productId)
     if (result.count === 0) {
       const product = await tx.product.findFirst({
         where: { tenantId, id: item.productId },
@@ -42,5 +43,21 @@ export async function increaseProductStock(
       where: { tenantId, id: item.productId, stockPolicy: "tracked" },
       data: { stock: { increment: item.quantity }, updatedAt: new Date() },
     })
+    await roundProductStock(tx, tenantId, item.productId)
   }
+}
+
+/**
+ * Release batch: stock and lot quantities are kept at their declared precision (0.001 of the unit) after every change,
+ * so repeated fractional moves (grams, millilitres, weighed items) never leave float residue that accumulates.
+ */
+export async function roundProductStock(db: any, tenantId: string, productId: number): Promise<void> {
+  if (!db?.$executeRaw || !(productId > 0)) return
+  await db.$executeRaw`UPDATE "Product" SET "stock" = round("stock"::numeric, 3)::float8
+    WHERE "tenantId" = ${tenantId} AND "id" = ${productId} AND "stock" <> round("stock"::numeric, 3)::float8`
+}
+export async function roundLotQuantity(db: any, tenantId: string, lotId: string): Promise<void> {
+  if (!db?.$executeRaw || !lotId) return
+  await db.$executeRaw`UPDATE "InventoryBatch" SET "quantityRemaining" = round("quantityRemaining"::numeric, 3)::float8, "initialQuantity" = round("initialQuantity"::numeric, 3)::float8
+    WHERE "tenantId" = ${tenantId} AND "id" = ${lotId} AND ("quantityRemaining" <> round("quantityRemaining"::numeric, 3)::float8 OR "initialQuantity" <> round("initialQuantity"::numeric, 3)::float8)`
 }

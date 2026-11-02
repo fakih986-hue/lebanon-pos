@@ -8,7 +8,7 @@ import prisma from "../lib/prisma.js"
 /** True only on the authoritative cloud instance (Railway), false on hubs. */
 const IS_CLOUD = !["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")
 
-import { decrementProductStock } from "../lib/inventory.js"
+import { decrementProductStock, roundLotQuantity, roundProductStock } from "../lib/inventory.js"
 import { applyPolicyChange, resolveLinePolicy, StockPolicyHeldError, StockPolicyMismatchError } from "../lib/stockPolicy.js"
 import { CloseConflictError, closeScope, legacyClosesFor, recordClose } from "../lib/dailyClose.js"
 import { isTechnicalError, publicError } from "../lib/publicError.js"
@@ -1498,7 +1498,7 @@ router.get("/sale-committed/:saleId", staffSync, async (req: AuthRequest, res: S
 // unlockWithPin), so withholding server hashes does not change what works offline.
 /** SPRINT-0: cost data a caller without reports.cost does not receive through sync (selling prices,
  *  including the wholesale price the till needs, stay). */
-const SYNC_COST_KEYS = new Set(["cost", "profit", "margin", "marginPct", "totalCost", "unitCost", "fallbackUnitCost", "valueImpact", "totalValueImpact", "costTotal", "costOfGoods", "returnedCost", "grossMargin", "netProfit", "costStatus", "purchasePrice"])
+const SYNC_COST_KEYS = new Set(["cost", "profit", "margin", "marginPct", "totalCost", "unitCost", "fallbackUnitCost", "valueImpact", "totalValueImpact", "costTotal", "costOfGoods", "returnedCost", "grossMargin", "netProfit", "costStatus", "purchasePrice", "costKnown", "ingredientCost", "wasteCost"])
 export function withoutCost<T>(value: T): T {
   if (Array.isArray(value)) return value.map(withoutCost) as T
   if (value && typeof value === "object" && !(value instanceof Date) && !("toNumber" in (value as object))) {
@@ -2414,6 +2414,7 @@ async function processOperation(
               where: { tenantId, id: p.productId },
               data: { stock: { increment: p.quantity }, updatedAt: new Date() },
             })
+            await roundProductStock(db, tenantId, p.productId)
             // Record the void as a Refund movement (stock comes back)
             await recordMovement(p.productId, "Refund", p.quantity, `void:${id}`, `Void sale ${saleNumber ?? id}`)
             for (const slice of p.allocations ?? []) {
@@ -2422,6 +2423,7 @@ async function processOperation(
                 where: { id: slice.batchId, tenantId },
                 data: { quantityRemaining: { increment: slice.quantity }, status: "Open" } as any,
               })
+              await roundLotQuantity(db, tenantId, slice.batchId)
             }
           }
 
@@ -2551,6 +2553,7 @@ async function processOperation(
                     where: { id: batch.id, tenantId, quantityRemaining: { gte: take } },
                     data: { quantityRemaining: { decrement: take } },
                   })
+                  await roundLotQuantity(db, tenantId, batch.id)
                   if (result.count > 0) {
                     remaining -= take
                     touchedBatchIds.add(batch.id)
@@ -2571,6 +2574,8 @@ async function processOperation(
               where: { id: allocation.batchId, tenantId, quantityRemaining: { gte: quantity } },
               data: { quantityRemaining: { decrement: quantity } },
             })
+
+            await roundLotQuantity(db, tenantId, allocation.batchId)
             if (result.count === 0) {
               throw new Error(`Insufficient stock in batch ${allocation.batchId}`)
             }
@@ -2806,6 +2811,7 @@ async function processOperation(
             where: { tenantId, id: p.productId },
             data: { stock: { increment: p.quantity }, updatedAt: new Date() },
           })
+          await roundProductStock(db, tenantId, p.productId)
           // Legacy lines and untracked slices restore product stock only — no
           // lot is guessed. That stock is tagged so the reconciliation report
           // shows it as an explained exception ("unallocated return") instead
@@ -2822,6 +2828,7 @@ async function processOperation(
               where: { id: slice.batchId, tenantId },
               data: { quantityRemaining: { increment: slice.quantity }, status: "Open" } as any,
             })
+            await roundLotQuantity(db, tenantId, slice.batchId)
           }
         }
 
@@ -3025,6 +3032,7 @@ async function processOperation(
             await db.inventoryBatch.create({ data: { ...batchData, id: batchId, tenantId } as any })
             if (productId > 0 && qty !== 0) {
               await db.product.updateMany({ where: { tenantId, id: productId }, data: { stock: { increment: qty }, updatedAt: new Date() } as any })
+              await roundProductStock(db, tenantId, productId)
             }
             await recordStockMovementOnce(db, tenantId, {
               productId, type: isOpening ? "Opening" : "Receive", quantity: qty, reference: batchId as string,
@@ -3113,6 +3121,11 @@ async function processOperation(
           await db.stockAdjustment.update({ where: { id: payload?.id as string }, data: persisted as any })
           break
         }
+        // release batch: an ingredient counted in grams or millilitres moves by at most 0.001 (never silently rounded)
+        if (resolvedPid > 0 && toMilli(adj.quantityChange) === null) {
+          const unit = (await db.product.findFirst({ where: { tenantId, id: resolvedPid }, select: { stockUnit: true, name: true } }))
+          if (unit && unit.stockUnit !== "unit") throw new ProductSetupError(`"${unit.name}": ${String(adj.quantityChange)} ${unit.stockUnit} is not a supported quantity (at most 3 decimals).`)
+        }
         // release batch: a lot the adjustment names belongs to the product it names, or nothing moves (held)
         for (const slice of normalizeAllocations(adj.batchAllocations) ?? []) {
           if (!slice.batchId) continue
@@ -3126,6 +3139,7 @@ async function processOperation(
             where: { tenantId, id: resolvedPid },
             data: { stock: { increment: delta }, updatedAt: new Date() } as any,
           })
+          await roundProductStock(db, tenantId, resolvedPid)
           // Allocations carry magnitudes; the direction is the sign of quantityChange.
           for (const slice of normalizeAllocations(adj.batchAllocations) ?? []) {
             if (!slice.batchId) continue
@@ -3136,6 +3150,7 @@ async function processOperation(
                   where: { id: slice.batchId, tenantId },
                   data: { quantityRemaining: { increment: slice.quantity }, initialQuantity: { increment: slice.quantity }, status: "Open" } as any,
                 })
+                await roundLotQuantity(db, tenantId, slice.batchId)
               } else {
                 const raw = (adj.batchAllocations as any[]).find((a: any) => a?.batchId === slice.batchId) ?? {}
                 await db.inventoryBatch.create({
@@ -3152,6 +3167,7 @@ async function processOperation(
                 where: { id: slice.batchId, tenantId, quantityRemaining: { gte: slice.quantity } },
                 data: { quantityRemaining: { decrement: slice.quantity } },
               })
+              await roundLotQuantity(db, tenantId, slice.batchId)
               if (taken.count === 0) {
                 // The server's lot holds less than the device thought: take what
                 // is there rather than going negative. The reconciliation report
