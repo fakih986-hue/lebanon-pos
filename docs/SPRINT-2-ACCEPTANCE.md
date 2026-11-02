@@ -315,3 +315,13 @@ loopback cloud on the same commit: settings and link kept, pending sales deliver
 (14/14), café day passed with figures identical to batch 79, uninstall/reinstall kept the data, PC restored byte for
 byte. 1.0.50/1.0.51 compatibility is source-level (simulated), not an installed upgrade. No LAN second device and no
 POS hardware were available. Evidence: `D:\TitanPOS-it\batch80` (REPORT.md, INSTALLER-DATA.md).
+
+### Cloud deployment and fakih pilot (batch 81, 2026-11-02)
+
+Production `master` fast-forwarded to `390558aea6598691d1518cc1b2ceaf479c439c4c`; Railway deployment `9afd8cd4` succeeded
+and applied exactly the 19 pending migrations; health, admin, register, ordering, owner and driver bundles up. This
+PC's 1.0.49 was upgraded with the tested 1.0.53 installer and activated for the disposable store `fakih` (no other
+devices, last activity July). PILOT-1.0.53.md §5 passed with every expected stock and money figure, hub = cloud, and a
+hub restart kept the link and the register's pairing. Topology stayed unset: readiness reported 9 old open delivery
+orders and an unconfirmed scripted register queue. Staff identity stays observe. No GitHub release; latest.yml
+unchanged. Evidence: `D:\TitanPOS-it\batch81` (REPORT.md).
