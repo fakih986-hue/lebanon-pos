@@ -16,7 +16,7 @@ import {
   getSaleRefundTotal, getSaleRefunds, parseReturnQuantity,
 } from "../../features/pos/lib/salesHelpers"
 import {
-  getPaymentMix, getRefunds, getSales, getSalesMetrics, previewRefund, processRefund, refundApprovalPayload, refundLineKeyOf, subscribeRefunds, subscribeSales, voidApprovalPayload, voidSale,
+  getPaymentMix, getRefunds, getSales, getSalesMetrics, previewRefund, processRefund, refundApprovalPayload, refundLineKeyOf, subscribeRefunds, subscribeSales, voidApprovalPayload, voidBlockedReason, voidSale,
   type RefundItem, type Sale, type SalePaymentMethod, type SaleRefund,
 } from "../../features/pos/services/sales.service"
 import { userCan } from "../../features/pos/services/security.service"
@@ -231,6 +231,10 @@ export default function SalesPage() {
   function executeVoid(saleId: string) {
     setVoidSaleId(null)
     const sale = sales.find((x) => x.id === saleId)
+    // the service's rule, checked before any manager is asked: a sale with refunds is never voided
+    const blocked = sale ? voidBlockedReason(sale, refunds) : null
+    if (blocked === "voided") return
+    if (blocked === "refunded") { setRefundStatus({ tone: "err", text: t("pos.refund.error_void_has_refunds") }); return }
     if (!canVoid && sale) {
       setApproval({
         request: { entity: "sale", action: "void", payload: voidApprovalPayload(sale), permission: "sales.void" },
@@ -454,6 +458,7 @@ function ReceiptDrawer({ sale, refunds, rate, canRefund, canReprint, canVoid, as
     return { ...i, quantity: qty, total: i.unitPrice * qty }
   }).filter((i) => i.quantity > 0)
   const draftTotal = Math.min(Math.max(0, sale.total - refunded), getRefundTotal(sale, draft))
+  const voidBlocked = voidBlockedReason(sale, refunds)
   const refundBlocked = !canRefund && !askManager ? t("rcpt.needs_refund") : !refundable ? t(sale.status === "Voided" ? "pos.refund.error_sale_voided" : "pos.sales.no_refundable_balance") : ""
   return (
     <Drawer open wide title={t("rcpt.receipt_title", { number: sale.saleNumber })} onClose={onClose}
@@ -464,11 +469,14 @@ function ReceiptDrawer({ sale, refunds, rate, canRefund, canReprint, canVoid, as
       footer={<>
         {canReprint ? <button type="button" className="mg2-btn" onClick={onPrint} data-autofocus><Printer size={16} />{t("pos.print")}</button> : null}
         <button type="button" className="mg2-btn" disabled={!!refundBlocked} aria-describedby={refundBlocked ? "rc-refund-why" : undefined} aria-expanded={returning} onClick={() => setReturning((r) => !r)}><RotateCcw size={16} />{t("rcpt.return_items")}</button>
-        {sale.status !== "Voided" && (canVoid || askManager
+        {voidBlocked === "refunded" && (canVoid || askManager)
+          ? <button type="button" className="mg2-btn mg2-btn-danger" disabled aria-describedby="rc-void-why"><XCircle size={16} />{t("pos.void")}</button>
+          : sale.status !== "Voided" && (canVoid || askManager
           ? <button type="button" className="mg2-btn mg2-btn-danger" onClick={onVoid}>{canVoid ? <XCircle size={16} /> : <ShieldCheck size={16} aria-hidden="true" />}{t("pos.void")}{!canVoid && <span className="sr-only"> — {t("approval.needed")}</span>}</button>
           : <span className="mg2-cap" style={{ display: "inline-flex", gap: 6, alignItems: "center" }}><Lock size={14} aria-hidden="true" />{t("rcpt.needs_void")}</span>)}
       </>}>
       {!refundBlocked && (!canRefund || !canVoid) && askManager && <p className="mg2-cap" style={{ margin: 0, display: "flex", gap: 6, alignItems: "center" }}><ShieldCheck size={14} aria-hidden="true" />{t("approval.needed")}</p>}
+      {voidBlocked === "refunded" && (canVoid || askManager) && <p className="mg2-cap" id="rc-void-why" style={{ margin: 0 }}>{t("pos.refund.error_void_has_refunds")}</p>}
       {refundBlocked && <p className="mg2-cap" id="rc-refund-why" style={{ margin: 0, display: "flex", gap: 6, alignItems: "center" }}>{!canRefund && <Lock size={14} aria-hidden="true" />}{refundBlocked}</p>}
       {status && (
         <div className={`mg2-banner ${status.tone === "ok" ? "mg2-t-ok" : status.tone === "err" ? "mg2-t-err" : "mg2-t-info"}`} role={status.tone === "err" ? "alert" : "status"}>

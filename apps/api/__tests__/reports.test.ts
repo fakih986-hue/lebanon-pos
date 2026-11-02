@@ -57,7 +57,7 @@ describe("POST /api/reports/z-report", () => {
 
   it("returns 404 when no open shift", async () => {
     vi.mocked(prisma.shift.findFirst).mockResolvedValue(null)
-    const res = await request("POST", "/api/reports/z-report", { token, body: {} })
+    const res = await request("POST", "/api/reports/z-report", { token, body: { closingCash: 0 } })
     expect(res.status).toBe(404)
   })
 

@@ -189,4 +189,20 @@ describe("server Z-report close (real Postgres)", () => {
     expect(own.status).toBe(200)
     expect((await prisma.shift.findUnique({ where: { id: shift.id } }))!).toMatchObject({ status: "Closed", closedById: CASHIER_A })
   })
+
+  it("a close needs a count: missing, blank or negative is refused and the shift stays open; 0 is a count", async () => {
+    const shift = await openShift(TENANT_A, 40)
+    for (const body of [{ shiftId: shift.id }, { shiftId: shift.id, closingCash: null }, { shiftId: shift.id, closingCash: "" }, { shiftId: shift.id, closingCash: -1 }]) {
+      const res = await call("POST", "/api/reports/z-report", tokenA, body)
+      expect(res.status).toBe(400)
+      expect(res.body.code).toBe("COUNT_REQUIRED")
+      expect((await prisma.shift.findUnique({ where: { id: shift.id } }))!).toMatchObject({ status: "Open", closingCashUsd: null })
+    }
+    const zero = await call("POST", "/api/reports/z-report", tokenA, { shiftId: shift.id, closingCash: 0 })
+    expect(zero.status).toBe(200)
+    const stored = (await prisma.shift.findUnique({ where: { id: shift.id } }))!
+    expect(stored.status).toBe("Closed")
+    expect(Number(stored.closingCashUsd)).toBe(0)
+    expect(Number(stored.differenceUsd)).toBe(-40)
+  })
 })

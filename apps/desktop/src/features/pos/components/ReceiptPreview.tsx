@@ -18,7 +18,7 @@ import {
 } from "../lib/salesHelpers"
 import { userCan } from "../services/security.service"
 import type { Sale, SaleItem, SaleRefund } from "../services/sales.service"
-import { refundLineKeyOf } from "../services/sales.service"
+import { refundLineKeyOf, voidBlockedReason } from "../services/sales.service"
 import { usdToLbp } from "../lib/currency"
 
 const ReceiptPreview = memo(function ReceiptPreview({
@@ -267,7 +267,7 @@ const ReceiptPreview = memo(function ReceiptPreview({
               <ChevronDown size={12} className={`transition ${showReturns ? "rotate-180" : ""}`} />
             </button>
           )}
-          {sale && sale.status !== "Voided" && userCan("sales.void") && (
+          {sale && !voidBlockedReason(sale, refunds) && userCan("sales.void") && (
             <button
               type="button"
               onClick={() => onVoid(sale.id)}

@@ -43,7 +43,9 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
   const canClose = canCloseShift(shift)
   const canDraw = userCan("cash.manage")
   const countedVal = parseFloat(countedCash)
-  const diff = countedCash && !isNaN(countedVal) ? countedVal - expectedCash : 0
+  // the drawer is closed only on an entered count: blank is "not counted", 0 is a count of nothing
+  const counted = countedCash.trim() !== "" && Number.isFinite(countedVal) && countedVal >= 0
+  const diff = counted ? countedVal - expectedCash : 0
 
   const recentClosed = getShifts()
     .filter((s) => s.status === "Closed")
@@ -63,12 +65,15 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
 
   function handleCloseShift() {
     if (!shift || !canClose) return
-    try { closeShift({
+    if (!counted) { showToast(t("pos.drawer.count_required"), "error"); return }
+    let closed: ReturnType<typeof closeShift>
+    try { closed = closeShift({
       shiftId: shift.id,
       expectedCashUsd: expectedCash,
-      closingCashUsd: isNaN(countedVal) ? expectedCash : countedVal,
+      closingCashUsd: countedVal,
       notes: note || undefined,
     }) } catch (err) { showToast(t("pos.drawer.action_failed", { reason: String((err as Error)?.message ?? err) }), "error"); return }
+    if (!closed) { showToast(t("pos.drawer.count_required"), "error"); return }
     setShift(undefined)
     setCountedCash("")
     setNote("")
@@ -144,31 +149,32 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
               <div className="flex gap-2 mt-1">
                 <input type="number" min="0" step="0.01" value={countedCash}
                   onChange={(e) => setCountedCash(e.target.value)}
-                  placeholder={`${expectedCash.toFixed(2)}`}
-                  aria-label={t("pos.drawer.counted")}
+                  placeholder={t("pos.drawer.count_placeholder")}
+                  aria-label={t("pos.drawer.counted")} aria-describedby={canClose && !counted ? "drawer-count-why" : undefined}
                   className="input flex-1" style={{ minHeight: 44, fontSize: 14, fontWeight: 600 }} />
                 <span className="px-2 text-[11px] font-bold rounded tabular-nums"
                   style={{
                     lineHeight: "34px",
-                    ...(countedCash
+                    ...(counted
                       ? diff >= 0
                         ? { color: "var(--success-text)", background: "var(--success-soft)" }
                         : { color: "var(--danger-text)", background: "var(--danger-soft)" }
                       : {}),
                   }}>
-                  {countedCash ? (diff > 0 ? `+${formatCurrency(diff)}` : formatCurrency(diff)) : ""}
+                  {counted ? (diff > 0 ? `+${formatCurrency(diff)}` : formatCurrency(diff)) : ""}
                 </span>
               </div>
               <div className="flex gap-2">
                 <input value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("pos.drawer.note")} aria-label={t("pos.drawer.note")}
                   className="input flex-1" style={{ minHeight: 44, fontSize: 14 }} />
-                <button type="button" onClick={handleCloseShift} disabled={!canClose} aria-describedby={canClose ? undefined : "drawer-close-why"}
+                <button type="button" onClick={handleCloseShift} disabled={!canClose || !counted} aria-describedby={!canClose ? "drawer-close-why" : !counted ? "drawer-count-why" : undefined}
                   className="mg2-btn" style={{ minHeight: 44 }}>
                   <CircleDollarSign size={13} /> {t("pos.drawer.close")}
                 </button>
               </div>
 
               {!canClose && <p id="drawer-close-why" className="text-[14px]" style={{ margin: 0, color: "var(--text-2)" }}>{t("pos.drawer.need_shift_manage")}</p>}
+              {canClose && !counted && <p id="drawer-count-why" className="text-[14px]" style={{ margin: 0, color: "var(--text-2)" }}>{t("pos.drawer.count_required")}</p>}
 
               {/* Owner Draw */}
               {!canDraw && <p className="text-[14px] pt-1" style={{ margin: 0, color: "var(--text-2)", display: "flex", gap: 6, alignItems: "center" }}><ShieldCheck size={14} aria-hidden="true" />{t("approval.needed")}</p>}
@@ -203,7 +209,9 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
               {showHistory && (
                 <div className="mt-1.5 space-y-1">
                   {recentClosed.map((s) => {
-                    const variance = (s.differenceUsd ?? 0)
+                    // a shift closed without a recorded count shows "not counted", never a counted 0
+                    const uncounted = typeof s.closingCashUsd !== "number"
+                    const variance = uncounted ? 0 : (s.differenceUsd ?? 0)
                     return (
                       <div key={s.id} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-[10px]"
                         style={{ background: "var(--surface-3)" }}>
@@ -215,7 +223,7 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
                         </div>
                         <div className="text-end">
                           <span className="tabular-nums" style={{ color: "var(--text-2)" }}>
-                            {formatCurrency(s.closingCashUsd ?? 0)}
+                            {uncounted ? t("pos.drawer.not_counted") : formatCurrency(s.closingCashUsd ?? 0)}
                           </span>
                           {variance !== 0 && (
                             <span className="ms-1.5 font-bold tabular-nums" style={{ color: variance > 0 ? "var(--success)" : "var(--danger)" }}>

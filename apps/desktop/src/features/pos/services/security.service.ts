@@ -1104,7 +1104,8 @@ export function closeShift(input: {
   if (!existing) return null
   if (existing.status === "Closed") return existing
   if (!canCloseShift(existing, user)) throw new PermissionError("Only the person who opened this shift or a manager can close it.")
-  if (typeof input.closingCashUsd !== "number" || input.closingCashUsd < 0) return null
+  // a counted amount is required (0 is a count); a blank count is never recorded as the expected cash
+  if (typeof input.closingCashUsd !== "number" || !Number.isFinite(input.closingCashUsd) || input.closingCashUsd < 0) return null
 
   const differenceUsd = input.closingCashUsd - input.expectedCashUsd
   let closedShift: Shift | undefined

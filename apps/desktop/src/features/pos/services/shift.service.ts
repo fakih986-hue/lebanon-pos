@@ -107,8 +107,10 @@ export function getRegisterShiftSummaries(dateKey?: string): RegisterShiftSummar
     .filter((shift) => !dateKey || toLocalDateKey(shift.openedAt) === dateKey || (shift.closedAt && toLocalDateKey(shift.closedAt) === dateKey))
     .map((shift) => {
       const breakdown = computeShiftCashBreakdown(shift)
-      const countedCash = shift.status === "Closed" ? shift.closingCashUsd ?? 0 : undefined
-      const difference = shift.status === "Closed"
+      // a closed shift with no recorded count stays "not counted" (undefined), never a counted 0
+      const counted = shift.status === "Closed" && typeof shift.closingCashUsd === "number" && Number.isFinite(shift.closingCashUsd)
+      const countedCash = counted ? shift.closingCashUsd : undefined
+      const difference = counted
         ? shift.differenceUsd ?? ((countedCash ?? 0) - breakdown.expectedCash)
         : undefined
       return {
@@ -124,7 +126,7 @@ export function getRegisterShiftSummaries(dateKey?: string): RegisterShiftSummar
         expectedCash: breakdown.expectedCash,
         countedCash,
         difference,
-        needsReview: shift.status === "Open" || Math.abs(difference ?? 0) >= 0.01,
+        needsReview: shift.status === "Open" || !counted || Math.abs(difference ?? 0) >= 0.01,
         breakdown,
       }
     })

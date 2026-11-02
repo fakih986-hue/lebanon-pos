@@ -8,7 +8,7 @@ import {
   registerLocalQuantitySetter, type Check, type JournalEffect, type JournalEntry,
 } from "./businessJournal.service"
 import {
-  buildRefundableLines, planRefund, planVoidRestoration, assertRefundAmount, resolveRefundRate,
+  buildRefundableLines, planRefund, planVoidRestoration, assertRefundAmount, resolveRefundRate, QTY_EPSILON,
   refundableQuantity, legacyLineKey, isLegacyLineKey, normalizeAllocations, roundQty,
   type AllocationSlice, type PriorRefundLine, type RefundableLine, type PlannedRefundLine,
 } from "../lib/refundAllocation"
@@ -796,6 +796,15 @@ export function buildRefund(input: ProcessRefundInput) {
     rateSource: rate.rateSource,
   }
   return { ...preview, refund }
+}
+
+/**
+ * Why this sale cannot be voided, or null when it can: the same rule voidSale and the server apply
+ * (planVoidRestoration) — a voided sale, or a sale with any refund (refund the remaining items instead).
+ */
+export function voidBlockedReason(sale: Pick<Sale, "id" | "status">, refunds: SaleRefund[] = getRefunds()): "voided" | "refunded" | null {
+  if (sale.status === "Voided") return "voided"
+  return priorRefundLinesOf(refunds, sale.id).some((line) => (Number(line.quantity) || 0) > QTY_EPSILON) ? "refunded" : null
 }
 
 /** SPRINT-2 E: the void a manager is asked to approve (the same payload voidSale sends). */

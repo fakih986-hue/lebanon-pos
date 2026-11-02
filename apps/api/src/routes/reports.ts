@@ -178,6 +178,11 @@ router.post("/z-report", requireAuth, hideCostUnlessAllowed, async (req: AuthReq
     const shiftId = body.shiftId as string | undefined
     const closingCash = body.closingCash as number | undefined
     const notes = body.notes as string | undefined
+    // A close records a counted amount (0 is a count); a missing count is refused, never stored as a counted 0.
+    if (typeof closingCash !== "number" || !Number.isFinite(closingCash) || closingCash < 0) {
+      json(res, { error: "Count the drawer and send the counted cash (0 if it is empty)", code: "COUNT_REQUIRED" }, 400)
+      return
+    }
 
     const shift = shiftId
       ? await prisma.shift.findFirst({ where: { id: shiftId, tenantId } })
@@ -222,7 +227,7 @@ router.post("/z-report", requireAuth, hideCostUnlessAllowed, async (req: AuthReq
         shiftCash(tx as Db, tenantId, shift),
       ])
       const { cashSales, cashRefunds, cashExpenses, cashSupplierPayments, cashIn, cashOut, expectedCash } = cash
-      const difference = (closingCash ?? 0) - expectedCash
+      const difference = closingCash - expectedCash
 
       await tx.shift.updateMany({
         where: { id: shift.id, tenantId },
@@ -232,7 +237,7 @@ router.post("/z-report", requireAuth, hideCostUnlessAllowed, async (req: AuthReq
           cashExpensesUsd: cashExpenses,
           supplierPaymentsUsd: cashSupplierPayments,
           expectedCashUsd: expectedCash,
-          closingCashUsd: closingCash ?? 0,
+          closingCashUsd: closingCash,
           differenceUsd: difference,
           notes: notes ?? undefined,
         },
