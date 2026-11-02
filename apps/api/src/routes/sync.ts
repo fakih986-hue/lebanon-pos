@@ -41,6 +41,7 @@ import { requireTokenKinds } from "../middleware/auth.js"
 // ordering-app customer, a delivery driver or the owner portal.
 const staffSync = [requireCloudOrJwtAuth, requireTokenKinds("staff", "hub-local", "bridge")]
 import { broadcastToTenant } from "../ws/index.js"
+import { isLegacyHubPull, projectLegacyPull, projectLegacyRows, legacyModelOf } from "../lib/legacyHubShape.js"
 import {
   buildRefundableLines, planRefund, planVoidRestoration, assertRefundAmount, resolveRefundRate,
   legacyLineKey, isLegacyLineKey, normalizeAllocations, roundQty, RefundRuleError,
@@ -1700,7 +1701,9 @@ router.get("/pull", staffSync, async (req: AuthRequest, res: ServerResponse) => 
     })),
   }
   // A caller without cost visibility gets no cost data and no purchase records (purchase prices).
-  json(res, showCost ? body : { ...(withoutCost(serializeDecimals(body)) as Record<string, unknown>), purchaseOrders: [], supplierPayments: [] })
+  // hubs 1.0.49–1.0.51 insert pulled rows verbatim: only the fields their database has (lib/legacyHubShape.ts)
+  const shaped = isLegacyHubPull(req.auth, clientSyncSchema(req as any)) ? projectLegacyPull(body) : body
+  json(res, showCost ? shaped : { ...(withoutCost(serializeDecimals(shaped)) as Record<string, unknown>), purchaseOrders: [], supplierPayments: [] })
   } catch (err) {
     console.error("Sync pull error:", err)
     json(res, { error: "Failed to pull sync data" }, 500)
@@ -1774,7 +1777,8 @@ router.get("/pull/full/:entity", staffSync, async (req: AuthRequest, res: Server
     // Special entities that don't follow findMany pattern
     if (entity === "settings") {
       const settings = await prisma.appSettings.findUnique({ where: { tenantId } })
-      json(res, { entity, items: settings ? [settings] : [], hasMore: false, nextCursor: null })
+      const rows = settings ? [settings] : []
+      json(res, { entity, items: isLegacyHubPull(req.auth, clientSyncSchema(req as any)) ? projectLegacyRows("AppSettings", rows) : rows, hasMore: false, nextCursor: null })
       return
     }
     if (entity === "deletions") {
@@ -1831,15 +1835,18 @@ router.get("/pull/full/:entity", staffSync, async (req: AuthRequest, res: Server
 
     const showCostFull = await can(req, "reports.cost")
     const purchaseEntity = entity === "purchase-orders" || entity === "supplier-payments"
+    // hubs 1.0.49–1.0.51 insert pulled rows verbatim: only the fields their database has (lib/legacyHubShape.ts)
+    const legacyModel = isLegacyHubPull(req.auth, clientSyncSchema(req as any)) ? legacyModelOf(modelName) : undefined
+    const forClient = (rows: any[]) => (legacyModel ? projectLegacyRows(legacyModel, rows) : rows) as any[]
     json(res, {
       entity,
-      items: !showCostFull && purchaseEntity ? [] : (showCostFull ? (x: any) => x : (x: any) => withoutCost(serializeDecimals(x)))(entity === "sales" ? shapeSalesForSchema(items, clientSyncSchema(req as any))
+      items: !showCostFull && purchaseEntity ? [] : (showCostFull ? (x: any) => x : (x: any) => withoutCost(serializeDecimals(x)))(forClient(entity === "sales" ? shapeSalesForSchema(items, clientSyncSchema(req as any))
         : entity === "products" ? shapeProductsForSchema(items, clientSyncSchema(req as any))
         : entity === "refunds" ? shapeRefundsForSchema(items, clientSyncSchema(req as any))
         : entity === "debt-sales" ? shapeDebtSalesForSchema(items, clientSyncSchema(req as any))
         : entity === "daily-closes" ? await shapeDailyClosesForClient(items, req as any, tenantId)
         : entity === "users" || entity === "customers" ? redactVerifiers(items, req, entity === "users")
-        : items),
+        : items)),
       hasMore,
       nextCursor: nextCursor ?? null,
     })
