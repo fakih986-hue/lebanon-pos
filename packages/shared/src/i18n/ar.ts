@@ -2652,4 +2652,5 @@ export const ar = {
   "delivery.filter_by_status": "تصفية حسب الحالة",
   "ordering.checkout_details": "بياناتك",
   "ordering.load_more": "عرض المزيد",
+  "nav.expand": "توسيع القائمة",
 }

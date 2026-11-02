@@ -2652,4 +2652,5 @@ export const en = {
   "delivery.filter_by_status": "Filter by status",
   "ordering.checkout_details": "Your details",
   "ordering.load_more": "Load more",
+  "nav.expand": "Expand menu",
 }
