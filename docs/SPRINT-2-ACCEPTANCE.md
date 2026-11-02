@@ -301,3 +301,17 @@ pulls); API 753 passed / 7 skipped, desktop 512, typechecks 0. Found and fixed: 
 products or staff from the upgraded cloud. Evidence and results: `D:\TitanPOS-it\batch79` (REPORT.md,
 INSTALLER-DATA.md).
 
+
+### Release candidate 1.0.53 (batch 80, 2026-11-02; not published)
+
+Two cashier fixes (`794a5cd`): a drawer closes only on an entered count (0 allowed, distinct from blank; uncounted
+history shows "Not counted"; the Z-report refuses a missing count), and Void follows the refund rule on every screen.
+Version 1.0.53, release notes, manifest review and the single-store pilot plan in the release commit
+`390558aea6598691d1518cc1b2ceaf479c439c4c`, built once in a clean worktree (`D:\TitanPOS-candidates\1.0.53-390558a`,
+Setup SHA-256 `5d6cce127972b3ee1265245ebc7efb46248f470146c17a05a9c4a8b2d63bc472`). On that commit: API 754 passed /
+7 skipped, the 7 (released 1.0.50/1.0.51 tills) plus legacy hub pulls and product identity 62/62 with their sources,
+desktop 517, typechecks 0. Actual upgrade from this PC's installed **1.0.49** with the real silent installer against a
+loopback cloud on the same commit: settings and link kept, pending sales delivered once, both fixes checked rendered
+(14/14), café day passed with figures identical to batch 79, uninstall/reinstall kept the data, PC restored byte for
+byte. 1.0.50/1.0.51 compatibility is source-level (simulated), not an installed upgrade. No LAN second device and no
+POS hardware were available. Evidence: `D:\TitanPOS-it\batch80` (REPORT.md, INSTALLER-DATA.md).
