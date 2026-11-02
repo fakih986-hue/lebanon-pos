@@ -59,7 +59,7 @@ export default function IngredientReceiveRows({ rows, products, problemKey, cost
               </select>
             </label>
             <label className="mg2-field"><span className="lbl">{t("inv.rcv.ing.quantity")}</span>
-              <input className="mg2-input num" inputMode="decimal" dir="ltr" value={r.purchaseQuantity ?? ""} onChange={(e) => onUpdate(r.id, { purchaseQuantity: numOrUndefined(e.target.value) })} aria-invalid={problems.includes("missing_quantity") || undefined} aria-label={t("inv.rcv.qty_for", { name: label })} />
+              <input className="mg2-input num" inputMode="decimal" dir="ltr" value={r.purchaseQuantity ?? ""} onChange={(e) => onUpdate(r.id, { purchaseQuantity: numOrUndefined(e.target.value) })} aria-invalid={problems.includes("missing_quantity") || undefined} aria-label={`${t("inv.rcv.ing.quantity")} — ${label}`} />
             </label>
             <label className="mg2-field"><span className="lbl">{t("inv.rcv.ing.unit")}</span>
               <select className="mg2-select" value={r.purchaseUnit ?? unit} onChange={(e) => onUpdate(r.id, { purchaseUnit: e.target.value as PurchaseUnit })} aria-invalid={problems.includes("unit_incompatible") || undefined}>
@@ -72,7 +72,7 @@ export default function IngredientReceiveRows({ rows, products, problemKey, cost
               </label>
             )}
             <label className="mg2-field"><span className="lbl">{t("inv.rcv.ing.price", { unit: t(`unit.${r.purchaseUnit ?? unit}`) })}</span>
-              <span className="mg2-money"><span className="mg2-adorn">$</span><input type="number" min="0" step="0.0001" inputMode="decimal" dir="ltr" value={r.purchasePrice ?? ""} onChange={(e) => onUpdate(r.id, { purchasePrice: numOrUndefined(e.target.value) })} aria-invalid={problems.includes("cost_missing") || problems.includes("negative_money") || undefined} aria-label={t("inv.rcv.cost_for", { name: label })} /></span>
+              <span className="mg2-money"><span className="mg2-adorn">$</span><input type="number" min="0" step="0.0001" inputMode="decimal" dir="ltr" value={r.purchasePrice ?? ""} onChange={(e) => onUpdate(r.id, { purchasePrice: numOrUndefined(e.target.value) })} aria-invalid={problems.includes("cost_missing") || problems.includes("negative_money") || undefined} aria-label={`${t("inv.rcv.ing.price", { unit: t(`unit.${r.purchaseUnit ?? unit}`) })} — ${label}`} /></span>
             </label>
             <label className="mg2-field"><span className="lbl">{t("inv.rcv.col.expiry")}</span>
               <input className="mg2-input" type="date" dir="ltr" value={r.expiryDate} onChange={(e) => onUpdate(r.id, { expiryDate: e.target.value })} />

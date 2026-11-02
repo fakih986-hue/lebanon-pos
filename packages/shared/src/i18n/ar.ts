@@ -2643,4 +2643,13 @@ export const ar = {
   "rcpt.void_effect_mixed": "يُعكس البيع ويُزال أي دين ناتج عنه. تعود الأصناف المعبّأة إلى المخزون؛ أما المُحضَّرة ({items}) فلا — المكونات المستعملة تبقى مستهلكة. لا يمكن التراجع عن ذلك.",
   "admin.cafe.refunds": "المرتجعات",
   "admin.cafe.refunds_note": "مبالغ مُعادة؛ المكونات تبقى مستهلكة",
+  "refused.fx.remake": "إعادة تحضير: يُؤخذ من المخزون ما يستهلكه {quantity} × {product}{options}. ملاحظة: {note}",
+  "refused.fx.waste": "هدر: يُؤخذ {quantity} × {product}{options} من المخزون. ملاحظة: {note}",
+  // release batch: keys used on screens that had no text (shown raw)
+  "admin.low_stock": "مخزون منخفض",
+  "admin.x_report": "تقرير X",
+  "customers.retry": "إعادة المحاولة",
+  "delivery.filter_by_status": "تصفية حسب الحالة",
+  "ordering.checkout_details": "بياناتك",
+  "ordering.load_more": "عرض المزيد",
 }

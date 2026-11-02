@@ -2077,6 +2077,9 @@ export async function pullFromServer(full = false) {
   _pulling = true
   try {
     await _pullFromServer(full)
+    // release batch: what the server records (made-to-order, café options) is known from the first download, so a
+    // register that goes offline before its first sale can still sell what its server records
+    try { if (localStorage.getItem(SERVER_SCHEMA_KEY) === null) void serverSupportsMadeToOrder().catch(() => false) } catch { /* storage */ }
   } finally {
     _pulling = false
   }

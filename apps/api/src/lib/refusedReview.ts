@@ -38,6 +38,7 @@ export type Effect =
   | { kind: "stock-change"; product: string; change: number; reason: string | null; tillBefore: number | null; tillAfter: number | null; serverNow: number | null; serverAfter: number | null }
   | { kind: "lots-received"; product: string; quantity: number; serverNow: number | null; serverAfter: number | null }
   | { kind: "stock-count"; lines: number }
+  | { kind: "waste"; product: string; quantity: number; reason: "Remake" | "Waste"; options: string; note: string | null }
   | { kind: "customer"; action: string; name: string }
   | { kind: "debt-payment"; customer: string; amount: number }
   | { kind: "debt"; action: string; amount: number | null }
@@ -74,7 +75,14 @@ export async function describeEffects(tenantId: string, entity: string, action: 
     }
     return out
   }
-  if (entity === "inventory" && action === "count") return [{ kind: "stock-count", lines: Array.isArray(p.items) ? p.items.length : 0 }]
+  // a count's lines (registers send `lines`; `items` is an older name)
+  if (entity === "inventory" && action === "count") return [{ kind: "stock-count", lines: Array.isArray(p.lines) ? p.lines.length : Array.isArray(p.items) ? p.items.length : 0 }]
+  // release batch: a remake or waste: what it takes from stock (a drink: its recipe's ingredients for that many)
+  if (entity === "inventory" && action === "waste") {
+    const prod = await productOf(tenantId, p)
+    const options = Array.isArray(p.modifiers) ? (p.modifiers as Array<{ name?: unknown }>).map((m) => String(m?.name ?? "")).filter(Boolean).join(", ") : ""
+    return [{ kind: "waste", product: prod.name, quantity: num(p.quantity) ?? 0, reason: p.reason === "Remake" ? "Remake" : "Waste", options, note: typeof p.note === "string" ? p.note.slice(0, 200) : null }]
+  }
   if (entity === "customer") return [{ kind: "customer", action, name: typeof p.name === "string" ? p.name : "?" }]
   if (entity === "debt" && action === "payment") {
     const c = typeof p.customerId === "string" ? await prisma.customer.findFirst({ where: { tenantId, id: p.customerId }, select: { name: true } }) : null

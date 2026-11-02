@@ -2643,4 +2643,13 @@ export const en = {
   "rcpt.void_effect_mixed": "The sale is reversed and any debt from it is removed. Packaged items return to stock; prepared items ({items}) do not — the ingredients used stay used. This cannot be undone.",
   "admin.cafe.refunds": "Refunds",
   "admin.cafe.refunds_note": "money given back; ingredients stay used",
+  "refused.fx.remake": "Remake: takes from stock what {quantity} × {product}{options} uses. Note: {note}",
+  "refused.fx.waste": "Waste: takes {quantity} × {product}{options} from stock. Note: {note}",
+  // release batch: keys used on screens that had no text (shown raw)
+  "admin.low_stock": "Low stock",
+  "admin.x_report": "X report",
+  "customers.retry": "Retry",
+  "delivery.filter_by_status": "Filter by status",
+  "ordering.checkout_details": "Your details",
+  "ordering.load_more": "Load more",
 }
