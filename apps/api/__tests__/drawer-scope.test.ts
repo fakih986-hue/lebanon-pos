@@ -42,7 +42,7 @@ beforeAll(async () => {
   expect((await call("POST", "/api/device/pair", { code, deviceId: "dev-pc", deviceName: "Counter PC" })).status).toBe(200)
 })
 afterAll(async () => {
-  for (const m of ["auditEvent", "syncOperation", "syncClient", "operationEvidence", "managerApproval", "supplierPayment", "supplier", "cashMovement", "saleRefund", "sale", "shift", "appSettings", "pairingCode", "device", "staffUser"] as const)
+  for (const m of ["auditEvent", "syncOperation", "syncClient", "operationEvidence", "managerApproval", "dailyClose", "supplierPayment", "supplier", "cashMovement", "saleRefund", "sale", "shift", "appSettings", "pairingCode", "device", "staffUser"] as const)
     await (prisma as any)[m].deleteMany({ where: { tenantId: T } }).catch(() => undefined)
   await prisma.tenant.deleteMany({ where: { id: T } })
   await new Promise<void>((r) => server.close(() => r()))
@@ -117,5 +117,71 @@ describe("shifts and the drawer scope", () => {
     expect([closed?.status, Number(closed?.expectedCashUsd), Number(closed?.differenceUsd)]).toEqual(["Closed", expected, 0])
     await prisma.supplierPayment.deleteMany({ where: { tenantId: T } }); await prisma.supplier.deleteMany({ where: { tenantId: T } })
     await prisma.cashMovement.deleteMany({ where: { tenantId: T } }); await prisma.saleRefund.deleteMany({ where: { tenantId: T } }); await prisma.sale.deleteMany({ where: { tenantId: T } })
+  })
+
+  it("the stuck 1.0.54 shift forwards (its exact shape: deviceName, deviceId, a close with tenantId and closedById): applied once; a resend changes nothing", async () => {
+    const OPEN = "0f4bffc5-0a09-4285-bd17-9697c934a150", CLOSE = "06e9533c-336b-419b-b965-21420bb540e9", SH = `shift-rehearsal-${T.slice(0, 6)}`
+    const open = { id: OPEN, entity: "shift", action: "open", payload: { id: SH, status: "Open", deviceId: "DEV-MVZXCELC-OA5K", openedAt: "2026-11-03T12:31:56.808Z", deviceName: "Main Register", openedById: OWNER, registerId: "REG-001", shiftNumber: "SHIFT-OA5K-007", openedByName: "Café Cashier", openingFloatUsd: 20 } }
+    const close = { id: CLOSE, entity: "shift", action: "close", payload: { id: SH, status: "Closed", closedAt: "2026-11-03T12:32:48.356Z", deviceId: "DEV-MVZXCELC-OA5K", openedAt: "2026-11-03T12:31:56.808Z", tenantId: T, closedById: OWNER, deviceName: "Main Register", openedById: OWNER, shiftNumber: "SHIFT-OA5K-007", cashSalesUsd: 0, closedByName: "Café Cashier", openedByName: "Café Cashier", differenceUsd: 0, cashRefundsUsd: 0, closingCashUsd: 21, cashExpensesUsd: 0, expectedCashUsd: 21, openingFloatUsd: 20, supplierPaymentsUsd: 0 } }
+    const bridge = (ops: any[]) => call("POST", "/api/sync/push", { deviceId: "hub", operations: ops }, { "x-cloud-key": KEY, "x-tenant-id": T })
+    for (let round = 0; round < 2; round++) {
+      const r = await bridge([open, close])
+      expect(r.body.results.map((x: any) => x.status)).toEqual(["ok", "ok"])
+    }
+    const rows = await prisma.shift.findMany({ where: { tenantId: T, id: SH } })
+    expect(rows.map((x) => [x.status, Number(x.openingFloatUsd), Number(x.closingCashUsd), Number(x.expectedCashUsd), Number(x.differenceUsd), x.deviceId])).toEqual([["Closed", 20, 21, 21, 0, "DEV-MVZXCELC-OA5K"]])
+    expect(await prisma.syncOperation.count({ where: { id: { in: [OPEN, CLOSE] }, appliedAt: { not: null } } })).toBe(2)
+    await prisma.syncOperation.deleteMany({ where: { id: { in: [OPEN, CLOSE] } } })
+  })
+})
+
+describe("the shared drawer's day close", () => {
+  const today = new Date().toISOString().slice(0, 10)
+  const closeOp = (id: string, saleIds: string[], extra: Record<string, unknown> = {}) => ({ id: randomUUID(), entity: "daily-close", action: "close", payload: {
+    id, dateKey: today, grossSales: saleIds.length * 5, refunds: 0, netSales: saleIds.length * 5, expenses: 0, cashIn: 0, cashOut: 0, note: "", closedBy: "Owner",
+    registerId: "SHARED-DRAWER", tzOffsetMinutes: 0, saleIds, refundIds: [], createdAt: new Date().toISOString(), ...extra } })
+  const current = () => prisma.dailyClose.findMany({ where: { tenantId: T, dateKey: today, supersededById: null } })
+  const sale = async (n: string) => (await prisma.sale.create({ data: { id: `${n}-${T.slice(0, 6)}`, tenantId: T, saleNumber: n, paymentMethod: "Cash", subtotal: 5, tax: 0, total: 5, cashier: "IT" } as any })).id
+  let s1 = "", s2 = "", s3 = ""
+  beforeAll(async () => { s1 = await sale("DC-1"); s2 = await sale("DC-2") })
+
+  it("a retry changes nothing; an explicit correction is a linked revision; a close that does not name the current one never replaces it", async () => {
+    const a = randomUUID()
+    const first = closeOp(a, [s1, s2])
+    expect((await push(first)).status).toBe("ok")
+    expect((await push(first)).status).toBe("ok") // the same operation again
+    expect((await push(closeOp(a, [s1, s2]))).status).toBe("ok") // the same close in another operation
+    expect((await current()).map((c) => [c.id, c.revision])).toEqual([[a, 1]])
+    // another register's close of the same date, not naming the current one
+    const other = await push(closeOp(randomUUID(), [s1, s2], { deviceId: "dev-phone" }))
+    expect([other.status === "ok", other.error]).toEqual([false, expect.stringMatching(/CLOSE_CONFLICT: .*already closed for the shared drawer/)])
+    expect((await current()).map((c) => c.id)).toEqual([a])
+    // an explicit correction
+    const c = randomUUID()
+    expect((await push(closeOp(c, [s1, s2], { correctsId: a }))).status).toBe("ok")
+    const cur = await current()
+    expect(cur.map((x) => [x.id, x.revision, x.revisionOf, x.correction])).toEqual([[c, 2, a, "correction"]])
+    expect((await prisma.dailyClose.findUnique({ where: { id: a } }))?.supersededById).toBe(c)
+  })
+
+  it("a register that has not received every sale of the day cannot close it (nothing lost); after syncing it can", async () => {
+    s3 = await sale("DC-3")
+    const prev = (await current())[0]
+    const partial = await push(closeOp(randomUUID(), [s1, s2], { correctsId: prev.id }))
+    expect([partial.status === "ok", partial.error]).toEqual([false, expect.stringMatching(/CLOSE_CONFLICT: .*leaves out 1 sale/)])
+    expect((await current()).map((x) => x.id)).toEqual([prev.id])
+    const full = randomUUID()
+    expect((await push(closeOp(full, [s1, s2, s3], { correctsId: prev.id }))).status).toBe("ok")
+    expect((await current()).map((x) => [x.id, Number(x.grossSales)])).toEqual([[full, 15]])
+  })
+
+  it("two registers correcting the same close at once: one becomes current, the other is kept for review; each sale counted once", async () => {
+    const prev = (await current())[0]
+    const [x, y] = await Promise.all([push(closeOp(randomUUID(), [s1, s2, s3], { correctsId: prev.id })), push(closeOp(randomUUID(), [s1, s2, s3], { correctsId: prev.id }))])
+    expect([x, y].filter((r) => r.status === "ok")).toHaveLength(1)
+    expect([x, y].find((r) => r.status !== "ok")?.error).toMatch(/CLOSE_CONFLICT/)
+    const cur = await current()
+    expect(cur).toHaveLength(1)
+    expect(Number(cur[0].grossSales)).toBe(15)
   })
 })

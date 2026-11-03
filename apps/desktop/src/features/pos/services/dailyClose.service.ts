@@ -43,6 +43,9 @@ export type DailyClose = {
   supersededById?: string | null
   /** The close this one corrects, as sent (the server refuses a correction of a close since corrected). */
   correctsId?: string
+  /** Shared drawer only: the register's UTC offset on that date (Date#getTimezoneOffset), so the server can check
+   *  that the close counts everything recorded for the day. Not sent otherwise (an older server has no such field). */
+  tzOffsetMinutes?: number
 }
 
 export type CloseBusinessDayInput = Omit<
@@ -116,8 +119,8 @@ export function currentDailyCloses(closes: DailyClose[] = readDailyCloses()): Da
  * instead of adding the same sales again.
  */
 export const SHARED_DRAWER_REGISTER = "SHARED-DRAWER"
-function closeIdentity(): Pick<DailyClose, "registerId" | "deviceId" | "shiftId"> {
-  if (isDrawerShared()) return { registerId: SHARED_DRAWER_REGISTER }
+function closeIdentity(dateKey?: string): Pick<DailyClose, "registerId" | "deviceId" | "shiftId" | "tzOffsetMinutes"> {
+  if (isDrawerShared()) return { registerId: SHARED_DRAWER_REGISTER, ...(dateKey ? { tzOffsetMinutes: new Date(`${dateKey}T12:00:00`).getTimezoneOffset() } : {}) }
   const shiftId = getActiveShift()?.id
   return { registerId: getRegisterId(), deviceId: getDeviceId(), ...(shiftId ? { shiftId } : {}) }
 }
@@ -140,7 +143,7 @@ export function closeBusinessDay({ saleIds, refundIds, ...input }: CloseBusiness
     ...input,
     costStatus: known ? "complete" : "incomplete",
     id,
-    ...closeIdentity(),
+    ...closeIdentity(input.dateKey),
     note: input.note.trim(),
     closedBy: user.name,
     createdAt: new Date().toISOString(),

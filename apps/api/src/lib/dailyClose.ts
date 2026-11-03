@@ -21,6 +21,29 @@ import type prisma from "./prisma.js"
 
 type Db = Pick<typeof prisma, "dailyClose" | "auditEvent" | "$executeRaw">
 
+/** The register label a shared drawer's close is recorded under (desktop dailyClose.service SHARED_DRAWER_REGISTER). */
+export const SHARED_DRAWER_REGISTER = "SHARED-DRAWER"
+
+/**
+ * Batch 83: a shared drawer's close must count every sale and refund this server has recorded for its date (the
+ * register's local day: dateKey and its UTC offset), or it would lose them from the day. A register that has not
+ * received them yet is refused (kept for review) and closes again after it syncs.
+ */
+export async function assertSharedCloseComplete(db: Pick<typeof prisma, "sale" | "saleRefund">, tenantId: string, dateKey: string, tzOffsetMinutes: unknown, saleIds: unknown, refundIds: unknown): Promise<void> {
+  const offset = Number(tzOffsetMinutes)
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(dateKey) ? Date.parse(`${dateKey}T00:00:00.000Z`) : NaN
+  if (!Number.isInteger(offset) || Math.abs(offset) > 14 * 60 || !Number.isFinite(day)) throw new CloseConflictError(`this shared-drawer close of ${dateKey || "a date"} does not say which local day it covers (update the register). Kept for a manager's review.`)
+  // getTimezoneOffset(): minutes to ADD to local time to get UTC
+  const from = new Date(day + offset * 60_000), to = new Date(day + offset * 60_000 + 86_400_000)
+  const has = new Set([...(Array.isArray(saleIds) ? saleIds : []), ...(Array.isArray(refundIds) ? refundIds : [])].map(String))
+  const [sales, refunds] = await Promise.all([
+    db.sale.findMany({ where: { tenantId, createdAt: { gte: from, lt: to } }, select: { id: true } }),
+    db.saleRefund.findMany({ where: { tenantId, createdAt: { gte: from, lt: to } }, select: { id: true } }),
+  ])
+  const missing = [...sales, ...refunds].filter((r) => !has.has(r.id)).length
+  if (missing > 0) throw new CloseConflictError(`this shared-drawer close of ${dateKey} leaves out ${missing} sale(s) or refund(s) already recorded for that day (this register had not received them yet). Sync it and close again. Kept for a manager's review; nothing was recorded.`)
+}
+
 export class CloseConflictError extends Error {
   constructor(message: string) { super(`CLOSE_CONFLICT: ${message}`); this.name = "CloseConflictError" }
 }
@@ -32,6 +55,8 @@ export function closeScope(submitted: Record<string, unknown> | null | undefined
   const deviceId = text(submitted?.deviceId)
   const registerId = text(submitted?.registerId)
   const shiftId = text(submitted?.shiftId)
+  // the shared drawer is one scope for the store, whichever register (or shift) sends its close
+  if (registerId === SHARED_DRAWER_REGISTER) return { scope: `register:${SHARED_DRAWER_REGISTER}`, registerId, shiftId: null }
   const who = deviceId ? `device:${deviceId}` : registerId ? `register:${registerId}` : null
   return { scope: who ? `${who}${shiftId ? `|shift:${shiftId}` : ""}` : "store", registerId, shiftId }
 }
@@ -55,6 +80,11 @@ export async function recordClose(db: Db, tenantId: string, close: Record<string
     if (correctsId) throw new CloseConflictError(`this close corrects ${correctsId}, which this server has not recorded for ${close.dateKey}. Kept for a manager's review.`)
     await db.dailyClose.create({ data: { ...base, revision: 1 } as any })
     return "created"
+  }
+  // batch 83: the shared drawer's close is one close for the whole store: a close that does not name the current one
+  // (another register's, or one made before this register saw it) never replaces it silently
+  if (!correctsId && scope.registerId === SHARED_DRAWER_REGISTER && by !== "hub") {
+    throw new CloseConflictError(`${close.dateKey} was already closed for the shared drawer (close ${current.id}, revision ${current.revision}, by ${String(current.closedBy ?? "someone")}). A new close must correct that one: sync this register and close again. Kept for a manager's review; nothing was replaced.`)
   }
   if (correctsId && correctsId !== current.id) {
     throw new CloseConflictError(`this correction of ${close.dateKey} was based on close ${correctsId}, but the current close of this register and shift is ${current.id} (revision ${current.revision}). Kept for a manager's review; nothing was replaced.`)

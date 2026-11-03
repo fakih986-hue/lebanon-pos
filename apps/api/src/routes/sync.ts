@@ -11,7 +11,7 @@ const IS_CLOUD = !["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")
 
 import { decrementProductStock, roundLotQuantity, roundProductStock } from "../lib/inventory.js"
 import { applyPolicyChange, resolveLinePolicy, StockPolicyHeldError, StockPolicyMismatchError } from "../lib/stockPolicy.js"
-import { CloseConflictError, closeScope, legacyClosesFor, recordClose } from "../lib/dailyClose.js"
+import { CloseConflictError, closeScope, legacyClosesFor, recordClose, assertSharedCloseComplete, SHARED_DRAWER_REGISTER } from "../lib/dailyClose.js"
 import { isTechnicalError, publicError } from "../lib/publicError.js"
 import { enforcesAll, enforcesCheckout, issuePolicy, storePolicy } from "../lib/staffPolicy.js"
 import { actingPerson } from "../middleware/permission.js"
@@ -3336,7 +3336,7 @@ async function processOperation(
         // never 0). Written back so a hub forwards what it recorded.
         // correctsId: the close the register says this one corrects. Scope and revision are this server's
         // to decide (lib/dailyClose.ts), never taken from the register.
-        const { saleIds, refundIds, correctsId, scope: _scope, revision: _rev, revisionOf: _of, correction: _cor, supersededById: _sup, supersededAt: _supAt, ...close } = (payload ?? {}) as any
+        const { saleIds, refundIds, correctsId, tzOffsetMinutes, scope: _scope, revision: _rev, revisionOf: _of, correction: _cor, supersededById: _sup, supersededAt: _supAt, ...close } = (payload ?? {}) as any
         const valued = await dayCloseValuation(db, tenantId, Number(close.expenses) || 0, saleIds, refundIds)
         const stated = DAY_COST_KEYS.every((k) => close[k] !== null && close[k] !== undefined && close[k] !== "" && Number.isFinite(Number(close[k])))
         const figures = valued ? { ...valued, costStatus: "server" }
@@ -3346,7 +3346,11 @@ async function processOperation(
         if (submitted && typeof submitted === "object") for (const k of [...DAY_COST_KEYS, "costStatus"]) submitted[k] = close[k]
         // another register or shift: a separate close; the same register and shift again: a linked
         // correction (the corrected close is kept); the same close again: nothing changes
-        await recordClose(db as any, tenantId, close, closeScope(submitted), typeof correctsId === "string" && correctsId ? correctsId : null, source.userId === "cloud-bridge" ? "hub" : "push")
+        const scope = closeScope(submitted)
+        // batch 83: the shared drawer's close (one per date for the store) counts everything this server has
+        // recorded for that date; a hub's forward was checked at the hub
+        if (scope.registerId === SHARED_DRAWER_REGISTER && source.userId !== "cloud-bridge") await assertSharedCloseComplete(db as any, tenantId, String(close.dateKey ?? ""), tzOffsetMinutes, saleIds, refundIds)
+        await recordClose(db as any, tenantId, close, scope, typeof correctsId === "string" && correctsId ? correctsId : null, source.userId === "cloud-bridge" ? "hub" : "push")
       }
       break
     }

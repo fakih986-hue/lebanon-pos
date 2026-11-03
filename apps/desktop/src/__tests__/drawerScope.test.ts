@@ -98,6 +98,8 @@ describe("daily close: each sale counts once across registers", () => {
     const { getAccountingSummary } = await import("../pages/accounting/accounting.helpers")
     const sales = [rec("pc-1", 5.5, "sh-pc"), rec("ph-1", 4.75, "sh-phone"), rec("legacy", 2, "")] as any[]
     const pc = getAccountingSummary(sales, [], [], [], security.recordInThisDrawer)
+    const own = (await import("../features/pos/services/dailyClose.service")).closeBusinessDay({ dateKey: today.slice(0, 10), grossSales: 7.5, refunds: 0, netSales: 7.5, costOfGoods: 0, returnedCost: 0, grossMargin: 7.5, expenses: 0, supplierPayments: 0, netProfit: 7.5, cashIn: 7.5, cashOut: 0, note: "", saleIds: pc.saleIds, refundIds: [] } as any)
+    expect(["tzOffsetMinutes" in own, own.deviceId]).toEqual([false, PC]) // not shared: a register's own close, nothing an older server cannot store
     expect([pc.grossSales, pc.saleIds.sort()]).toEqual([7.5, ["legacy", "pc-1"]])
     vi.resetModules()
     seed({ device: PHONE, user: "u-mgr", shifts: [{ ...pcShift, status: "Closed", closedAt: today, closingCashUsd: 25.5 }, phoneShift] })
@@ -115,6 +117,7 @@ describe("daily close: each sale counts once across registers", () => {
     let dc = await import("../features/pos/services/dailyClose.service")
     const first = dc.closeBusinessDay(closeInput(10.25) as any)
     expect([first.registerId, first.deviceId, first.shiftId, first.revision]).toEqual(["SHARED-DRAWER", undefined, undefined, 1])
+    expect(first.tzOffsetMinutes).toBe(new Date(`${first.dateKey}T12:00:00`).getTimezoneOffset()) // the server checks the day is complete
     // the phone (same store, local closes pulled) closes the same date
     const closes = window.localStorage.getItem("lebanonpos.daily-closes.v1")
     vi.resetModules()
