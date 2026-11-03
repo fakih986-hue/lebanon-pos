@@ -1,6 +1,7 @@
 import { Router } from "express"
 import type { IncomingMessage, ServerResponse } from "node:http"
 import bcrypt from "bcryptjs"
+import { pinMatches } from "../lib/pinVerifier.js"
 import { createHash, timingSafeEqual } from "crypto"
 import { z } from "zod"
 import prisma from "../lib/prisma.js"
@@ -29,9 +30,6 @@ const loginSchema = z.object({
 
 const router = Router()
 
-function hashSha256Pin(pin: string) {
-  return createHash("sha256").update(pin).digest("base64")
-}
 
 router.post("/tenant/setup", async (req: any, res: any) => {
   try {
@@ -140,10 +138,7 @@ router.post("/login", async (req: any, res: any) => {
         res.status(403).json({ error: "Tenant suspended", code: "TENANT_SUSPENDED" })
         return
       }
-      const pinMatches = driver.pin.startsWith("$2")
-        ? await bcrypt.compare(pin, driver.pin)
-        : driver.pin === hashSha256Pin(pin)
-      if (!pinMatches) {
+      if (!(await pinMatches(driver.pin, pin))) {
         res.status(401).json({ error: "Invalid credentials" })
         return
       }
@@ -200,10 +195,7 @@ router.post("/login", async (req: any, res: any) => {
         include: { tenant: true },
       })
       if (candidate) {
-        const pinMatches = candidate.pin.startsWith("$2")
-          ? await bcrypt.compare(pin, candidate.pin)
-          : candidate.pin === hashSha256Pin(pin)
-        if (pinMatches) {
+        if (await pinMatches(candidate.pin, pin)) {
           const token = signToken({ userId: candidate.id, tenantId: candidate.tenantId, role: candidate.role, tokenVersion: candidate.tokenVersion ?? 1, ...use })
           res.json({
             token, user: { id: candidate.id, name: candidate.name, role: candidate.role, tenantId: candidate.tenantId, tenantName: candidate.tenant.name, pinVersion: candidate.pinVersion },
@@ -222,7 +214,6 @@ router.post("/login", async (req: any, res: any) => {
     // CONTAINMENT: a PIN identifies ONE person. If several active staff members (in this store, or
     // across stores when no store is named) share it, the sign-in is refused instead of silently
     // picking the highest role: the caller must name the staff member (staffId).
-    const sha256Pin = hashSha256Pin(pin)
     const candidates = await prisma.staffUser.findMany({
       where: { active: true, ...tenantFilter, ...(staffId ? { id: staffId } : {}) },
       include: { tenant: true },
@@ -230,10 +221,7 @@ router.post("/login", async (req: any, res: any) => {
 
     const matched: any[] = []
     for (const candidate of candidates) {
-      const matches = candidate.pin.startsWith("$2")
-        ? await bcrypt.compare(pin, candidate.pin)
-        : candidate.pin === sha256Pin
-      if (matches) matched.push(candidate)
+      if (await pinMatches(candidate.pin, pin)) matched.push(candidate)
     }
 
     if (matched.length === 0) {

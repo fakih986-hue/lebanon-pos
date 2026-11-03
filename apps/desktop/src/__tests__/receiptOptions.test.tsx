@@ -71,3 +71,74 @@ describe("the on-screen receipt shows each drink's options", () => {
     }
   })
 })
+
+// ── printed receipt, reprint, the completed-sale panel and the WhatsApp text (batch 83) ──
+const printed = async (print: () => void) => {
+  let html = ""
+  const win = { document: { write: (h: string) => { html += h }, close: () => undefined }, focus: () => undefined, print: () => undefined, close: () => undefined, addEventListener: () => undefined, onload: null as unknown }
+  const open = vi.spyOn(window, "open").mockReturnValue(win as unknown as Window)
+  print()
+  open.mockRestore()
+  return html
+}
+const settings = { storeName: "IT Café", branchName: "", address: "", phone: "", receiptFooter: "", usdToLbpRate: 89500 } as any
+
+describe("printed receipts and reprints carry each line's sale-time options", () => {
+  for (const lang of ["en", "ar"] as const) it(`sales reprint and POS print, ${lang}; a legacy line shows none; long names wrap`, async () => {
+    localStorage.setItem("lebanonpos.locale", lang)
+    const { printSaleReceipt, printLastSaleReceipt } = await import("../features/pos/lib/printReceipt")
+    const long = { id: 3, lineId: "L4", name: "Extra-long seasonal hazelnut caramel oat-milk latte with cinnamon dusting", barcode: "", quantity: 1, unitPrice: 5, total: 5, stockPolicy: "recipe", modifiers: [mod("Size", "Large", "كبير", 0.5)] }
+    const withLong = { ...sale, items: [...sale.items, long] }
+    const reprint = await printed(() => printSaleReceipt(withLong as any, 89500, [], settings))
+    const pos = await printed(() => printLastSaleReceipt({ number: "S-CAFE-1", paymentMethod: "Cash", grossSubtotal: 8.5, subtotal: 8.5, discountTotal: 0, tax: 0, total: 8.5, totalLbp: 760750, exchangeRate: 89500,
+      items: sale.items.map((i: any) => ({ ...i, price: i.unitPrice })) } as any, settings))
+    const want = lang === "ar" ? ["كبير، حليب الشوفان، شوت إضافي", "عادي، حليب كامل الدسم"] : ["Large, Oat milk, Extra shot", "Regular, Full-fat milk"]
+    for (const html of [reprint, pos]) {
+      for (const w of want) expect(html).toContain(w)
+      // Pepsi (no options, an older line): its block has no options row
+      const at = html.indexOf("Pepsi 330 ml"), next = html.indexOf('class="item"', at)
+      const pepsi = html.slice(at, next === -1 ? at + 400 : next)
+      expect(pepsi).not.toMatch(/Large|Oat|كبير/)
+    }
+    expect(reprint).toContain("Extra-long seasonal hazelnut caramel oat-milk latte with cinnamon dusting")
+    expect(reprint).toMatch(/overflow-wrap: anywhere/)
+  })
+
+  it("58 mm and 80 mm rolls: the printable width is used, and text wraps", async () => {
+    const { printSaleReceipt } = await import("../features/pos/lib/printReceipt")
+    for (const [paperMm, printableMm] of [[58, 48], [80, 72]] as const) {
+      localStorage.setItem("lebanonpos.receipt-printer.v1", JSON.stringify({ paperMm, printableMm, marginMm: 2 }))
+      const html = await printed(() => printSaleReceipt(sale as any, 89500, [], settings))
+      expect(html).toContain(`width: ${printableMm}mm`)
+      expect(html).toContain("Large, Oat milk, Extra shot")
+    }
+  })
+
+  it("a receipt keeps the options as sold when the menu option is renamed later", async () => {
+    localStorage.setItem("lebanonpos.locale", "en")
+    // the menu's option is renamed (Oat milk → Oat drink); the sale line keeps its own snapshot
+    localStorage.setItem("lebanonpos.modifier-groups.v1", JSON.stringify([{ id: "g-Milk", name: "Milk", options: [{ id: "o-Oat milk", name: "Oat drink", priceDelta: 0.5 }] }]))
+    const { printSaleReceipt } = await import("../features/pos/lib/printReceipt")
+    const html = await printed(() => printSaleReceipt(sale as any, 89500, [], settings))
+    expect(html).toContain("Large, Oat milk, Extra shot")
+    expect(html).not.toContain("Oat drink")
+  })
+})
+
+describe("the completed-sale panel and the WhatsApp receipt", () => {
+  it("the panel lists the lines with their options; a line without options shows none", async () => {
+    localStorage.setItem("lebanonpos.locale", "en")
+    const { default: SaleCompleteOverlay } = await import("../features/pos/components/SaleCompleteOverlay")
+    await render(h(SaleCompleteOverlay, { sale: { number: "S-CAFE-1", total: 8.5, totalLbp: 760750, paymentMethod: "Card", items: sale.items as any } }))
+    const opts = [...container.querySelectorAll("[data-testid=sale-complete-options]")].map((e) => e.textContent)
+    expect(opts).toEqual(["Large, Oat milk, Extra shot", "Regular, Full-fat milk"])
+    expect(container.textContent).toContain("Pepsi 330 ml")
+  })
+
+  it("the WhatsApp text names each line's options", async () => {
+    const { receiptMessage } = await import("../features/pos/lib/whatsapp")
+    const text = receiptMessage({ storeName: "IT Café", saleNumber: "S-CAFE-1", total: 5.5, totalLbp: 492250, items: [{ name: "Latte", quantity: 1, total: 4.5, options: "Large, Oat milk" }, { name: "Pepsi 330 ml", quantity: 1, total: 1 }] })
+    expect(text).toContain("1× Latte (Large, Oat milk) — $4.50")
+    expect(text).toContain("1× Pepsi 330 ml — $1.00")
+  })
+})

@@ -35,7 +35,7 @@ type MarginData = {
 }
 type CafeData = {
   summary: { revenue: number; baseRevenue: number; modifierRevenue: number; refunds?: number; ingredientCost?: number; unknownCostQuantity?: number; partialCostQuantity?: number; wasteCost?: number }
-  drinks: Array<{ productId: number; name: string; quantity: number; revenue: number; baseRevenue: number; modifierRevenue: number; refunds?: number; ingredientCost?: number; costStatus?: "known" | "partial" | "unknown" | "none"; margin?: number | null }>
+  drinks: Array<{ productId: number; name: string; soldAs?: string[]; archived?: boolean; missing?: boolean; quantity: number; revenue: number; baseRevenue: number; modifierRevenue: number; refunds?: number; ingredientCost?: number; costStatus?: "known" | "partial" | "unknown" | "none"; margin?: number | null }>
   waste?: Array<{ reason: string; events: number; cost: number }>
 }
 type DebtAgingData = {
@@ -421,7 +421,7 @@ export function ReportsPage() {
                       <tbody>
                         {cafe.drinks.map((d) => (
                           <tr key={d.productId} className="border-t border-white/5">
-                            <td className="py-2 pr-4">{d.name}</td><td className="py-2 pr-4">{d.quantity}</td>
+                            <td className="py-2 pr-4">{d.name}{d.archived && <span className="block text-xs opacity-60">{t("admin.cafe.archived")}</span>}{d.soldAs?.length ? <span className="block text-xs opacity-60">{t("admin.cafe.sold_as", { names: d.soldAs.join(", ") })}</span> : null}</td><td className="py-2 pr-4">{d.quantity}</td>
                             <td className="py-2 pr-4">{formatCurrency(d.baseRevenue)}</td><td className="py-2 pr-4">{formatCurrency(d.modifierRevenue)}</td><td className="py-2 pr-4">{formatCurrency(d.refunds ?? 0)}</td>
                             {cafe.summary.ingredientCost !== undefined && <><td className="py-2 pr-4">{money(d.ingredientCost)}</td><td className="py-2 pr-4">{t(`admin.cafe.status.${d.costStatus ?? "none"}`)}</td><td className="py-2">{money(d.margin)}</td></>}
                           </tr>

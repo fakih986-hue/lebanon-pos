@@ -8722,6 +8722,7 @@ export namespace Prisma {
     assignMode: string | null
     assignTimeout: number | null
     defaultDriverId: string | null
+    drawerScope: string | null
   }
 
   export type AppSettingsMaxAggregateOutputType = {
@@ -8743,6 +8744,7 @@ export namespace Prisma {
     assignMode: string | null
     assignTimeout: number | null
     defaultDriverId: string | null
+    drawerScope: string | null
   }
 
   export type AppSettingsCountAggregateOutputType = {
@@ -8764,6 +8766,7 @@ export namespace Prisma {
     assignMode: number
     assignTimeout: number
     defaultDriverId: number
+    drawerScope: number
     _all: number
   }
 
@@ -8807,6 +8810,7 @@ export namespace Prisma {
     assignMode?: true
     assignTimeout?: true
     defaultDriverId?: true
+    drawerScope?: true
   }
 
   export type AppSettingsMaxAggregateInputType = {
@@ -8828,6 +8832,7 @@ export namespace Prisma {
     assignMode?: true
     assignTimeout?: true
     defaultDriverId?: true
+    drawerScope?: true
   }
 
   export type AppSettingsCountAggregateInputType = {
@@ -8849,6 +8854,7 @@ export namespace Prisma {
     assignMode?: true
     assignTimeout?: true
     defaultDriverId?: true
+    drawerScope?: true
     _all?: true
   }
 
@@ -8957,6 +8963,7 @@ export namespace Prisma {
     assignMode: string
     assignTimeout: number
     defaultDriverId: string
+    drawerScope: string | null
     _count: AppSettingsCountAggregateOutputType | null
     _avg: AppSettingsAvgAggregateOutputType | null
     _sum: AppSettingsSumAggregateOutputType | null
@@ -8997,6 +9004,7 @@ export namespace Prisma {
     assignMode?: boolean
     assignTimeout?: boolean
     defaultDriverId?: boolean
+    drawerScope?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["appSettings"]>
 
@@ -9019,6 +9027,7 @@ export namespace Prisma {
     assignMode?: boolean
     assignTimeout?: boolean
     defaultDriverId?: boolean
+    drawerScope?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["appSettings"]>
 
@@ -9041,6 +9050,7 @@ export namespace Prisma {
     assignMode?: boolean
     assignTimeout?: boolean
     defaultDriverId?: boolean
+    drawerScope?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["appSettings"]>
 
@@ -9063,9 +9073,10 @@ export namespace Prisma {
     assignMode?: boolean
     assignTimeout?: boolean
     defaultDriverId?: boolean
+    drawerScope?: boolean
   }
 
-  export type AppSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "storeName" | "branchName" | "phone" | "address" | "vatRate" | "usdToLbpRate" | "receiptFooter" | "lowStockThreshold" | "profitPercent1" | "profitPercent2" | "deliveryFee" | "whatsAppAdmin" | "whatsAppDriverEnabled" | "assignMode" | "assignTimeout" | "defaultDriverId", ExtArgs["result"]["appSettings"]>
+  export type AppSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "storeName" | "branchName" | "phone" | "address" | "vatRate" | "usdToLbpRate" | "receiptFooter" | "lowStockThreshold" | "profitPercent1" | "profitPercent2" | "deliveryFee" | "whatsAppAdmin" | "whatsAppDriverEnabled" | "assignMode" | "assignTimeout" | "defaultDriverId" | "drawerScope", ExtArgs["result"]["appSettings"]>
   export type AppSettingsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }
@@ -9100,6 +9111,11 @@ export namespace Prisma {
       assignMode: string
       assignTimeout: number
       defaultDriverId: string
+      /**
+       * batch 83: null = not chosen (a register never uses another register's open shift); "shared" = every
+       * register of the store sells into the one open shift (one drawer). Separate drawers are not supported yet.
+       */
+      drawerScope: string | null
     }, ExtArgs["result"]["appSettings"]>
     composites: {}
   }
@@ -9542,6 +9558,7 @@ export namespace Prisma {
     readonly assignMode: FieldRef<"AppSettings", 'String'>
     readonly assignTimeout: FieldRef<"AppSettings", 'Int'>
     readonly defaultDriverId: FieldRef<"AppSettings", 'String'>
+    readonly drawerScope: FieldRef<"AppSettings", 'String'>
   }
     
 
@@ -26823,6 +26840,8 @@ export namespace Prisma {
     closedById: string | null
     closedByName: string | null
     notes: string | null
+    deviceId: string | null
+    deviceName: string | null
   }
 
   export type ShiftMaxAggregateOutputType = {
@@ -26845,6 +26864,8 @@ export namespace Prisma {
     closedById: string | null
     closedByName: string | null
     notes: string | null
+    deviceId: string | null
+    deviceName: string | null
   }
 
   export type ShiftCountAggregateOutputType = {
@@ -26869,6 +26890,8 @@ export namespace Prisma {
     notes: number
     openAttribution: number
     closeAttribution: number
+    deviceId: number
+    deviceName: number
     _all: number
   }
 
@@ -26915,6 +26938,8 @@ export namespace Prisma {
     closedById?: true
     closedByName?: true
     notes?: true
+    deviceId?: true
+    deviceName?: true
   }
 
   export type ShiftMaxAggregateInputType = {
@@ -26937,6 +26962,8 @@ export namespace Prisma {
     closedById?: true
     closedByName?: true
     notes?: true
+    deviceId?: true
+    deviceName?: true
   }
 
   export type ShiftCountAggregateInputType = {
@@ -26961,6 +26988,8 @@ export namespace Prisma {
     notes?: true
     openAttribution?: true
     closeAttribution?: true
+    deviceId?: true
+    deviceName?: true
     _all?: true
   }
 
@@ -27072,6 +27101,8 @@ export namespace Prisma {
     notes: string | null
     openAttribution: JsonValue | null
     closeAttribution: JsonValue | null
+    deviceId: string | null
+    deviceName: string | null
     _count: ShiftCountAggregateOutputType | null
     _avg: ShiftAvgAggregateOutputType | null
     _sum: ShiftSumAggregateOutputType | null
@@ -27115,6 +27146,8 @@ export namespace Prisma {
     notes?: boolean
     openAttribution?: boolean
     closeAttribution?: boolean
+    deviceId?: boolean
+    deviceName?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     openedBy?: boolean | StaffUserDefaultArgs<ExtArgs>
     closedBy?: boolean | Shift$closedByArgs<ExtArgs>
@@ -27142,6 +27175,8 @@ export namespace Prisma {
     notes?: boolean
     openAttribution?: boolean
     closeAttribution?: boolean
+    deviceId?: boolean
+    deviceName?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     openedBy?: boolean | StaffUserDefaultArgs<ExtArgs>
     closedBy?: boolean | Shift$closedByArgs<ExtArgs>
@@ -27169,6 +27204,8 @@ export namespace Prisma {
     notes?: boolean
     openAttribution?: boolean
     closeAttribution?: boolean
+    deviceId?: boolean
+    deviceName?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     openedBy?: boolean | StaffUserDefaultArgs<ExtArgs>
     closedBy?: boolean | Shift$closedByArgs<ExtArgs>
@@ -27196,9 +27233,11 @@ export namespace Prisma {
     notes?: boolean
     openAttribution?: boolean
     closeAttribution?: boolean
+    deviceId?: boolean
+    deviceName?: boolean
   }
 
-  export type ShiftOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "shiftNumber" | "status" | "openedAt" | "closedAt" | "openingFloatUsd" | "cashSalesUsd" | "cashRefundsUsd" | "cashExpensesUsd" | "supplierPaymentsUsd" | "expectedCashUsd" | "closingCashUsd" | "differenceUsd" | "openedById" | "openedByName" | "closedById" | "closedByName" | "notes" | "openAttribution" | "closeAttribution", ExtArgs["result"]["shift"]>
+  export type ShiftOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "shiftNumber" | "status" | "openedAt" | "closedAt" | "openingFloatUsd" | "cashSalesUsd" | "cashRefundsUsd" | "cashExpensesUsd" | "supplierPaymentsUsd" | "expectedCashUsd" | "closingCashUsd" | "differenceUsd" | "openedById" | "openedByName" | "closedById" | "closedByName" | "notes" | "openAttribution" | "closeAttribution" | "deviceId" | "deviceName", ExtArgs["result"]["shift"]>
   export type ShiftInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     openedBy?: boolean | StaffUserDefaultArgs<ExtArgs>
@@ -27247,6 +27286,11 @@ export namespace Prisma {
        */
       openAttribution: Prisma.JsonValue | null
       closeAttribution: Prisma.JsonValue | null
+      /**
+       * batch 83: the register that opened it (null: opened before this was recorded)
+       */
+      deviceId: string | null
+      deviceName: string | null
     }, ExtArgs["result"]["shift"]>
     composites: {}
   }
@@ -27694,6 +27738,8 @@ export namespace Prisma {
     readonly notes: FieldRef<"Shift", 'String'>
     readonly openAttribution: FieldRef<"Shift", 'Json'>
     readonly closeAttribution: FieldRef<"Shift", 'Json'>
+    readonly deviceId: FieldRef<"Shift", 'String'>
+    readonly deviceName: FieldRef<"Shift", 'String'>
   }
     
 
@@ -55941,7 +55987,8 @@ export namespace Prisma {
     whatsAppDriverEnabled: 'whatsAppDriverEnabled',
     assignMode: 'assignMode',
     assignTimeout: 'assignTimeout',
-    defaultDriverId: 'defaultDriverId'
+    defaultDriverId: 'defaultDriverId',
+    drawerScope: 'drawerScope'
   };
 
   export type AppSettingsScalarFieldEnum = (typeof AppSettingsScalarFieldEnum)[keyof typeof AppSettingsScalarFieldEnum]
@@ -56258,7 +56305,9 @@ export namespace Prisma {
     closedByName: 'closedByName',
     notes: 'notes',
     openAttribution: 'openAttribution',
-    closeAttribution: 'closeAttribution'
+    closeAttribution: 'closeAttribution',
+    deviceId: 'deviceId',
+    deviceName: 'deviceName'
   };
 
   export type ShiftScalarFieldEnum = (typeof ShiftScalarFieldEnum)[keyof typeof ShiftScalarFieldEnum]
@@ -57436,6 +57485,7 @@ export namespace Prisma {
     assignMode?: StringFilter<"AppSettings"> | string
     assignTimeout?: IntFilter<"AppSettings"> | number
     defaultDriverId?: StringFilter<"AppSettings"> | string
+    drawerScope?: StringNullableFilter<"AppSettings"> | string | null
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }
 
@@ -57458,6 +57508,7 @@ export namespace Prisma {
     assignMode?: SortOrder
     assignTimeout?: SortOrder
     defaultDriverId?: SortOrder
+    drawerScope?: SortOrderInput | SortOrder
     tenant?: TenantOrderByWithRelationInput
   }
 
@@ -57483,6 +57534,7 @@ export namespace Prisma {
     assignMode?: StringFilter<"AppSettings"> | string
     assignTimeout?: IntFilter<"AppSettings"> | number
     defaultDriverId?: StringFilter<"AppSettings"> | string
+    drawerScope?: StringNullableFilter<"AppSettings"> | string | null
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }, "id" | "tenantId">
 
@@ -57505,6 +57557,7 @@ export namespace Prisma {
     assignMode?: SortOrder
     assignTimeout?: SortOrder
     defaultDriverId?: SortOrder
+    drawerScope?: SortOrderInput | SortOrder
     _count?: AppSettingsCountOrderByAggregateInput
     _avg?: AppSettingsAvgOrderByAggregateInput
     _max?: AppSettingsMaxOrderByAggregateInput
@@ -57534,6 +57587,7 @@ export namespace Prisma {
     assignMode?: StringWithAggregatesFilter<"AppSettings"> | string
     assignTimeout?: IntWithAggregatesFilter<"AppSettings"> | number
     defaultDriverId?: StringWithAggregatesFilter<"AppSettings"> | string
+    drawerScope?: StringNullableWithAggregatesFilter<"AppSettings"> | string | null
   }
 
   export type ProductWhereInput = {
@@ -59109,6 +59163,8 @@ export namespace Prisma {
     notes?: StringNullableFilter<"Shift"> | string | null
     openAttribution?: JsonNullableFilter<"Shift">
     closeAttribution?: JsonNullableFilter<"Shift">
+    deviceId?: StringNullableFilter<"Shift"> | string | null
+    deviceName?: StringNullableFilter<"Shift"> | string | null
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     openedBy?: XOR<StaffUserScalarRelationFilter, StaffUserWhereInput>
     closedBy?: XOR<StaffUserNullableScalarRelationFilter, StaffUserWhereInput> | null
@@ -59136,6 +59192,8 @@ export namespace Prisma {
     notes?: SortOrderInput | SortOrder
     openAttribution?: SortOrderInput | SortOrder
     closeAttribution?: SortOrderInput | SortOrder
+    deviceId?: SortOrderInput | SortOrder
+    deviceName?: SortOrderInput | SortOrder
     tenant?: TenantOrderByWithRelationInput
     openedBy?: StaffUserOrderByWithRelationInput
     closedBy?: StaffUserOrderByWithRelationInput
@@ -59166,6 +59224,8 @@ export namespace Prisma {
     notes?: StringNullableFilter<"Shift"> | string | null
     openAttribution?: JsonNullableFilter<"Shift">
     closeAttribution?: JsonNullableFilter<"Shift">
+    deviceId?: StringNullableFilter<"Shift"> | string | null
+    deviceName?: StringNullableFilter<"Shift"> | string | null
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     openedBy?: XOR<StaffUserScalarRelationFilter, StaffUserWhereInput>
     closedBy?: XOR<StaffUserNullableScalarRelationFilter, StaffUserWhereInput> | null
@@ -59193,6 +59253,8 @@ export namespace Prisma {
     notes?: SortOrderInput | SortOrder
     openAttribution?: SortOrderInput | SortOrder
     closeAttribution?: SortOrderInput | SortOrder
+    deviceId?: SortOrderInput | SortOrder
+    deviceName?: SortOrderInput | SortOrder
     _count?: ShiftCountOrderByAggregateInput
     _avg?: ShiftAvgOrderByAggregateInput
     _max?: ShiftMaxOrderByAggregateInput
@@ -59225,6 +59287,8 @@ export namespace Prisma {
     notes?: StringNullableWithAggregatesFilter<"Shift"> | string | null
     openAttribution?: JsonNullableWithAggregatesFilter<"Shift">
     closeAttribution?: JsonNullableWithAggregatesFilter<"Shift">
+    deviceId?: StringNullableWithAggregatesFilter<"Shift"> | string | null
+    deviceName?: StringNullableWithAggregatesFilter<"Shift"> | string | null
   }
 
   export type AuditEventWhereInput = {
@@ -62186,6 +62250,7 @@ export namespace Prisma {
     assignMode?: string
     assignTimeout?: number
     defaultDriverId?: string
+    drawerScope?: string | null
     tenant: TenantCreateNestedOneWithoutSettingsInput
   }
 
@@ -62208,6 +62273,7 @@ export namespace Prisma {
     assignMode?: string
     assignTimeout?: number
     defaultDriverId?: string
+    drawerScope?: string | null
   }
 
   export type AppSettingsUpdateInput = {
@@ -62228,6 +62294,7 @@ export namespace Prisma {
     assignMode?: StringFieldUpdateOperationsInput | string
     assignTimeout?: IntFieldUpdateOperationsInput | number
     defaultDriverId?: StringFieldUpdateOperationsInput | string
+    drawerScope?: NullableStringFieldUpdateOperationsInput | string | null
     tenant?: TenantUpdateOneRequiredWithoutSettingsNestedInput
   }
 
@@ -62250,6 +62317,7 @@ export namespace Prisma {
     assignMode?: StringFieldUpdateOperationsInput | string
     assignTimeout?: IntFieldUpdateOperationsInput | number
     defaultDriverId?: StringFieldUpdateOperationsInput | string
+    drawerScope?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type AppSettingsCreateManyInput = {
@@ -62271,6 +62339,7 @@ export namespace Prisma {
     assignMode?: string
     assignTimeout?: number
     defaultDriverId?: string
+    drawerScope?: string | null
   }
 
   export type AppSettingsUpdateManyMutationInput = {
@@ -62291,6 +62360,7 @@ export namespace Prisma {
     assignMode?: StringFieldUpdateOperationsInput | string
     assignTimeout?: IntFieldUpdateOperationsInput | number
     defaultDriverId?: StringFieldUpdateOperationsInput | string
+    drawerScope?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type AppSettingsUncheckedUpdateManyInput = {
@@ -62312,6 +62382,7 @@ export namespace Prisma {
     assignMode?: StringFieldUpdateOperationsInput | string
     assignTimeout?: IntFieldUpdateOperationsInput | number
     defaultDriverId?: StringFieldUpdateOperationsInput | string
+    drawerScope?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ProductCreateInput = {
@@ -64131,6 +64202,8 @@ export namespace Prisma {
     notes?: string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: string | null
+    deviceName?: string | null
     tenant: TenantCreateNestedOneWithoutShiftsInput
     openedBy: StaffUserCreateNestedOneWithoutOpenedShiftsInput
     closedBy?: StaffUserCreateNestedOneWithoutClosedShiftsInput
@@ -64158,6 +64231,8 @@ export namespace Prisma {
     notes?: string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: string | null
+    deviceName?: string | null
   }
 
   export type ShiftUpdateInput = {
@@ -64179,6 +64254,8 @@ export namespace Prisma {
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
     tenant?: TenantUpdateOneRequiredWithoutShiftsNestedInput
     openedBy?: StaffUserUpdateOneRequiredWithoutOpenedShiftsNestedInput
     closedBy?: StaffUserUpdateOneWithoutClosedShiftsNestedInput
@@ -64206,6 +64283,8 @@ export namespace Prisma {
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ShiftCreateManyInput = {
@@ -64230,6 +64309,8 @@ export namespace Prisma {
     notes?: string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: string | null
+    deviceName?: string | null
   }
 
   export type ShiftUpdateManyMutationInput = {
@@ -64251,6 +64332,8 @@ export namespace Prisma {
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ShiftUncheckedUpdateManyInput = {
@@ -64275,6 +64358,8 @@ export namespace Prisma {
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type AuditEventCreateInput = {
@@ -67819,6 +67904,7 @@ export namespace Prisma {
     assignMode?: SortOrder
     assignTimeout?: SortOrder
     defaultDriverId?: SortOrder
+    drawerScope?: SortOrder
   }
 
   export type AppSettingsAvgOrderByAggregateInput = {
@@ -67850,6 +67936,7 @@ export namespace Prisma {
     assignMode?: SortOrder
     assignTimeout?: SortOrder
     defaultDriverId?: SortOrder
+    drawerScope?: SortOrder
   }
 
   export type AppSettingsMinOrderByAggregateInput = {
@@ -67871,6 +67958,7 @@ export namespace Prisma {
     assignMode?: SortOrder
     assignTimeout?: SortOrder
     defaultDriverId?: SortOrder
+    drawerScope?: SortOrder
   }
 
   export type AppSettingsSumOrderByAggregateInput = {
@@ -69193,6 +69281,8 @@ export namespace Prisma {
     notes?: SortOrder
     openAttribution?: SortOrder
     closeAttribution?: SortOrder
+    deviceId?: SortOrder
+    deviceName?: SortOrder
   }
 
   export type ShiftAvgOrderByAggregateInput = {
@@ -69226,6 +69316,8 @@ export namespace Prisma {
     closedById?: SortOrder
     closedByName?: SortOrder
     notes?: SortOrder
+    deviceId?: SortOrder
+    deviceName?: SortOrder
   }
 
   export type ShiftMinOrderByAggregateInput = {
@@ -69248,6 +69340,8 @@ export namespace Prisma {
     closedById?: SortOrder
     closedByName?: SortOrder
     notes?: SortOrder
+    deviceId?: SortOrder
+    deviceName?: SortOrder
   }
 
   export type ShiftSumOrderByAggregateInput = {
@@ -74714,6 +74808,8 @@ export namespace Prisma {
     notes?: string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: string | null
+    deviceName?: string | null
     openedBy: StaffUserCreateNestedOneWithoutOpenedShiftsInput
     closedBy?: StaffUserCreateNestedOneWithoutClosedShiftsInput
   }
@@ -74739,6 +74835,8 @@ export namespace Prisma {
     notes?: string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: string | null
+    deviceName?: string | null
   }
 
   export type ShiftCreateOrConnectWithoutTenantInput = {
@@ -74803,6 +74901,7 @@ export namespace Prisma {
     assignMode?: string
     assignTimeout?: number
     defaultDriverId?: string
+    drawerScope?: string | null
   }
 
   export type AppSettingsUncheckedCreateWithoutTenantInput = {
@@ -74823,6 +74922,7 @@ export namespace Prisma {
     assignMode?: string
     assignTimeout?: number
     defaultDriverId?: string
+    drawerScope?: string | null
   }
 
   export type AppSettingsCreateOrConnectWithoutTenantInput = {
@@ -75837,6 +75937,8 @@ export namespace Prisma {
     notes?: StringNullableFilter<"Shift"> | string | null
     openAttribution?: JsonNullableFilter<"Shift">
     closeAttribution?: JsonNullableFilter<"Shift">
+    deviceId?: StringNullableFilter<"Shift"> | string | null
+    deviceName?: StringNullableFilter<"Shift"> | string | null
   }
 
   export type AuditEventUpsertWithWhereUniqueWithoutTenantInput = {
@@ -75900,6 +76002,7 @@ export namespace Prisma {
     assignMode?: StringFieldUpdateOperationsInput | string
     assignTimeout?: IntFieldUpdateOperationsInput | number
     defaultDriverId?: StringFieldUpdateOperationsInput | string
+    drawerScope?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type AppSettingsUncheckedUpdateWithoutTenantInput = {
@@ -75920,6 +76023,7 @@ export namespace Prisma {
     assignMode?: StringFieldUpdateOperationsInput | string
     assignTimeout?: IntFieldUpdateOperationsInput | number
     defaultDriverId?: StringFieldUpdateOperationsInput | string
+    drawerScope?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ExpenseUpsertWithWhereUniqueWithoutTenantInput = {
@@ -76496,6 +76600,8 @@ export namespace Prisma {
     notes?: string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: string | null
+    deviceName?: string | null
     tenant: TenantCreateNestedOneWithoutShiftsInput
     closedBy?: StaffUserCreateNestedOneWithoutClosedShiftsInput
   }
@@ -76521,6 +76627,8 @@ export namespace Prisma {
     notes?: string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: string | null
+    deviceName?: string | null
   }
 
   export type ShiftCreateOrConnectWithoutOpenedByInput = {
@@ -76552,6 +76660,8 @@ export namespace Prisma {
     notes?: string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: string | null
+    deviceName?: string | null
     tenant: TenantCreateNestedOneWithoutShiftsInput
     openedBy: StaffUserCreateNestedOneWithoutOpenedShiftsInput
   }
@@ -76577,6 +76687,8 @@ export namespace Prisma {
     notes?: string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: string | null
+    deviceName?: string | null
   }
 
   export type ShiftCreateOrConnectWithoutClosedByInput = {
@@ -86960,6 +87072,8 @@ export namespace Prisma {
     notes?: string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: string | null
+    deviceName?: string | null
   }
 
   export type AuditEventCreateManyTenantInput = {
@@ -87858,6 +87972,8 @@ export namespace Prisma {
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
     openedBy?: StaffUserUpdateOneRequiredWithoutOpenedShiftsNestedInput
     closedBy?: StaffUserUpdateOneWithoutClosedShiftsNestedInput
   }
@@ -87883,6 +87999,8 @@ export namespace Prisma {
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ShiftUncheckedUpdateManyWithoutTenantInput = {
@@ -87906,6 +88024,8 @@ export namespace Prisma {
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type AuditEventUpdateWithoutTenantInput = {
@@ -88611,6 +88731,8 @@ export namespace Prisma {
     notes?: string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: string | null
+    deviceName?: string | null
   }
 
   export type ShiftCreateManyClosedByInput = {
@@ -88634,6 +88756,8 @@ export namespace Prisma {
     notes?: string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: string | null
+    deviceName?: string | null
   }
 
   export type ExpenseCreateManyRecordedByUserInput = {
@@ -88701,6 +88825,8 @@ export namespace Prisma {
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
     tenant?: TenantUpdateOneRequiredWithoutShiftsNestedInput
     closedBy?: StaffUserUpdateOneWithoutClosedShiftsNestedInput
   }
@@ -88726,6 +88852,8 @@ export namespace Prisma {
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ShiftUncheckedUpdateManyWithoutOpenedByInput = {
@@ -88749,6 +88877,8 @@ export namespace Prisma {
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ShiftUpdateWithoutClosedByInput = {
@@ -88770,6 +88900,8 @@ export namespace Prisma {
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
     tenant?: TenantUpdateOneRequiredWithoutShiftsNestedInput
     openedBy?: StaffUserUpdateOneRequiredWithoutOpenedShiftsNestedInput
   }
@@ -88795,6 +88927,8 @@ export namespace Prisma {
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ShiftUncheckedUpdateManyWithoutClosedByInput = {
@@ -88818,6 +88952,8 @@ export namespace Prisma {
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     openAttribution?: NullableJsonNullValueInput | InputJsonValue
     closeAttribution?: NullableJsonNullValueInput | InputJsonValue
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ExpenseUpdateWithoutRecordedByUserInput = {

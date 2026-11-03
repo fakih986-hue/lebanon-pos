@@ -4,6 +4,7 @@ import { useI18n } from "@lebanonpos/shared"
 
 import { formatCurrency, formatNumber } from "../lib/currency"
 import { playSaleChime } from "../lib/sound"
+import { lineOptionsText, type LineOptionsSource } from "../lib/lineOptions"
 
 type Props = {
   sale: {
@@ -15,6 +16,8 @@ type Props = {
     paymentMethod?: string
     tender?: { changeUsd?: number; changeLbp?: number; paidUsd?: number; paidLbp?: number; changeCurrency?: string }
     profit?: number
+    /** The lines as sold (a drink keeps the options chosen at the time). */
+    items?: Array<LineOptionsSource & { name: string; quantity: number }>
   } | null
   /** True once the cashier starts the next sale (an item is in the cart). */
   nextSaleStarted?: boolean
@@ -29,7 +32,7 @@ type Props = {
  * and the next barcode simply starts the next sale (which closes the panel).
  */
 export default function SaleCompleteOverlay({ sale, nextSaleStarted = false, onViewReceipt, onWhatsApp }: Props) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   // Visibility is derived: the latest sale, unless it was closed, timed out,
   // or the next sale has started. No state is set synchronously in an effect.
   const [closed, setClosed] = useState<Props["sale"]>(null)
@@ -69,6 +72,16 @@ export default function SaleCompleteOverlay({ sale, nextSaleStarted = false, onV
         </button>
       </div>
       <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+        {(snapshot.items?.length ?? 0) > 0 && (
+          <ul aria-label={t("rcpt.lines")} style={{ margin: 0, padding: 0, listStyle: "none", maxHeight: 132, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+            {snapshot.items!.map((i, n) => (
+              <li key={n} style={{ minWidth: 0 }}>
+                <span className="num">{formatNumber(i.quantity)}×</span> <span style={{ color: "var(--text)", overflowWrap: "anywhere" }}>{i.name}</span>
+                {lineOptionsText(i, locale) && <span className="mg2-cap block" data-testid="sale-complete-options" style={{ overflowWrap: "anywhere" }}>{lineOptionsText(i, locale)}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
         <div className="flex justify-between gap-3">
           <span className="mg2-cap">{t("pos.v2.paid")}</span>
           <span className="num font-semibold" style={{ color: "var(--text)" }}>{formatCurrency(paidUsd)} · {formatNumber(Math.round(paidLbp))} {lbp}</span>

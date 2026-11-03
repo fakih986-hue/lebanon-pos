@@ -414,13 +414,14 @@ router.get("/cafe", requireAuth, requirePermission("reports.view"), async (req: 
       select: { lineId: true, productId: true, productName: true, stockPolicy: true, modifiers: true },
     }) : []
     const cafeLineProduct = new Map(refundedLines.filter((l) => l.stockPolicy === "recipe" || (Array.isArray(l.modifiers) && l.modifiers.length > 0)).map((l) => [l.lineId!, { productId: l.productId, name: l.productName }]))
-    type Row = { productId: number; name: string; quantity: number; revenue: number; baseRevenue: number; modifierRevenue: number; refunds: number; cost: number; known: number; partial: number; unknown: number; conflicts: number }
+    type Row = { productId: number; name: string; soldAs: Set<string>; quantity: number; revenue: number; baseRevenue: number; modifierRevenue: number; refunds: number; cost: number; known: number; partial: number; unknown: number; conflicts: number }
     const by = new Map<number, Row>()
     const round2 = (n: number) => Math.round(n * 100) / 100
     for (const l of lines) {
       // a packaged line stored with an empty options list (JSON [] rather than NULL) is not a café line
       if (l.stockPolicy !== "recipe" && !(Array.isArray(l.modifiers) && l.modifiers.length > 0)) continue
-      const r = by.get(l.productId) ?? { productId: l.productId, name: l.productName, quantity: 0, revenue: 0, baseRevenue: 0, modifierRevenue: 0, refunds: 0, cost: 0, known: 0, partial: 0, unknown: 0, conflicts: 0 }
+      const r = by.get(l.productId) ?? { productId: l.productId, name: l.productName, soldAs: new Set<string>(), quantity: 0, revenue: 0, baseRevenue: 0, modifierRevenue: 0, refunds: 0, cost: 0, known: 0, partial: 0, unknown: 0, conflicts: 0 }
+      r.soldAs.add(l.productName)
       const qty = Number(l.quantity) || 0
       const total = Number(l.total) || 0
       // the options' share: (unit price − the product's own price) × quantity, when the line kept its base price
@@ -437,16 +438,20 @@ router.get("/cafe", requireAuth, requirePermission("reports.view"), async (req: 
     for (const x of refunded) {
       const line = cafeLineProduct.get(x.saleLineId!)
       if (!line) continue
-      const r = by.get(line.productId) ?? { productId: line.productId, name: line.name, quantity: 0, revenue: 0, baseRevenue: 0, modifierRevenue: 0, refunds: 0, cost: 0, known: 0, partial: 0, unknown: 0, conflicts: 0 }
+      const r = by.get(line.productId) ?? { productId: line.productId, name: line.name, soldAs: new Set<string>([line.name]), quantity: 0, revenue: 0, baseRevenue: 0, modifierRevenue: 0, refunds: 0, cost: 0, known: 0, partial: 0, unknown: 0, conflicts: 0 }
       r.refunds += Number(x.total) || 0
       by.set(line.productId, r)
     }
-    // a drink renamed since is shown under its current name (the lines keep the name they were sold under)
-    const current = new Map((by.size ? await prisma.product.findMany({ where: { tenantId, id: { in: [...by.keys()] } }, select: { id: true, name: true } }) : []).map((p) => [p.id, p.name]))
+    // Rows are one product each (its stable id; never merged by name). A row is named by the product's current
+    // name (archived included); a product no longer on file keeps the name its lines were sold under. Sale lines
+    // keep their own name; the names a drink was sold under, when different, are listed (soldAs).
+    const current = new Map((by.size ? await prisma.product.findMany({ where: { tenantId, id: { in: [...by.keys()] } }, select: { id: true, name: true, archived: true } }) : []).map((p) => [p.id, p]))
     const drinks = [...by.values()].map((r) => {
       const complete = r.unknown === 0 && r.partial === 0
       return {
-        productId: r.productId, name: current.get(r.productId) || r.name, quantity: r.quantity,
+        productId: r.productId, name: current.get(r.productId)?.name || r.name, quantity: r.quantity,
+        ...((() => { const now = current.get(r.productId)?.name || r.name; const other = [...r.soldAs].filter((n) => n && n !== now).sort(); return other.length ? { soldAs: other } : {} })()),
+        ...(current.get(r.productId)?.archived ? { archived: true } : !current.has(r.productId) ? { missing: true } : {}),
         revenue: round2(r.revenue), baseRevenue: round2(r.baseRevenue), modifierRevenue: round2(r.modifierRevenue), refunds: round2(r.refunds),
         conflicts: r.conflicts,
         ...(showCost ? {

@@ -1326,7 +1326,7 @@ function fetchCloud(urlPath: string, init: RequestInit = {}): Promise<Response> 
       "x-tenant-id":   CLOUD_TENANT!,
       // REFUND-INTEGRITY-1: this hub understands sale line ids, sale lot
       // allocations and refund rates (schema 2), so the cloud may send them.
-      "x-titan-sync-schema": "6", // SPRINT-1: receives stockPolicy (product + sale line); SPRINT-2: 4 identity evidence, 5 staff enforcement (signs forwards, adopts the staff policy); café batch: 6 modifiers, recipes, ingredients
+      "x-titan-sync-schema": "7", // SPRINT-1: receives stockPolicy (product + sale line); SPRINT-2: 4 identity evidence, 5 staff enforcement (signs forwards, adopts the staff policy); café batch: 6 modifiers, recipes, ingredients; batch 83: 7 shift register + drawer scope
       "x-titan-unknown-cost": "1", // a daily close's unknown cost stays null (not 0)
       "x-titan-close-revisions": "1", // several closes per date, with their revisions (lib/dailyClose.ts)
       ...(init.headers as Record<string, string> | undefined),

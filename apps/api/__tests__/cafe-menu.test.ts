@@ -410,13 +410,41 @@ describe("café menu: waste, cost visibility, versions, reports", () => {
     expect(JSON.stringify(cashier.body)).not.toMatch(/ingredientCost|wasteCost|revenue/)
   })
 
-  it("a drink renamed after it was sold is reported under its current name, with the same figures", async () => {
-    const before = (await call("GET", "/api/reports/cafe?days=1", undefined, { Authorization: `Bearer ${ownerPerson}` })).body.drinks.find((d: any) => d.name === "Cappuccino")
+  it("names: a renamed drink is one row under its current name (sold-as names listed); option renames and archiving change no figures", async () => {
+    const report = async () => (await call("GET", "/api/reports/cafe?days=1", undefined, { Authorization: `Bearer ${ownerPerson}` })).body
+    const before = await report()
+    const cap0 = before.drinks.find((d: any) => d.name === "Cappuccino")
+    const figures = (d: any) => ({ quantity: d.quantity, revenue: d.revenue, baseRevenue: d.baseRevenue, modifierRevenue: d.modifierRevenue, refunds: d.refunds, ingredientCost: d.ingredientCost, margin: d.margin })
+    const lineNames = async () => (await prisma.saleItem.findMany({ where: { sale: { tenantId: T }, productId: pid[SID.capp] }, select: { productName: true } })).map((l) => l.productName).sort()
+    const names0 = await lineNames()
+    // 1. the drink is renamed: one row, the current name, the old name listed, the same figures; the sale lines keep their name
     await prisma.product.update({ where: { id: pid[SID.capp] }, data: { name: "Cappuccino (house)" } })
-    const after = (await call("GET", "/api/reports/cafe?days=1", undefined, { Authorization: `Bearer ${ownerPerson}` })).body.drinks
-    expect(after.find((d: any) => d.name === "Cappuccino")).toBeUndefined()
-    expect(after.find((d: any) => d.name === "Cappuccino (house)")).toEqual({ ...before, name: "Cappuccino (house)" })
-    await prisma.product.update({ where: { id: pid[SID.capp] }, data: { name: "Cappuccino" } })
+    const r1 = await report()
+    expect(r1.drinks.filter((d: any) => d.productId === pid[SID.capp])).toHaveLength(1)
+    const cap1 = r1.drinks.find((d: any) => d.productId === pid[SID.capp])
+    expect([cap1.name, cap1.soldAs]).toEqual(["Cappuccino (house)", ["Cappuccino"]])
+    expect(figures(cap1)).toEqual(figures(cap0))
+    expect(r1.drinks.find((d: any) => d.name === "Cappuccino")).toBeUndefined()
+    expect(await lineNames()).toEqual(names0)
+    // 2. another product given the same name is its own row (never merged by name)
+    const other = await prisma.product.update({ where: { id: pid[SID.esp] }, data: { name: "Cappuccino (house)" } })
+    const r2 = await report()
+    expect(r2.drinks.filter((d: any) => d.name === "Cappuccino (house)").map((d: any) => d.productId).sort()).toEqual([pid[SID.capp], other.id].sort())
+    await prisma.product.update({ where: { id: pid[SID.esp] }, data: { name: "Espresso" } })
+    // 3. an option renamed in the menu: no figure or name changes
+    const groups = await prisma.modifierGroup.findMany({ where: { tenantId: T } })
+    for (const g of groups) await prisma.modifierGroup.update({ where: { id: g.id }, data: { name: `${g.name} (renamed)` } })
+    expect(figures((await report()).drinks.find((d: any) => d.productId === pid[SID.capp]))).toEqual(figures(cap0))
+    for (const g of groups) await prisma.modifierGroup.update({ where: { id: g.id }, data: { name: g.name } })
+    // 4. archived: still reported under its name, marked; same figures and totals
+    await prisma.product.update({ where: { id: pid[SID.capp] }, data: { archived: true } })
+    const r4 = await report()
+    const cap4 = r4.drinks.find((d: any) => d.productId === pid[SID.capp])
+    expect([cap4.name, cap4.archived, figures(cap4)]).toEqual(["Cappuccino (house)", true, figures(cap0)])
+    expect(r4.summary).toEqual(before.summary)
+    await prisma.product.update({ where: { id: pid[SID.capp] }, data: { name: "Cappuccino", archived: false } })
+    const after = (await report()).drinks.find((d: any) => d.productId === pid[SID.capp])
+    expect([after.name, after.soldAs, after.archived]).toEqual(["Cappuccino", undefined, undefined])
   })
 })
 

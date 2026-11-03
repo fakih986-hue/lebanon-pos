@@ -188,6 +188,9 @@ model AppSettings {
   assignMode            String  @default("manual")
   assignTimeout         Int     @default(5)
   defaultDriverId       String  @default("")
+  /// batch 83: null = not chosen (a register never uses another register's open shift); "shared" = every
+  /// register of the store sells into the one open shift (one drawer). Separate drawers are not supported yet.
+  drawerScope           String?
 }
 
 model Product {
@@ -597,6 +600,9 @@ model Shift {
   /// how the opener and the closer are known (lib/attribution.ts); null before it existed
   openAttribution     Json?
   closeAttribution    Json?
+  /// batch 83: the register that opened it (null: opened before this was recorded)
+  deviceId            String?
+  deviceName          String?
 
   @@index([tenantId, shiftNumber])
   @@index([tenantId, status])

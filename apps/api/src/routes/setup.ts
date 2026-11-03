@@ -19,6 +19,7 @@ import type { Response } from "express"
 import type { IncomingMessage } from "node:http"
 import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs"
+import { pinMatches } from "../lib/pinVerifier.js"
 import prisma from "../lib/prisma.js"
 import { triggerFullPull, saveCloudConfig, getCloudStatus, enrollHubKey } from "../services/cloudSync.js"
 import { readHubKey } from "../lib/hubAttestation.js"
@@ -391,13 +392,10 @@ router.post("/discover", async (req: Req, res: Response) => {
       return
     }
 
-    const sha = createHash("sha256").update(pin).digest("base64")
-    let pinMatches = false
-    for (const a of admins) {
-      if (a.pin.startsWith("$2") ? await bcrypt.compare(pin, a.pin) : a.pin === sha) { pinMatches = true; break }
-    }
+    let matchesAdmin = false
+    for (const a of admins) if (await pinMatches(a.pin, pin)) { matchesAdmin = true; break }
 
-    if (!pinMatches) {
+    if (!matchesAdmin) {
       res.status(401).json({ error: "Incorrect PIN. Check with the store owner." })
       return
     }

@@ -32,6 +32,7 @@ vi.mock("../src/lib/prisma", () => {
     purchaseOrder: model(),
     supplierPayment: model(),
     shift: model(),
+    device: model(),
     auditEvent: model(),
     appSettings: { findUnique: vi.fn(), upsert: vi.fn() },
     tenant: { findUnique: vi.fn().mockResolvedValue({ licenseStatus: "active", suspendedAt: null, offlineGraceDays: 7 }) },
@@ -709,8 +710,17 @@ describe("POST /api/sync/push — sale stock integrity", () => {
     expect(createArgs.data).not.toHaveProperty("deviceId")
   })
 
+  it("a shift records the register that opened it (batch 83), named as the store knows the device; never registerId", async () => {
+    vi.mocked((prisma as any).device.findUnique).mockResolvedValueOnce({ deviceName: "Counter PC" })
+    const res = await request("POST", "/api/sync/push", { token, body: { operations: [{ id: "op-shift-dev", entity: "shift", action: "open", payload: { id: "shift-x", shiftNumber: "SHIFT-X", registerId: "REG-001", deviceId: "DEV-ABC" } }] } })
+    expect(res.status).toBe(200)
+    expect(res.body.results[0].status).toBe("ok")
+    const upsertArgs = vi.mocked((prisma as any).shift.upsert).mock.calls.at(-1)?.[0] as any
+    expect(upsertArgs.create).not.toHaveProperty("registerId")
+    expect([upsertArgs.create.deviceId, upsertArgs.create.deviceName]).toEqual(["DEV-ABC", "Counter PC"])
+  })
+
   it.each([
-    ["shift", "open", "shift", { id: "shift-x", shiftNumber: "SHIFT-X" }],
     ["expense", "create", "expense", { id: "exp-x", expenseNumber: "EXP-X", vendor: "v", category: "c", amount: 5, paymentMethod: "Cash", recordedBy: "Admin" }],
     ["cash-movement", "create", "cashMovement", { id: "cm-x", type: "CashIn", amountUsd: 5, reason: "r", recordedByName: "Admin" }],
     ["purchase-order", "create", "purchaseOrder", { id: "po-x", poNumber: "PO-X", supplierId: "sup1", supplierName: "s", total: 5, createdBy: "Admin" }],

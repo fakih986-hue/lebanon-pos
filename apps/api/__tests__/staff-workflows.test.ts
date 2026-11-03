@@ -133,7 +133,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await dispose()
-  for (const m of ["reviewResolution", "managerApproval", "operationEvidence", "staffSession", "syncOperation", "syncClient", "auditEvent", "dailyClose", "expense", "cashMovement", "inventoryBatch", "stockMovement", "saleItem", "sale", "pairingCode", "device", "shift", "product", "staffUser"] as const)
+  for (const m of ["reviewResolution", "managerApproval", "operationEvidence", "staffSession", "syncOperation", "syncClient", "auditEvent", "dailyClose", "expense", "cashMovement", "inventoryBatch", "stockMovement", "saleItem", "sale", "pairingCode", "device", "shift", "appSettings", "product", "staffUser"] as const)
     await (prisma as any)[m]?.deleteMany({ where: { tenantId: T } }).catch(() => undefined)
   await (prisma as any).refundItem.deleteMany({ where: { refund: { tenantId: T } } }).catch(() => undefined)
   await prisma.saleRefund.deleteMany({ where: { tenantId: T } }).catch(() => undefined)
@@ -244,6 +244,9 @@ describe("a manager on the same register after a staff switch; review", { timeou
 
 describe("a cashier on her OWN connection; staff without checkout", { timeout: 120_000 }, () => {
   it("the connection does not change who acts: Rana's discount still needs Maya; Noor cannot sell", async () => {
+    // the front register's shift is still open: this store chose one shared drawer, so the back register sells
+    // into it (batch 83: without that choice a second register does not use another register's shift)
+    await prisma.appSettings.upsert({ where: { tenantId: T }, update: { drawerScope: "shared" }, create: { tenantId: T, storeName: "SW", branchName: "", phone: "", address: "", vatRate: 0, usdToLbpRate: 89500, receiptFooter: "", lowStockThreshold: 5, drawerScope: "shared" } })
     await connect(PIN.rana, "sw-back")
     await signIn(PIN.rana, RANA)
     const plain = cafeOrder(1) // no approval asked: the server refuses the discount, keeps the sale for review

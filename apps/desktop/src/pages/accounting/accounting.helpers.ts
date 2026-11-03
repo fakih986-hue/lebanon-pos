@@ -101,18 +101,20 @@ export function getAccountingSummary(
   sales: Sale[],
   refunds: SaleRefund[],
   expenses: Expense[],
-  supplierPayments: SupplierPayment[]
+  supplierPayments: SupplierPayment[],
+  /** batch 83: only the records of the drawer this register closes (another register closes its own) */
+  inDrawer: (record: { shiftId?: string | null }) => boolean = () => true,
 ): AccountingSummary {
   const dateKey = getLocalDateKey()
-  const todaySales = sales.filter((sale) => isToday(sale.createdAt, dateKey))
+  const todaySales = sales.filter((sale) => isToday(sale.createdAt, dateKey) && inDrawer(sale))
   const todayRefunds = refunds.filter((refund) =>
-    isToday(refund.createdAt, dateKey)
+    isToday(refund.createdAt, dateKey) && inDrawer(refund)
   )
   const todayExpenses = expenses.filter((expense) =>
-    isToday(expense.createdAt, dateKey)
+    isToday(expense.createdAt, dateKey) && inDrawer(expense)
   )
   const todaySupplierPayments = supplierPayments.filter((payment) =>
-    isToday(payment.createdAt, dateKey)
+    isToday(payment.createdAt, dateKey) && inDrawer(payment)
   )
   const grossSales = todaySales.reduce((sum, sale) => sum + sale.total, 0)
   const refundsTotal = todayRefunds.reduce((sum, refund) => sum + refund.total, 0)

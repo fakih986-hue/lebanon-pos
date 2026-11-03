@@ -82,7 +82,7 @@ async function isServerReachable(): Promise<boolean> {
 // x-titan-close-revisions: this till keeps several closes per date (register, shift) and their revisions.
 // Schema 5: this till understands the store's staff policy "enforce" (every action is the signed-in person's).
 // café batch: schema 6 = receives modifier groups, recipe revisions, recipe drinks and ingredients
-const SYNC_SCHEMA_HEADERS = { "x-titan-sync-schema": "6", "x-titan-unknown-cost": "1", "x-titan-close-revisions": "1" }
+const SYNC_SCHEMA_HEADERS = { "x-titan-sync-schema": "7", "x-titan-unknown-cost": "1", "x-titan-close-revisions": "1" }
 
 /**
  * A rejected refund (or void) is a money conflict: the customer may already

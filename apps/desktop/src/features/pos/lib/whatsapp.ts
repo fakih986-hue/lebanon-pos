@@ -38,7 +38,7 @@ export function receiptMessage(opts: {
   saleNumber: string
   total: number
   totalLbp: number
-  items: { name: string; quantity: number; total: number }[]
+  items: { name: string; quantity: number; total: number; options?: string }[]
   footer?: string
 }): string {
   const { storeName, saleNumber, total, totalLbp, items, footer } = opts
@@ -46,7 +46,7 @@ export function receiptMessage(opts: {
     `🧾 ${storeName}`,
     `Receipt ${saleNumber}`,
     ``,
-    ...items.map((i) => `${i.quantity}× ${i.name} — $${i.total.toFixed(2)}`),
+    ...items.map((i) => `${i.quantity}× ${i.name}${i.options ? ` (${i.options})` : ""} — $${i.total.toFixed(2)}`),
     ``,
     `TOTAL: $${total.toFixed(2)}  /  ${formatNumber(Math.round(totalLbp))} LBP`,
   ]

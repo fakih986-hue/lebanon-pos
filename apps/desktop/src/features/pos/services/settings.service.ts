@@ -27,6 +27,8 @@ export type AppSettings = {
   defaultDriverId: string
   registerId?: string
   registerName?: string
+  /** batch 83: "shared" = every register sells into the one open shift (one drawer); null = not chosen */
+  drawerScope?: "shared" | null
 }
 
 export const defaultSettings: AppSettings = {

@@ -11,16 +11,14 @@
  * the acting person stay separate.
  */
 import { Router } from "express"
-import bcrypt from "bcryptjs"
-import { createHash } from "node:crypto"
 import { z } from "zod"
 import type { ServerResponse } from "node:http"
 import prisma from "../lib/prisma.js"
 import { json, type AuthRequest } from "../middleware/auth.js"
 import { checkDevice, checkSession, openStaffSession } from "../lib/credentials.js"
+import { pinMatches } from "../lib/pinVerifier.js"
 
 const router = Router()
-const sha256 = (pin: string) => createHash("sha256").update(pin).digest("hex")
 const deviceCredential = (req: AuthRequest) => {
   const h = req.headers["x-device-credential"]
   return typeof h === "string" && h ? h : undefined
@@ -44,19 +42,22 @@ router.post("/staff-session", async (req: AuthRequest, res: ServerResponse) => {
   if (!tenant || tenant.suspended) { json(res, { error: "Tenant suspended", code: "TENANT_SUSPENDED" }, 403); return }
 
   const { pin, staffId } = parsed.data
+  // every active person is checked (not only the one named): a PIN that matches two people proves neither
   const candidates = await prisma.staffUser.findMany({
-    where: { tenantId, active: true, role: { not: "Driver" }, ...(staffId ? { id: staffId } : {}) },
+    where: { tenantId, active: true, role: { not: "Driver" } },
     select: { id: true, name: true, role: true, pin: true, tokenVersion: true },
   })
-  const matched: typeof candidates = []
-  for (const c of candidates) if (c.pin.startsWith("$2") ? await bcrypt.compare(pin, c.pin) : c.pin === sha256(pin)) matched.push(c)
+  const all: typeof candidates = []
+  for (const c of candidates) if (await pinMatches(c.pin, pin)) all.push(c)
+  const matched = staffId && all.length === 1 ? all.filter((c) => c.id === staffId) : all
   if (matched.length === 0) {
     await audit(tenantId, "staff.session.refused", `Staff session refused on device ${device.name || device.deviceId}: wrong PIN`, { deviceId: device.deviceId })
     json(res, { error: "Invalid credentials" }, 401)
     return
   }
   if (matched.length > 1) {
-    json(res, { error: "This PIN belongs to more than one staff member. Choose who is signing in.", code: "AMBIGUOUS_PIN", candidates: matched.map((u) => ({ id: u.id, name: u.name })) }, 409)
+    await audit(tenantId, "staff.session.refused", `Staff session refused on device ${device.name || device.deviceId}: the PIN belongs to more than one person`, { deviceId: device.deviceId })
+    json(res, { error: "This PIN belongs to more than one staff member, so it cannot start a checked session. Ask the owner to give each person their own PIN.", code: "AMBIGUOUS_PIN" }, 409)
     return
   }
   const staff = matched[0]

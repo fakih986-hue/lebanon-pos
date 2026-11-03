@@ -11,6 +11,8 @@ import type { Sale, SaleRefund } from "../services/sales.service"
 import type { AppSettings } from "../services/settings.service"
 import { getReceiptPrinter, receiptPageCss } from "./receiptPrinter"
 import { lineOptionsText } from "./lineOptions"
+// a drink's options print in the language the register is shown in (the I18nProvider's saved choice)
+const receiptLocale = () => { try { return localStorage.getItem("lebanonpos.locale") === "ar" ? "ar" : "en" } catch { return "en" } }
 
 /** One item: the full name on its own line (wraps, Arabic-aware), then quantity × price and the line total. */
 function itemBlock(name: string, barcode: string, quantity: number, unit: number, total: number, options = "") {
@@ -73,7 +75,7 @@ export function printSaleReceipt(
   const grossSubtotal = getSaleGrossSubtotal(sale)
   const refundedTotal = getSaleRefundTotal(refunds, sale.id)
   const itemRows = (Array.isArray(sale.items) ? sale.items : [])
-    .map((item) => itemBlock((item as any).name ?? (item as any).productName ?? "Product", (item as any).barcode ?? "", item.quantity, item.unitPrice, item.total, lineOptionsText(item as any)))
+    .map((item) => itemBlock((item as any).name ?? (item as any).productName ?? "Product", (item as any).barcode ?? "", item.quantity, item.unitPrice, item.total, lineOptionsText(item as any, receiptLocale())))
     .join("")
 
   const receiptWindow = window.open("", "_blank", "width=420,height=720")
@@ -208,7 +210,7 @@ export function printTestReceipt(settings: AppSettings) {
 
 export function printLastSaleReceipt(lastSale: LastSaleSummary, settings: AppSettings) {
   const lineItems = (Array.isArray(lastSale.items) ? lastSale.items : [])
-    .map((item) => itemBlock((item as any).name ?? (item as any).productName ?? "Product", (item as any).barcode ?? "", item.quantity, item.price, item.price * item.quantity, lineOptionsText(item as any)))
+    .map((item) => itemBlock((item as any).name ?? (item as any).productName ?? "Product", (item as any).barcode ?? "", item.quantity, item.price, item.price * item.quantity, lineOptionsText(item as any, receiptLocale())))
     .join("")
   const tenderRows = lastSale.tender
     ? `

@@ -2,6 +2,7 @@ import { Router } from "express"
 import { timingSafeEqual, randomInt, createHash } from "crypto"
 import { z } from "zod"
 import bcrypt from "bcryptjs"
+import { pinMatches } from "../lib/pinVerifier.js"
 import type { ServerResponse } from "node:http"
 import prisma from "../lib/prisma.js"
 import { signToken, requireAuth, json } from "../middleware/auth.js"
@@ -385,12 +386,8 @@ router.post("/tenants/:id/users/:userId/reset-pin", requireAuth, requireAdmin, a
       where: { tenantId: req.params?.id, id: { not: user.id } },
       select: { id: true, name: true, pin: true },
     })
-    const sha256Hash = createHash("sha256").update(newPin).digest("base64")
     for (const u of existingUsers) {
-      const matches = u.pin.startsWith("$2")
-        ? await bcrypt.compare(newPin, u.pin)
-        : u.pin === sha256Hash
-      if (matches) {
+      if (await pinMatches(u.pin, newPin)) {
         json(res, { error: `PIN is already in use by ${u.name}` }, 409)
         return
       }

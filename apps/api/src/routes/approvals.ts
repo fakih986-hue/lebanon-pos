@@ -72,7 +72,11 @@ router.post("/", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
 
   const who = await verifyStaffPin(tenantId, pin, approverId)
   if (!who.ok) {
-    if (who.code === "AMBIGUOUS_PIN") { json(res, { error: "This PIN belongs to more than one person. Choose who is approving.", code: "AMBIGUOUS_PIN", candidates: who.candidates }, 409); return }
+    if (who.code === "AMBIGUOUS_PIN") {
+      // never "choose who is approving": anyone who knows a shared PIN could approve as the others
+      await audit(tenantId, "approval.refused", `Manager approval refused on ${device.name || "a register"}: the PIN belongs to more than one person (${entity} ${action})`, { deviceId: device.deviceId, entity, action, recordId: material.id })
+      json(res, { error: "This PIN belongs to more than one person, so it cannot approve. Ask the owner to give each person their own PIN.", code: "AMBIGUOUS_PIN" }, 409); return
+    }
     if (who.code === "INACTIVE") {
       await audit(tenantId, "approval.refused", `Manager approval refused: ${who.name} is no longer active (${entity} ${action})`, { deviceId: device.deviceId, entity, action, recordId: material.id })
       json(res, { error: `${who.name} is no longer an active staff member.`, code: "APPROVER_INACTIVE" }, 403); return

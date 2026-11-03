@@ -1,6 +1,7 @@
 import { Router } from "express"
 import type { ServerResponse } from "node:http"
 import bcrypt from "bcryptjs"
+import { isSha256Verifier, samePin } from "../lib/pinVerifier.js"
 import { randomUUID } from "node:crypto"
 import { z } from "zod"
 import prisma from "../lib/prisma.js"
@@ -65,6 +66,19 @@ function toPriorRefundLine(it: any): PriorRefundLine {
  * schema >= 2 receive the new fields.
  */
 export const SYNC_SCHEMA_HEADER = "x-titan-sync-schema"
+/**
+ * Batch 83 (schema 7): Shift.deviceId/deviceName and AppSettings.drawerScope reach a pulling hub only when it
+ * sends x-titan-sync-schema >= 7: an older hub inserts pulled rows verbatim and its database has no such columns.
+ */
+export const DRAWER_SCHEMA = 7
+const DRAWER_FIELDS: Record<string, string[]> = { shifts: ["deviceId", "deviceName"], settings: ["drawerScope"] }
+export function withoutDrawerFields(entity: string, rows: unknown): unknown {
+  const drop = DRAWER_FIELDS[entity]
+  if (!drop) return rows
+  const strip = (r: unknown) => { if (!r || typeof r !== "object") return r; const o = { ...(r as Record<string, unknown>) }; for (const k of drop) delete o[k]; return o }
+  return Array.isArray(rows) ? rows.map(strip) : strip(rows)
+}
+const oldHubPull = (req: any) => req.auth?.userId === "cloud-bridge" && clientSyncSchema(req) < DRAWER_SCHEMA
 function clientSyncSchema(req: { headers?: Record<string, unknown> }): number {
   const value = Number(req.headers?.[SYNC_SCHEMA_HEADER])
   return Number.isFinite(value) ? value : 1
@@ -1702,7 +1716,8 @@ router.get("/pull", staffSync, async (req: AuthRequest, res: ServerResponse) => 
   }
   // A caller without cost visibility gets no cost data and no purchase records (purchase prices).
   // hubs 1.0.49–1.0.51 insert pulled rows verbatim: only the fields their database has (lib/legacyHubShape.ts)
-  const shaped = isLegacyHubPull(req.auth, clientSyncSchema(req as any)) ? projectLegacyPull(body) : body
+  const shaped0 = isLegacyHubPull(req.auth, clientSyncSchema(req as any)) ? projectLegacyPull(body) : body
+  const shaped = oldHubPull(req) ? { ...shaped0, shifts: withoutDrawerFields("shifts", (shaped0 as any).shifts), settings: withoutDrawerFields("settings", (shaped0 as any).settings) } : shaped0
   json(res, showCost ? shaped : { ...(withoutCost(serializeDecimals(shaped)) as Record<string, unknown>), purchaseOrders: [], supplierPayments: [] })
   } catch (err) {
     console.error("Sync pull error:", err)
@@ -1778,7 +1793,7 @@ router.get("/pull/full/:entity", staffSync, async (req: AuthRequest, res: Server
     if (entity === "settings") {
       const settings = await prisma.appSettings.findUnique({ where: { tenantId } })
       const rows = settings ? [settings] : []
-      json(res, { entity, items: isLegacyHubPull(req.auth, clientSyncSchema(req as any)) ? projectLegacyRows("AppSettings", rows) : rows, hasMore: false, nextCursor: null })
+      json(res, { entity, items: isLegacyHubPull(req.auth, clientSyncSchema(req as any)) ? projectLegacyRows("AppSettings", rows) : oldHubPull(req) ? withoutDrawerFields("settings", rows) : rows, hasMore: false, nextCursor: null })
       return
     }
     if (entity === "deletions") {
@@ -1837,7 +1852,7 @@ router.get("/pull/full/:entity", staffSync, async (req: AuthRequest, res: Server
     const purchaseEntity = entity === "purchase-orders" || entity === "supplier-payments"
     // hubs 1.0.49–1.0.51 insert pulled rows verbatim: only the fields their database has (lib/legacyHubShape.ts)
     const legacyModel = isLegacyHubPull(req.auth, clientSyncSchema(req as any)) ? legacyModelOf(modelName) : undefined
-    const forClient = (rows: any[]) => (legacyModel ? projectLegacyRows(legacyModel, rows) : rows) as any[]
+    const forClient = (rows: any[]) => (legacyModel ? projectLegacyRows(legacyModel, rows) : entity === "shifts" && oldHubPull(req) ? withoutDrawerFields("shifts", rows) : rows) as any[]
     json(res, {
       entity,
       items: !showCostFull && purchaseEntity ? [] : (showCostFull ? (x: any) => x : (x: any) => withoutCost(serializeDecimals(x)))(forClient(entity === "sales" ? shapeSalesForSchema(items, clientSyncSchema(req as any))
@@ -3262,11 +3277,21 @@ async function processOperation(
     }
     case "shift": {
       if (action === "open") {
+        // batch 83: which register opened it (the register's own id and name, as sent)
+        const dev = typeof submitted?.deviceId === "string" && submitted.deviceId ? String(submitted.deviceId).slice(0, 200) : null
+        // its name as the store knows the device (paired / renamed), else what the register calls itself
+        const known = dev ? await db.device.findUnique({ where: { tenantId_deviceId: { tenantId, deviceId: dev } }, select: { deviceName: true } }).catch(() => null) : null
+        const devName = known?.deviceName || (typeof submitted?.deviceName === "string" && submitted.deviceName ? String(submitted.deviceName).slice(0, 120) : null)
+        const other = await db.shift.findFirst({ where: { tenantId, status: "Open", id: { not: payload?.id as string } }, select: { shiftNumber: true, deviceId: true } })
         await db.shift.upsert({
           where: { id: payload?.id as string },
           update: payload as any,
-          create: { ...payload, tenantId } as any,
+          create: { ...payload, tenantId, deviceId: dev, deviceName: devName } as any,
         })
+        // two drawers open at once (registers that opened offline, or older registers): recorded, never merged
+        if (other && (other.deviceId ?? null) !== dev) {
+          await db.auditEvent.create({ data: { tenantId, action: "shift.open_while_other_open", entity: "shift", summary: `${String(payload?.shiftNumber ?? "A shift")} was opened on ${devName ?? dev ?? "a register"} while ${other.shiftNumber} was still open on another register. Each keeps its own sales and count; check both closes.`, metadata: { shiftId: payload?.id, otherShift: other.shiftNumber, deviceId: dev }, userId: "__system__", userName: "Sync", userRole: "Admin" } as any })
+        }
       } else if (action === "close") {
         // A close records the closing figures; it never rewrites who opened the shift or its float.
         const { openedById: _ob, openedByName: _on, openedAt: _oa, openingFloatUsd: _of, tenantId: _t, ...closeData } = (payload ?? {}) as Record<string, unknown>
@@ -3285,6 +3310,17 @@ async function processOperation(
         // and syncing it would let one device's register name stomp on the
         // shared settings row. registerId is already stripped globally above.
         const { registerName: _rn, ...data } = raw as Record<string, unknown>
+        // batch 83: the drawer scope is null (not chosen) or "shared"; it changes only while no shift is open
+        // and nothing is held for review (a hub's forward was checked at the hub)
+        if ("drawerScope" in data) {
+          data.drawerScope = data.drawerScope === "shared" ? "shared" : null
+          const cur = await db.appSettings.findUnique({ where: { tenantId }, select: { drawerScope: true } })
+          if ((cur?.drawerScope ?? null) !== data.drawerScope && source.userId !== "cloud-bridge") {
+            const open = await db.shift.count({ where: { tenantId, status: "Open" } })
+            const held = await db.syncOperation.count({ where: { tenantId, appliedAt: null, status: { in: ["Refused", "Resolving"] } } })
+            if (open > 0 || held > 0) throw new Error(`DRAWER_SCOPE_BUSY: the drawer setting changes only when no shift is open and nothing is held for review (${open} open shift(s), ${held} held operation(s)).`)
+          }
+        }
         await db.appSettings.upsert({
           where: { tenantId },
           create: { ...data, tenantId } as any,
@@ -3523,12 +3559,13 @@ export class StaleStaffError extends Error {
   constructor(message: string) { super(`STALE_STAFF: ${message}`); this.name = "StaleStaffError" }
 }
 
+// A new PIN (typed, or a register's SHA-256 verifier) that anyone else in the store already has is refused.
+// A register's SHA-256 cannot be compared with a bcrypt verifier: such a pair, if it is the same PIN, is
+// caught where the PIN is used (sign-in names both; a staff session or an approval refuses it).
 async function assertPinFree(db: typeof prisma, tenantId: string, rawPin: string, exceptId: string) {
   if (!rawPin || rawPin.startsWith("$2")) return
   const others = await db.staffUser.findMany({ where: { tenantId, id: { not: exceptId } }, select: { name: true, pin: true } })
-  for (const u of others) {
-    if (u.pin.startsWith("$2") ? bcrypt.compareSync(rawPin, u.pin) : u.pin === rawPin) throw new Error(`PIN is already in use by ${u.name}`)
-  }
+  for (const u of others) if ((await samePin(rawPin, u.pin)) === "same") throw new Error(`PIN is already in use by ${u.name}`)
 }
 async function assertOneAdmin(db: typeof prisma, tenantId: string, id: string, role: unknown, active: unknown) {
   if (role !== "Admin" || active === false) return
@@ -3610,7 +3647,7 @@ export async function applyStaffWrite(db: typeof prisma, tenantId: string, actio
     // A 1.0.49 device's PIN change travels inside the update as a SHA-256 hash. A server-issued
     // (bcrypt) hash, or the current one, is just the device's copy: no PIN change intended.
     const legacyPin = typeof payload.pin === "string" ? payload.pin : ""
-    if (legacyPin && legacyPin !== current.pin && isSha256Base64(legacyPin)) {
+    if (legacyPin && legacyPin !== current.pin && isSha256Verifier(legacyPin)) {
       if (payload.pinVersion !== current.pinVersion) {
         throw new StaleStaffError(`${current.name}'s PIN was changed elsewhere (e.g. reset by the owner); this device's change was made on an older copy and was not applied.`)
       }
@@ -3695,15 +3732,12 @@ async function hashStaffPayload(payload?: Record<string, unknown>) {
   // A pin the server itself sent as WITHHELD_PIN (or any other "$2…" that is not a bcrypt hash)
   // must never be stored: it would lock the person out.
   if (pin.startsWith("$2") && !/^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(pin)) throw new Error("Invalid PIN")
-  if (pin && !pin.startsWith("$2") && !isSha256Base64(pin)) {
+  if (pin && !pin.startsWith("$2") && !isSha256Verifier(pin)) {
     data.pin = await bcrypt.hash(pin, 12)
   }
 
   return data
 }
 
-function isSha256Base64(value: string) {
-  return /^[A-Za-z0-9+/]{43}=$/.test(value)
-}
 
 export default router

@@ -122,6 +122,8 @@ export type Shift = {
   closedByName?: string
   registerId?: string
   deviceId?: string
+  /** batch 83: the opening register's name, as recorded by the server */
+  deviceName?: string | null
   notes?: string
 }
 
@@ -1039,8 +1041,39 @@ export function recordBelongsToShift(
   return recordTime >= openedTime && recordTime <= closedTime
 }
 
+/**
+ * Batch 83: the drawer scope. A shift belongs to the register that opened it. Another register sells into it
+ * only when the store's owner chose ONE SHARED DRAWER (settings.drawerScope "shared"); otherwise that register
+ * is told whose shift is open and cannot open a second one (separate drawers are not supported yet). A shift
+ * opened before registers were recorded (no deviceId) is usable by any register, as before.
+ */
+export const isDrawerShared = () => getSettings().drawerScope === "shared"
+export const isThisRegistersShift = (shift: Pick<Shift, "deviceId">) => !shift.deviceId || shift.deviceId === getDeviceId()
 export function getActiveShift() {
-  return getShifts().find((shift) => shift.status === "Open")
+  const open = getShifts().filter((shift) => shift.status === "Open")
+  return open.find(isThisRegistersShift) ?? (isDrawerShared() ? open[0] : undefined)
+}
+/**
+ * Whether a record (sale, refund, expense, supplier payment) belongs to the drawer this register closes the
+ * day for: with one shared drawer, every record of the store; otherwise the records of this register's own
+ * shifts. A record of no shift, or of a shift this register has not seen, counts as before.
+ */
+export function recordInThisDrawer(record: { shiftId?: string | null }): boolean {
+  if (isDrawerShared() || !record.shiftId) return true
+  const shift = getShifts().find((s) => s.id === record.shiftId)
+  return !shift || isThisRegistersShift(shift)
+}
+/** Another register's open shift that this register may not use (drawer scope not shared). */
+export function getOtherRegistersShift() {
+  if (getActiveShift()) return undefined
+  return getShifts().find((shift) => shift.status === "Open" && !isThisRegistersShift(shift))
+}
+export class ShiftScopeError extends Error {
+  shift: Shift
+  constructor(shift: Shift) {
+    super(`SHIFT_OTHER_REGISTER: ${shift.shiftNumber} is open on ${shift.deviceName || "another register"} (opened by ${shift.openedByName}). This store does not share one drawer between registers: close that shift there first, or ask the owner to choose a shared drawer.`)
+    this.name = "ShiftScopeError"; this.shift = shift
+  }
 }
 
 export function openShift(openingFloatUsd: number) {
@@ -1049,11 +1082,14 @@ export function openShift(openingFloatUsd: number) {
   const user = requireCurrentUser()
   if (!canOpenShift(user)) throw new PermissionError("Opening a shift needs the Checkout or Shifts permission.")
   const shifts = getShifts()
-  const openShiftNow = shifts.find((shift) => shift.status === "Open")
-
+  // this register's open shift, or the store's shared drawer: it is the one in use
+  const openShiftNow = getActiveShift()
   if (openShiftNow) {
     return openShiftNow
   }
+  // never a silent second drawer, and never someone else's drawer unasked
+  const other = getOtherRegistersShift()
+  if (other) throw new ShiftScopeError(other)
 
   const shift: Shift = {
     id: createId("shift"),
@@ -1063,6 +1099,7 @@ export function openShift(openingFloatUsd: number) {
     openingFloatUsd,
     registerId: getSettings().registerId ?? "REG-001",
     deviceId: getDeviceId(),
+    deviceName: getSettings().registerName ?? null,
     openedById: user.id,
     openedByName: user.name,
   }

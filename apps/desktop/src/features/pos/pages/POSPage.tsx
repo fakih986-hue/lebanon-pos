@@ -23,7 +23,7 @@ import ModifierSheet from "../components/ModifierSheet"
 import WasteDialog from "../components/WasteDialog"
 import { cartShortage, configuredLine, consumptionPayload, defaultSelection, groupsForProduct, ingredientCheckoutLines, needsOptions, servingsFor, subscribeMenu, type CafeLine } from "../services/menu.service"
 import { lineConfigKey, priceWithModifiers, type LineModifier, type Selection } from "../lib/cafeMenu"
-import { cartKeyOf, type CartKey } from "../lib/lineOptions"
+import { cartKeyOf, lineOptionsText, type CartKey } from "../lib/lineOptions"
 import { serverReason } from "../lib/serverReason"
 import { getProductsSync } from "../services/product.service"
 import QuickPOSMode from "../components/QuickPOSMode"
@@ -64,7 +64,7 @@ import {
   removeHeldSale,
   type HeldSale,
 } from "../services/heldSale.service"
-import { recordAuditEvent, userCan, getActiveShift, getCurrentUser, subscribeSecurity, type Permission } from "../services/security.service"
+import { recordAuditEvent, userCan, getActiveShift, getOtherRegistersShift, getCurrentUser, subscribeSecurity, type Permission } from "../services/security.service"
 import { showToast } from "../services/toast.service"
 import { consumeInventoryBatches } from "../services/inventoryBatch.service"
 import { getApiUrl, getConnectionMode, pullFromServer, nextDocumentReference, getSyncStatus, serverSupportsMadeToOrder, serverSupportsCafeMenu, getTopologyGuidance } from "../services/sync.service"
@@ -90,7 +90,7 @@ type CartItem = Product & {
 const cafeLines = (items: CartItem[]): CafeLine[] => items.map((i) => ({ productId: i.id, quantity: i.quantity, stockPolicy: i.stockPolicy, recipeRev: i.recipeRev ?? null, modifiers: i.modifiers }))
 
 export default function POSPage() {
-  const { t, dir } = useI18n()
+  const { t, dir, locale } = useI18n()
 
   // --- Data ---
   const { products, isLoading, heldSales, customers, settings } = usePosData()
@@ -1104,15 +1104,26 @@ export default function POSPage() {
           <section className="flex h-full min-w-0 flex-col gap-3 overflow-hidden p-3 pb-24 sm:p-4 md:pb-4 xl:p-5">
             <SyncBanner />
             <PendingHubSaleBanner refreshKey={scannerStatus} />
-            {!hasShift && (
-              <div className="mg2-banner mg2-t-warn" role="status">
-                <div style={{ flex: 1, minWidth: 180 }}>
-                  <div className="mg2-sub" style={{ color: "var(--text)" }}>{t("pos.v2.no_shift_title")}</div>
-                  <div className="mg2-cap" style={{ color: "var(--text-2)" }}>{t("pos.v2.no_shift_text")}</div>
+            {!hasShift && (() => {
+              // batch 83: another register's drawer is open and this store does not share one drawer
+              const other = getOtherRegistersShift()
+              return other ? (
+                <div className="mg2-banner mg2-t-warn" role="status" data-testid="other-register-shift">
+                  <div style={{ flex: 1, minWidth: 180 }}>
+                    <div className="mg2-sub" style={{ color: "var(--text)" }}>{t("pos.drawer.other_register_title")}</div>
+                    <div className="mg2-cap" style={{ color: "var(--text-2)" }}>{t("pos.drawer.other_register_text", { shift: other.shiftNumber, register: other.deviceName || t("pos.drawer.another_register"), name: other.openedByName })}</div>
+                  </div>
                 </div>
-                <button type="button" className="mg2-btn mg2-btn-primary" onClick={openShiftSheet}>{t("pos.v2.open_shift")}</button>
-              </div>
-            )}
+              ) : (
+                <div className="mg2-banner mg2-t-warn" role="status">
+                  <div style={{ flex: 1, minWidth: 180 }}>
+                    <div className="mg2-sub" style={{ color: "var(--text)" }}>{t("pos.v2.no_shift_title")}</div>
+                    <div className="mg2-cap" style={{ color: "var(--text-2)" }}>{t("pos.v2.no_shift_text")}</div>
+                  </div>
+                  <button type="button" className="mg2-btn mg2-btn-primary" onClick={openShiftSheet}>{t("pos.v2.open_shift")}</button>
+                </div>
+              )
+            })()}
             <LastSaleBanner
               sales={recentSales}
               onNewSale={cleanSale}
@@ -1123,7 +1134,7 @@ export default function POSPage() {
                   saleNumber: s.number,
                   total: s.total,
                   totalLbp: s.totalLbp,
-                  items: (s.items ?? []).map((i: any) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
+                  items: (s.items ?? []).map((i: any) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity, options: lineOptionsText(i, locale) || undefined })),
                   footer: settings.receiptFooter,
                 }))
               }}
@@ -1187,7 +1198,7 @@ export default function POSPage() {
                     saleNumber: s.number,
                     total: s.total,
                     totalLbp: s.totalLbp,
-                  items: (s.items ?? []).map((i: any) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
+                  items: (s.items ?? []).map((i: any) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity, options: lineOptionsText(i, locale) || undefined })),
                     footer: settings.receiptFooter,
                   }))
                 }}
@@ -1528,7 +1539,7 @@ export default function POSPage() {
             saleNumber: lastSale.number,
             total: lastSale.total,
             totalLbp: lastSale.totalLbp,
-            items: (lastSale.items ?? []).map((i: any) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
+            items: (lastSale.items ?? []).map((i: any) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity, options: lineOptionsText(i, locale) || undefined })),
             footer: settings.receiptFooter,
           }))
         }}

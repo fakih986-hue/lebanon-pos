@@ -1,39 +1,38 @@
 /**
- * A fresh server-side PIN check for one staff member of one store (bcrypt; legacy SHA-256 verifiers
- * still accepted, as at sign-in). Used where a person must authenticate again for one decision: a hub
- * key enrollment, a manager approval. Never returns or logs the PIN or the verifier.
+ * A fresh server-side PIN check for one staff member of one store, with the store's one verifier rule
+ * (lib/pinVerifier.ts: bcrypt, or a register's SHA-256). Used where a person must authenticate again for
+ * one decision: a hub key enrollment, a manager approval. Never returns or logs the PIN or the verifier.
+ *
+ * A PIN must identify ONE person here. If it matches several active people (two staff were given the same
+ * PIN, e.g. one set on a register, where the server cannot compare it with a bcrypt verifier), it is
+ * refused as AMBIGUOUS_PIN — naming who is approving would let anyone who knows the shared PIN approve as
+ * the others. The owner gives each person their own PIN.
  */
-import bcrypt from "bcryptjs"
-import { createHash } from "node:crypto"
 import prisma from "./prisma.js"
 import { effectivePermissions } from "./permissions.js"
+import { pinMatches } from "./pinVerifier.js"
 
 export type VerifiedStaff = { id: string; name: string; role: string; permissions: string[]; tokenVersion: number }
 export type PinCheck =
   | { ok: true; staff: VerifiedStaff }
   | { ok: false; code: "INVALID_PIN" }
   | { ok: false; code: "INACTIVE"; name: string }
-  | { ok: false; code: "AMBIGUOUS_PIN"; candidates: Array<{ id: string; name: string }> }
-
-// a legacy verifier is the SHA-256 a register stores (base64, as sign-in checks it); hex kept for older rows
-const legacyMatch = (stored: string, pin: string) => { const d = createHash("sha256").update(pin).digest(); return stored === d.toString("base64") || stored === d.toString("hex") }
+  | { ok: false; code: "AMBIGUOUS_PIN" }
 
 export async function verifyStaffPin(tenantId: string, pin: string, staffId?: string): Promise<PinCheck> {
   const candidates = await prisma.staffUser.findMany({
-    where: { tenantId, role: { not: "Driver" }, ...(staffId ? { id: staffId } : {}) },
+    where: { tenantId, role: { not: "Driver" } },
     select: { id: true, name: true, role: true, pin: true, permissions: true, tokenVersion: true, active: true },
   })
   const matched: typeof candidates = []
-  for (const c of candidates) {
-    if (!c.pin || c.pin === "$2-withheld") continue
-    if (c.pin.startsWith("$2") ? await bcrypt.compare(pin, c.pin) : legacyMatch(c.pin, pin)) matched.push(c)
-  }
-  // a deactivated person's PIN is reported as such (never accepted), so the refusal is clear
+  for (const c of candidates) if (await pinMatches(c.pin, pin)) matched.push(c)
   const active = matched.filter((m) => m.active)
-  if (active.length === 0 && matched.length > 0) return { ok: false, code: "INACTIVE", name: matched[0].name }
-  matched.splice(0, matched.length, ...active)
-  if (matched.length === 0) return { ok: false, code: "INVALID_PIN" }
-  if (matched.length > 1) return { ok: false, code: "AMBIGUOUS_PIN", candidates: matched.map((m) => ({ id: m.id, name: m.name })) }
-  const s = matched[0]
+  if (active.length > 1) return { ok: false, code: "AMBIGUOUS_PIN" }
+  // the person named (if any) must be the one this PIN belongs to
+  const mine = staffId ? matched.filter((m) => m.id === staffId) : matched
+  // a deactivated person's PIN is reported as such (never accepted), so the refusal is clear
+  if (mine.length > 0 && !mine.some((m) => m.active)) return { ok: false, code: "INACTIVE", name: mine[0].name }
+  const s = mine.find((m) => m.active)
+  if (!s) return { ok: false, code: "INVALID_PIN" }
   return { ok: true, staff: { id: s.id, name: s.name, role: s.role, permissions: effectivePermissions(s.permissions as any, s.role), tokenVersion: s.tokenVersion ?? 0 } }
 }

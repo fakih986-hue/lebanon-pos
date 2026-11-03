@@ -1,6 +1,7 @@
 import { deviceHeadersFor } from "../../features/pos/lib/deviceCredentials"
 import { useEffect, useRef, useState } from "react"
 import DeviceSessionCard from "../../features/pos/components/DeviceSessionCard"
+import DrawerScopeCard from "../../features/pos/components/DrawerScopeCard"
 import { useI18n } from "@lebanonpos/shared"
 import { RatePanel } from "../../features/pos/components/RateManager"
 import {
@@ -1348,6 +1349,7 @@ export default function SettingsPage() {
           ) : null}
 
           {activeWorkspace === "Cloud sync" ? <DeviceSessionCard /> : null}
+          {activeWorkspace === "Cloud sync" ? <DrawerScopeCard /> : null}
 
           {activeWorkspace === "Cloud sync" && connectionMode === "STORE_HUB" ? (
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">

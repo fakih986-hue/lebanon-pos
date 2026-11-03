@@ -5,7 +5,7 @@ import { getSales, subscribeSales, getRefunds, subscribeRefunds } from "../../fe
 import { getExpenses, subscribeExpenses } from "../../features/pos/services/expense.service"
 import { getSupplierPayments, subscribeSuppliers } from "../../features/pos/services/supplier.service"
 import { currentCloseOf, currentDailyCloses, getDailyCloses, subscribeDailyCloses } from "../../features/pos/services/dailyClose.service"
-import { subscribeSecurity, userCan } from "../../features/pos/services/security.service"
+import { recordInThisDrawer, subscribeSecurity, userCan } from "../../features/pos/services/security.service"
 import { closeBusinessDay } from "../../features/pos/services/dailyClose.service"
 import { getSyncStatus, getUnsyncedCount, subscribeSync } from "../../features/pos/services/sync.service"
 import { subscribeCashMovements } from "../../features/pos/services/cashMovement.service"
@@ -93,7 +93,7 @@ export default function AccountingPage() {
   }, [])
 
   const summary = useMemo(
-    () => getAccountingSummary(sales, refunds, expenses, supplierPayments),
+    () => getAccountingSummary(sales, refunds, expenses, supplierPayments, recordInThisDrawer),
     [expenses, refunds, sales, supplierPayments]
   )
   const todayExpenses = expenses.filter((expense) =>

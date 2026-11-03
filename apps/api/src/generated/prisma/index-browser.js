@@ -191,7 +191,8 @@ exports.Prisma.AppSettingsScalarFieldEnum = {
   whatsAppDriverEnabled: 'whatsAppDriverEnabled',
   assignMode: 'assignMode',
   assignTimeout: 'assignTimeout',
-  defaultDriverId: 'defaultDriverId'
+  defaultDriverId: 'defaultDriverId',
+  drawerScope: 'drawerScope'
 };
 
 exports.Prisma.ProductScalarFieldEnum = {
@@ -466,7 +467,9 @@ exports.Prisma.ShiftScalarFieldEnum = {
   closedByName: 'closedByName',
   notes: 'notes',
   openAttribution: 'openAttribution',
-  closeAttribution: 'closeAttribution'
+  closeAttribution: 'closeAttribution',
+  deviceId: 'deviceId',
+  deviceName: 'deviceName'
 };
 
 exports.Prisma.AuditEventScalarFieldEnum = {

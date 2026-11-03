@@ -1,4 +1,4 @@
-import { getActiveShift, recordAuditEvent, requireCurrentUser } from "./security.service"
+import { getActiveShift, isDrawerShared, recordAuditEvent, requireCurrentUser } from "./security.service"
 import { enqueueSyncOperation, assertCanWrite, getDeviceId } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
@@ -110,9 +110,21 @@ export function currentDailyCloses(closes: DailyClose[] = readDailyCloses()): Da
   return closes.filter((c) => !c.supersededById)
 }
 
+/**
+ * Who closes: this register (its device, and its shift if one is open), or — with one shared drawer — the
+ * store's shared drawer as a whole, so a second register's close of the same date corrects the first one
+ * instead of adding the same sales again.
+ */
+export const SHARED_DRAWER_REGISTER = "SHARED-DRAWER"
+function closeIdentity(): Pick<DailyClose, "registerId" | "deviceId" | "shiftId"> {
+  if (isDrawerShared()) return { registerId: SHARED_DRAWER_REGISTER }
+  const shiftId = getActiveShift()?.id
+  return { registerId: getRegisterId(), deviceId: getDeviceId(), ...(shiftId ? { shiftId } : {}) }
+}
+
 /** This register's current close of a date in its present scope (closing again corrects it), if any. */
 export function currentCloseOf(dateKey: string, closes: DailyClose[] = readDailyCloses()): DailyClose | undefined {
-  const scope = closeScopeOf({ registerId: getRegisterId(), deviceId: getDeviceId(), shiftId: getActiveShift()?.id })
+  const scope = closeScopeOf(closeIdentity())
   return currentDailyCloses(closes).find((c) => c.dateKey === dateKey && closeScopeOf(c) === scope)
 }
 
@@ -122,16 +134,13 @@ export function closeBusinessDay({ saleIds, refundIds, ...input }: CloseBusiness
   const known = [input.costOfGoods, input.returnedCost, input.grossMargin, input.netProfit].every((v) => typeof v === "number" && Number.isFinite(v))
   // Another register, or another shift, closes separately; closing this register's date again in the
   // same shift corrects its current close (named here; the corrected close is kept, not replaced).
-  const shiftId = getActiveShift()?.id
   const corrected = currentCloseOf(input.dateKey)
   const id = createId()
   const close: DailyClose = {
     ...input,
     costStatus: known ? "complete" : "incomplete",
     id,
-    registerId: getRegisterId(),
-    deviceId: getDeviceId(),
-    ...(shiftId ? { shiftId } : {}),
+    ...closeIdentity(),
     note: input.note.trim(),
     closedBy: user.name,
     createdAt: new Date().toISOString(),
