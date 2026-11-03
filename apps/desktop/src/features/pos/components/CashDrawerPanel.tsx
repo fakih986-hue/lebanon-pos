@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { ChevronDown, CircleDollarSign, Clock, HandCoins, Landmark, Lock, ShieldCheck } from "lucide-react"
-import { canCloseShift, canOpenShift, getActiveShift, getShifts, openShift, closeShift, subscribeSecurity, userCan, type Shift } from "../services/security.service"
+import { canCloseShift, canOpenShift, getActiveShift, getShifts, openShift, closeShift, subscribeSecurity, userCan, ShiftScopeError, type Shift } from "../services/security.service"
+import { shiftOpenRefusal } from "../lib/shiftScope"
 import { formatCurrency, formatLbpCurrency, usdToLbp } from "../lib/currency"
 import { getSettings } from "../services/settings.service"
 import { showToast } from "../services/toast.service"
@@ -56,7 +57,7 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
     const f = parseFloat(floatInput)
     if (!f || f <= 0) { showToast(t("pos.drawer.invalid_float"), "error"); return }
     let s: Shift | null | undefined
-    try { s = openShift(f) } catch (err) { showToast(t("pos.drawer.action_failed", { reason: String((err as Error)?.message ?? err) }), "error"); return }
+    try { s = openShift(f) } catch (err) { showToast(err instanceof ShiftScopeError ? shiftOpenRefusal(err, t) : t("pos.drawer.action_failed", { reason: String((err as Error)?.message ?? err) }), "error"); return }
     if (!s) return
     setShift(s)
     setFloatInput("")

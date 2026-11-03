@@ -10,6 +10,8 @@ import {
 import { computeShiftCashBreakdown } from "../services/shift.service"
 import { formatCurrency } from "../lib/currency"
 import { parseMoney, formatDateTime } from "../lib/helpers"
+import { shiftOpenRefusal } from "../lib/shiftScope"
+import { useI18n } from "@lebanonpos/shared"
 import { showToast } from "../services/toast.service"
 import ConfirmDialog from "../../../components/ConfirmDialog"
 
@@ -21,6 +23,7 @@ import ConfirmDialog from "../../../components/ConfirmDialog"
  * shift-service functions as the Staff page — one source of truth, no logic change.
  */
 export default function ShiftControlPanel() {
+  const { t } = useI18n()
   const [, setTick] = useState(0) // bump to re-read localStorage-backed shift state
   const [openingFloat, setOpeningFloat] = useState("250")
   const [closingCash, setClosingCash] = useState("")
@@ -45,7 +48,7 @@ export default function ShiftControlPanel() {
 
   const doOpen = () => {
     let s: ReturnType<typeof openShift>
-    try { s = openShift(parseMoney(openingFloat)) } catch (e) { showToast(e instanceof Error ? e.message : String(e), "error"); return }
+    try { s = openShift(parseMoney(openingFloat)) } catch (e) { showToast(shiftOpenRefusal(e, t), "error"); return }
     if (s) { showToast("Shift opened.", "success"); setTick((n) => n + 1) }
     else showToast("Could not open shift — enter a valid opening float.", "error")
   }

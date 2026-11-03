@@ -33,6 +33,7 @@ import {
   type SaleRefund,
 } from "../../features/pos/services/sales.service"
 import { closeShift, createUser, getActiveShift, getAuditEvents, getCurrentUser, getShifts, getUsers, openShift, rolePermissions, subscribeSecurity, updateUser, effectivePermissions, grantablePermissions, wouldOrphanAdmin, PERMISSION_CATALOG, PERMISSION_GROUP_ORDER, PERMISSION_GROUP_LABEL_KEYS, type AuditEvent, type Permission, otherActiveAdmin, type Shift, type StaffUser, type UserRole, lockSession } from "../../features/pos/services/security.service"
+import { shiftOpenRefusal } from "../../features/pos/lib/shiftScope"
 import {
   getSupplierPayments,
   subscribeSuppliers,
@@ -479,7 +480,7 @@ export default function StaffPage() {
 
   function handleOpenShift() {
     let shift: ReturnType<typeof openShift>
-    try { shift = openShift(parseMoney(openingFloat)) } catch (e) { showToast(e instanceof Error ? e.message : String(e), "error"); return }
+    try { shift = openShift(parseMoney(openingFloat)) } catch (e) { showToast(shiftOpenRefusal(e, t), "error"); return }
     if (!shift) return
 
     showToast(t("pos.staff.shift_opened", { shift: shift.shiftNumber }))

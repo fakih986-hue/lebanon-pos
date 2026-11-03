@@ -126,3 +126,21 @@ describe("daily close: each sale counts once across registers", () => {
     expect(dc.currentDailyCloses(dc.getDailyCloses()).filter((c: any) => c.dateKey === first.dateKey)).toHaveLength(1)
   })
 })
+
+describe("the refusal is shown in the register's language", () => {
+  it("names the open shift, its register and who opened it (en, ar)", async () => {
+    seed()
+    const { security } = await services()
+    const { shiftOpenRefusal } = await import("../features/pos/lib/shiftScope")
+    const { en } = await import("../../../../packages/shared/src/i18n/en")
+    const { ar } = await import("../../../../packages/shared/src/i18n/ar")
+    let err: unknown
+    try { security.openShift(10) } catch (e) { err = e }
+    for (const dict of [en, ar] as Array<Record<string, string>>) {
+      const t = (k: string, v: Record<string, string | number> = {}) => (dict[k] ?? k).replace(/\{(\w+)\}/g, (_, n) => String(v[n] ?? ""))
+      const text = shiftOpenRefusal(err, t)
+      expect(text).toContain("SHIFT-PC-001"); expect(text).toContain("Counter PC"); expect(text).toContain("Café Cashier")
+      expect(text).not.toContain("SHIFT_OTHER_REGISTER")
+    }
+  })
+})
