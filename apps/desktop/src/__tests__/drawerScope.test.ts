@@ -144,3 +144,26 @@ describe("the refusal is shown in the register's language", () => {
     }
   })
 })
+
+describe("what a register sends stays readable by an older server (rollout safety)", () => {
+  it("shift open/close never carry the register's name; a routine settings save never carries the drawer scope", async () => {
+    seed({ device: PHONE, shifts: [{ ...pcShift, status: "Closed", closedAt: "2026-11-03T09:00:00.000Z", closingCashUsd: 20 }] })
+    const { security } = await services()
+    const s = security.openShift(10)!
+    // a pulled copy of the shift (from a schema-7 hub) carries the name; the close still does not send it
+    window.localStorage.setItem(SHIFTS_KEY, JSON.stringify(read(SHIFTS_KEY).map((x: any) => (x.id === s.id ? { ...x, deviceName: "Phone" } : x))))
+    window.localStorage.setItem(CURRENT_USER_KEY, "u-mgr")
+    security.closeShift({ shiftId: s.id, expectedCashUsd: 10, closingCashUsd: 10 })
+    await new Promise((r) => setTimeout(r, 30))
+    const ops = read("lebanonpos.sync-queue.v1").filter((o: any) => o.entity === "shift")
+    expect(ops.map((o: any) => o.action)).toEqual(expect.arrayContaining(["open", "close"]))
+    for (const o of ops) expect("deviceName" in o.payload).toBe(false)
+    const { saveSettings, getSettings } = await import("../features/pos/services/settings.service")
+    saveSettings({ ...getSettings(), storeName: "IT 2" })
+    await new Promise((r) => setTimeout(r, 30))
+    saveSettings({ ...getSettings(), drawerScope: "shared" }, { drawerScopeChange: true })
+    await new Promise((r) => setTimeout(r, 30))
+    const set = read("lebanonpos.sync-queue.v1").filter((o: any) => o.entity === "settings").map((o: any) => o.payload).reverse() // the queue is newest first
+    expect(["drawerScope" in set[0], set[1]?.drawerScope]).toEqual([false, "shared"])
+  })
+})

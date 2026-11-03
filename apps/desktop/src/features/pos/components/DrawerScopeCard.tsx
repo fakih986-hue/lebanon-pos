@@ -15,7 +15,7 @@ export default function DrawerScopeCard() {
   const [shared, setShared] = useState(() => getSettings().drawerScope === "shared")
   function change(next: boolean) {
     if (getShifts().some((s) => s.status === "Open")) { showToast(t("settings.drawer.busy"), "error"); return }
-    saveSettings({ ...getSettings(), drawerScope: next ? "shared" : null })
+    saveSettings({ ...getSettings(), drawerScope: next ? "shared" : null }, { drawerScopeChange: true })
     recordAuditEvent({ action: "settings.drawer_scope", entity: "settings", summary: next ? "Registers set to share one drawer." : "Registers set not to share a drawer.", metadata: { drawerScope: next ? "shared" : null } })
     setShared(next)
     showToast(t(next ? "settings.drawer.saved_shared" : "settings.drawer.saved_off"), "success")

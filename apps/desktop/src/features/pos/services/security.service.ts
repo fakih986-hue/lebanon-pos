@@ -1068,6 +1068,8 @@ export function getOtherRegistersShift() {
   if (getActiveShift()) return undefined
   return getShifts().find((shift) => shift.status === "Open" && !isThisRegistersShift(shift))
 }
+/** A shift as sent to the server: the register's name is the server's to record (an older server has no such column). */
+const shiftPayload = (shift: Shift) => { const { deviceName: _n, ...rest } = shift; return rest }
 export class ShiftScopeError extends Error {
   shift: Shift
   constructor(shift: Shift) {
@@ -1099,7 +1101,6 @@ export function openShift(openingFloatUsd: number) {
     openingFloatUsd,
     registerId: getSettings().registerId ?? "REG-001",
     deviceId: getDeviceId(),
-    deviceName: getSettings().registerName ?? null,
     openedById: user.id,
     openedByName: user.name,
   }
@@ -1118,7 +1119,7 @@ export function openShift(openingFloatUsd: number) {
     entity: "shift",
     action: "open",
     summary: `${shift.shiftNumber} opening queued for sync.`,
-    payload: shift,
+    payload: shiftPayload(shift),
   })
 
   return shift
@@ -1195,7 +1196,7 @@ export function closeShift(input: {
       entity: "shift",
       action: "close",
       summary: `${closedShift.shiftNumber} closing queued for sync.`,
-      payload: closedShift,
+      payload: shiftPayload(closedShift),
     })
   }
 

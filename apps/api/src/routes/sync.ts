@@ -2162,7 +2162,7 @@ async function processOperation(
   const stripClientMeta = (value: unknown): unknown => {
     if (Array.isArray(value)) return value.map(stripClientMeta)
     if (value && typeof value === "object") {
-      const { registerId: _reg, deviceId: _dev, ...rest } = value as Record<string, unknown>
+      const { registerId: _reg, deviceId: _dev, deviceName: _devName, ...rest } = value as Record<string, unknown>
       return rest
     }
     return value

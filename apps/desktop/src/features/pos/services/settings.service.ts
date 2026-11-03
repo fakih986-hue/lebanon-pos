@@ -76,7 +76,12 @@ export function getSettings() {
   }
 }
 
-export function saveSettings(settings: AppSettings) {
+/**
+ * Saves the settings and queues them for the server. The drawer scope travels only when the owner changes it
+ * (`drawerScopeChange`): a routine save never carries it (an older server has no such column, and the server
+ * changes it only while no shift is open).
+ */
+export function saveSettings(settings: AppSettings, opts: { drawerScopeChange?: boolean } = {}) {
   if (!canUseStorage()) {
     return
   }
@@ -88,7 +93,7 @@ export function saveSettings(settings: AppSettings) {
     entity: "settings",
     action: "update",
     summary: "Business settings queued for sync.",
-    payload: settings,
+    payload: opts.drawerScopeChange ? settings : (({ drawerScope: _d, ...rest }) => rest)(settings),
   })
 }
 
