@@ -409,6 +409,15 @@ describe("café menu: waste, cost visibility, versions, reports", () => {
     expect(cashier.status).toBe(403)
     expect(JSON.stringify(cashier.body)).not.toMatch(/ingredientCost|wasteCost|revenue/)
   })
+
+  it("a drink renamed after it was sold is reported under its current name, with the same figures", async () => {
+    const before = (await call("GET", "/api/reports/cafe?days=1", undefined, { Authorization: `Bearer ${ownerPerson}` })).body.drinks.find((d: any) => d.name === "Cappuccino")
+    await prisma.product.update({ where: { id: pid[SID.capp] }, data: { name: "Cappuccino (house)" } })
+    const after = (await call("GET", "/api/reports/cafe?days=1", undefined, { Authorization: `Bearer ${ownerPerson}` })).body.drinks
+    expect(after.find((d: any) => d.name === "Cappuccino")).toBeUndefined()
+    expect(after.find((d: any) => d.name === "Cappuccino (house)")).toEqual({ ...before, name: "Cappuccino (house)" })
+    await prisma.product.update({ where: { id: pid[SID.capp] }, data: { name: "Cappuccino" } })
+  })
 })
 
 describe("delivery and the store's topology", () => {

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest"
 import http from "node:http"
 import type { AddressInfo } from "node:net"
-import { randomUUID } from "node:crypto"
+import { createHash, randomUUID } from "node:crypto"
 import jwt from "jsonwebtoken"
 
 // SPRINT-2 Phase E (real Postgres, real handlers): online manager approval. A cashier's register is
@@ -18,7 +18,8 @@ vi.setConfig({ testTimeout: 60_000 })
 
 const TENANT = randomUUID(), OTHER = randomUUID()
 const OWNER = randomUUID(), MANAGER = randomUUID(), SUPERVISOR = randomUUID(), CASHIER = randomUUID(), FORMER = randomUUID(), OTHER_OWNER = randomUUID()
-const PINS = { owner: "7401", manager: "7402", supervisor: "7403", cashier: "7404", former: "7405", other: "7501" }
+const LEGACY = randomUUID()
+const PINS = { owner: "7401", manager: "7402", supervisor: "7403", cashier: "7404", former: "7405", other: "7501", legacy: "7406" }
 let server: http.Server
 let base = ""
 let owner = "", cashierConn = "", otherOwner = ""
@@ -52,6 +53,8 @@ beforeAll(async () => {
     if (id === OWNER) await prisma.tenant.create({ data: { id: TENANT, name: "Approvals IT (disposable)", subdomain: `ap-${TENANT.slice(0, 8)}`, cloudApiKey: randomUUID() } })
     await prisma.staffUser.create({ data: { id, tenantId: TENANT, name, mobile: `ap-${id.slice(0, 8)}`, pin: await bcrypt.hash(pin, 12), role, active, ...(permissions ? { permissions: [...permissions] } : {}) } as any })
   }
+  // a manager added on a register: the register stores the PIN as its SHA-256 (base64), as sign-in accepts it
+  await prisma.staffUser.create({ data: { id: LEGACY, tenantId: TENANT, name: "Lina", mobile: `ap-${LEGACY.slice(0, 8)}`, pin: createHash("sha256").update(PINS.legacy).digest("base64"), role: "Manager" } as any })
   await prisma.tenant.create({ data: { id: OTHER, name: "Approvals IT other (disposable)", subdomain: `ap2-${OTHER.slice(0, 8)}`, cloudApiKey: randomUUID() } })
   await prisma.staffUser.create({ data: { id: OTHER_OWNER, tenantId: OTHER, name: "Other owner", mobile: `ap-x-${OTHER.slice(0, 6)}`, pin: await bcrypt.hash(PINS.other, 12), role: "Admin" } })
   const sign = (userId: string, tenantId: string, role: string) => jwt.sign({ userId, tenantId, role, tokenVersion: 1 }, process.env.JWT_SECRET!, { expiresIn: "1h" })
@@ -122,6 +125,11 @@ describe("online manager approval", () => {
     expect((await push(refundOp(refundPayload(randomUUID())))).status).not.toBe("ok")
     const stored = JSON.stringify(await prisma.syncOperation.findMany({ where: { tenantId: TENANT } })) + JSON.stringify(await prisma.auditEvent.findMany({ where: { tenantId: TENANT } }))
     for (const pin of Object.values(PINS)) expect(stored).not.toContain(`"${pin}"`)
+  })
+
+  it("a manager whose PIN was set on a register (legacy SHA-256, base64) can approve", async () => {
+    const a = await approve("refund", "create", refundPayload(randomUUID()), "sales.refund", PINS.legacy)
+    expect([a.status, a.body.approver?.name]).toEqual([200, "Lina"])
   })
 
   it("an approval cannot authorize changed values, another record, another operation, another register, or after expiry", async () => {

@@ -11,6 +11,7 @@ import { Badge, ConfirmLayer, Drawer, EmptyState, FilterChip, PageHeader, PageTa
 import { formatCurrency, formatLbpCurrency, formatNumber, usdToLbp } from "../../features/pos/lib/currency"
 import { isCostAvailable, sumAvailable } from "../../features/pos/lib/cost"
 import { printSaleReceipt } from "../../features/pos/lib/printReceipt"
+import { lineOptionsText } from "../../features/pos/lib/lineOptions"
 import {
   getRefundMethod, getRefundTotal, getRefundableQuantity, getRefundedQuantity, getSaleExchangeRate, getSaleGrossSubtotal, getSaleQuantity,
   getSaleRefundTotal, getSaleRefunds, parseReturnQuantity,
@@ -443,7 +444,7 @@ function ReceiptDrawer({ sale, refunds, rate, canRefund, canReprint, canVoid, as
   quantities: Record<string, string>; reason: string; status: { tone: "ok" | "err" | "info"; text: string } | null
   onClose: () => void; onPrint: () => void; onQuantity: (key: string, v: string) => void; onReason: (v: string) => void; onRefund: () => void; onVoid: () => void
 }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const date = useDate()
   const [returning, setReturning] = useState(false)
   const saleRate = getSaleExchangeRate(sale, rate)
@@ -497,7 +498,7 @@ function ReceiptDrawer({ sale, refunds, rate, canRefund, canReprint, canVoid, as
               const back = getRefundedQuantity(refunds, sale.id, i)
               return (
                 <tr key={`${i.lineId ?? i.id}-${n}`} className="mg2-static">
-                  <td style={{ fontWeight: 600 }}>{itemName(i) || "—"}{back > 0 && <span className="sub">{t("rcpt.returned_n", { n: formatNumber(back) })}</span>}</td>
+                  <td style={{ fontWeight: 600 }}>{itemName(i) || "—"}{lineOptionsText(i, locale) && <span className="sub" data-testid="rcpt-line-options">{lineOptionsText(i, locale)}</span>}{back > 0 && <span className="sub">{t("rcpt.returned_n", { n: formatNumber(back) })}</span>}</td>
                   <td className="num">{formatNumber(i.quantity)}</td>
                   <td className="num p3">{formatCurrency(i.unitPrice)}</td>
                   <td className="num">{formatCurrency(i.total)}</td>
@@ -548,6 +549,7 @@ function ReceiptDrawer({ sale, refunds, rate, canRefund, canReprint, canVoid, as
               <div key={`${refundLineKeyOf(i)}-${n}`} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 96px", gap: 8, alignItems: "center" }}>
                 <label htmlFor={id} style={{ minWidth: 0 }}>
                   <span style={{ fontWeight: 600, display: "block", overflowWrap: "anywhere" }}>{itemName(i)}</span>
+                  {lineOptionsText(i, locale) && <span className="mg2-cap" style={{ fontSize: 13, display: "block" }}>{lineOptionsText(i, locale)}</span>}
                   <span className="mg2-cap" style={{ fontSize: 13 }}>{t("rcpt.can_return", { n: formatNumber(left), sold: formatNumber(i.quantity) })}</span>
                 </label>
                 <input id={id} className="mg2-input num" type="number" min="0" max={left} step="1" inputMode="numeric" dir="ltr" disabled={left === 0}

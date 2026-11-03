@@ -15,7 +15,8 @@ export type PinCheck =
   | { ok: false; code: "INACTIVE"; name: string }
   | { ok: false; code: "AMBIGUOUS_PIN"; candidates: Array<{ id: string; name: string }> }
 
-const sha256 = (pin: string) => createHash("sha256").update(pin).digest("hex")
+// a legacy verifier is the SHA-256 a register stores (base64, as sign-in checks it); hex kept for older rows
+const legacyMatch = (stored: string, pin: string) => { const d = createHash("sha256").update(pin).digest(); return stored === d.toString("base64") || stored === d.toString("hex") }
 
 export async function verifyStaffPin(tenantId: string, pin: string, staffId?: string): Promise<PinCheck> {
   const candidates = await prisma.staffUser.findMany({
@@ -25,7 +26,7 @@ export async function verifyStaffPin(tenantId: string, pin: string, staffId?: st
   const matched: typeof candidates = []
   for (const c of candidates) {
     if (!c.pin || c.pin === "$2-withheld") continue
-    if (c.pin.startsWith("$2") ? await bcrypt.compare(pin, c.pin) : c.pin === sha256(pin)) matched.push(c)
+    if (c.pin.startsWith("$2") ? await bcrypt.compare(pin, c.pin) : legacyMatch(c.pin, pin)) matched.push(c)
   }
   // a deactivated person's PIN is reported as such (never accepted), so the refusal is clear
   const active = matched.filter((m) => m.active)

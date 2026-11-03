@@ -441,10 +441,12 @@ router.get("/cafe", requireAuth, requirePermission("reports.view"), async (req: 
       r.refunds += Number(x.total) || 0
       by.set(line.productId, r)
     }
+    // a drink renamed since is shown under its current name (the lines keep the name they were sold under)
+    const current = new Map((by.size ? await prisma.product.findMany({ where: { tenantId, id: { in: [...by.keys()] } }, select: { id: true, name: true } }) : []).map((p) => [p.id, p.name]))
     const drinks = [...by.values()].map((r) => {
       const complete = r.unknown === 0 && r.partial === 0
       return {
-        productId: r.productId, name: r.name, quantity: r.quantity,
+        productId: r.productId, name: current.get(r.productId) || r.name, quantity: r.quantity,
         revenue: round2(r.revenue), baseRevenue: round2(r.baseRevenue), modifierRevenue: round2(r.modifierRevenue), refunds: round2(r.refunds),
         conflicts: r.conflicts,
         ...(showCost ? {
